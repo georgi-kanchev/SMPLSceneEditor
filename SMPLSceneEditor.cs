@@ -1,10 +1,10 @@
 global using System.Numerics;
 global using SFML.Graphics;
-global using SFML.System;
 global using SFML.Window;
 global using SMPL;
 global using SMPL.Tools;
 global using Color = SFML.Graphics.Color;
+using SFML.System;
 
 namespace SMPLSceneEditor
 {
@@ -13,8 +13,9 @@ namespace SMPLSceneEditor
 		private readonly System.Windows.Forms.Timer loop;
 		private readonly RenderWindow window;
 		private float sceneSc = 1;
-		private bool isSelecting;
-		private Vector2 prevMousePos, selectStartPos, rightClickPos;
+		private bool isDragSelecting, isHoveringScene;
+		private Vector2 prevFormsMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos;
+		private readonly List<string> selectedUIDs = new();
 
 		public SMPLSceneEditor()
 		{
@@ -45,6 +46,8 @@ namespace SMPLSceneEditor
 			window.Clear();
 			DrawGrid();
 			TryShowMousePos();
+
+			TrySelect();
 
 			ThingManager.UpdateAllThings();
 			ThingManager.DrawAllVisuals(window);
@@ -101,7 +104,7 @@ namespace SMPLSceneEditor
 			window.Draw(cellVerts);
 			window.Draw(specialCellVerts);
 
-			SFML.Graphics.Color GetColor(float coordinate)
+			Color GetColor(float coordinate)
 			{
 				if(coordinate == 0)
 					return SFML.Graphics.Color.Yellow;
@@ -127,58 +130,120 @@ namespace SMPLSceneEditor
 				$"Cursor [{(int)mousePos.X} {(int)mousePos.Y}]\n" +
 				$"Grid [{(int)inGrid.X} {(int)inGrid.Y}]";
 		}
-		private void TryDrawSelection()
-		{
-			if(isSelecting == false)
-				return;
 
+		private Hitbox GetDragSelectionHitbox()
+		{
 			var mousePos = Mouse.GetPosition(window);
 			var topLeft = new Vector2i((int)selectStartPos.X, (int)selectStartPos.Y);
 			var botRight = new Vector2i(mousePos.X, mousePos.Y);
 			var topRight = new Vector2i(botRight.X, topLeft.Y);
 			var botLeft = new Vector2i(topLeft.X, botRight.Y);
-			var tl = window.MapPixelToCoords(topLeft);
-			var tr = window.MapPixelToCoords(topRight);
-			var br = window.MapPixelToCoords(botRight);
-			var bl = window.MapPixelToCoords(botLeft);
-			var fillCol = new Color(0, 180, 255, 100);
-			var outCol = Color.Black;
-			var fill = new Vertex[]
+			var tl = window.MapPixelToCoords(topLeft).ToSystem();
+			var tr = window.MapPixelToCoords(topRight).ToSystem();
+			var br = window.MapPixelToCoords(botRight).ToSystem();
+			var bl = window.MapPixelToCoords(botLeft).ToSystem();
+
+			return new Hitbox(tl, tr, br, bl, tl);
+		}
+		private void TrySelect()
+		{
+			var left = Mouse.IsButtonPressed(Mouse.Button.Left);
+			var click = left.Once("leftClick");
+
+			if(isHoveringScene == false)
+				return;
+
+			var mousePos = GetMousePosition();
+			var rawMousePos = Mouse.GetPosition(window);
+			var uids = ThingManager.GetUIDs();
+			var dragSelHitbox = GetDragSelectionHitbox();
+			var clickedUIDs = new SortedDictionary<int, string>();
+			var dist = selectStartPos.DistanceBetweenPoints(new(rawMousePos.X, rawMousePos.Y));
+
+			if(click)
 			{
-				new(tl, fillCol),
-				new(tr, fillCol),
-				new(br, fillCol),
-				new(bl, fillCol),
-			};
-
-			DrawLine(new Line(tl.ToSystem(), tr.ToSystem()), outCol);
-			DrawLine(new Line(tr.ToSystem(), br.ToSystem()), outCol);
-			DrawLine(new Line(br.ToSystem(), bl.ToSystem()), outCol);
-			DrawLine(new Line(bl.ToSystem(), tl.ToSystem()), outCol);
-
-			window.Draw(fill, PrimitiveType.Quads);
-
-			void DrawLine(Line line, Color color = default, float width = 4)
-			{
-				color = color == default ? Color.White : color;
-
-				width /= 2;
-				var startLeft = line.A.PointMoveAtAngle(line.Angle - 90, width, false);
-				var startRight = line.A.PointMoveAtAngle(line.Angle + 90, width, false);
-				var endLeft = line.B.PointMoveAtAngle(line.Angle - 90, width, false);
-				var endRight = line.B.PointMoveAtAngle(line.Angle + 90, width, false);
-
-				var vert = new Vertex[]
+				selectedUIDs.Clear();
+				for(int i = 0; i < uids.Count; i++)
 				{
-					new(new(startLeft.X, startLeft.Y), color),
-					new(new(startRight.X, startRight.Y), color),
-					new(new(endRight.X, endRight.Y), color),
-					new(new(endLeft.X, endLeft.Y), color),
+					var uid = uids[i];
+					var hitbox = GetHitbox(uid);
+					if(hitbox == null || ThingManager.HasGet(uid, "Depth") == false)
+						continue;
+
+					TryTransformHitbox(uid);
+					if(hitbox.ConvexContains(mousePos))
+						clickedUIDs[(int)ThingManager.Get(uid, "Depth")] = uid;
+				}
+			}
+			else if(left && dist > 1)
+			{
+				selectedUIDs.Clear();
+				for(int i = 0; i < uids.Count; i++)
+				{
+					var uid = uids[i];
+					var hitbox = GetHitbox(uid);
+					if(hitbox == null)
+						continue;
+
+					TryTransformHitbox(uid);
+
+					if(dragSelHitbox != null && dragSelHitbox.ConvexContains(hitbox))
+						selectedUIDs.Add(uid);
+				}
+			}
+
+			foreach(var kvp in clickedUIDs)
+			{
+				selectedUIDs.Add(kvp.Value);
+				break;
+			}
+		}
+		private void TryDrawSelection()
+		{
+			for(int i = 0; i < selectedUIDs.Count; i++)
+				Draw((Hitbox)ThingManager.Get(selectedUIDs[i], "Hitbox"));
+
+			if(isDragSelecting)
+				Draw(GetDragSelectionHitbox());
+
+			void Draw(Hitbox? hitbox)
+			{
+				if(hitbox == null)
+					return;
+
+				var topL = hitbox.Lines[0].A;
+				var topR = hitbox.Lines[0].B;
+				var botR = hitbox.Lines[1].B;
+				var botL = hitbox.Lines[2].B;
+				var fillCol = new Color(0, 180, 255, 100);
+				var outCol = Color.White;
+				var fill = new Vertex[]
+				{
+					new(topL.ToSFML(), fillCol),
+					new(topR.ToSFML(), fillCol),
+					new(botR.ToSFML(), fillCol),
+					new(botL.ToSFML(), fillCol),
 				};
-				window.Draw(vert, PrimitiveType.Quads);
+
+				new Line(topL, topR).Draw(window, outCol);
+				new Line(topR, botR).Draw(window, outCol);
+				new Line(botR, botL).Draw(window, outCol);
+				new Line(botL, topL).Draw(window, outCol);
+
+				window.Draw(fill, PrimitiveType.Quads);
 			}
 		}
 
+		private static Hitbox? GetHitbox(string uid)
+		{
+			return ThingManager.HasGet(uid, "Hitbox") == false ? default : (Hitbox)ThingManager.Get(uid, "Hitbox");
+		}
+		private Vector2 GetFormsMousePos()
+		{
+			var view = window.GetView();
+			var scale = view.Size.ToSystem() / new Vector2(windowSplit.Panel1.Width, windowSplit.Panel1.Height);
+			return new Vector2(MousePosition.X, MousePosition.Y) * scale;
+		}
 		private float GetGridSpacing()
 		{
 			return MathF.Max(gridSpacing.Text.ToNumber(), 8);
@@ -203,31 +268,71 @@ namespace SMPLSceneEditor
 			sceneSc = 1;
 			UpdateZoom();
 		}
+		private Vector2 Drag(Vector2 point, bool reverse = false, bool snapToGrid = false)
+		{
+			var view = window.GetView();
+			var prev = snapToGrid ? prevFormsMousePosGrid : prevFormsMousePos;
+			var pos = GetFormsMousePos();
+			var gridSp = new Vector2(GetGridSpacing());
+
+			if(snapToGrid)
+				pos = pos.PointToGrid(gridSp) + gridSp * 0.5f;
+
+			var dist = prev.DistanceBetweenPoints(pos);
+			var ang = prev.AngleBetweenPoints(pos);
+
+			if(reverse)
+				dist *= -1;
+
+			return dist == 0 ? point : point.PointMoveAtAngle(view.Rotation + ang, dist, false);
+		}
+		private static void TryTransformHitbox(string uid)
+		{
+			if(ThingManager.HasGet(uid, "Hitbox") == false)
+				return;
+
+			var hitbox = (Hitbox)ThingManager.Get(uid, "Hitbox");
+			hitbox.TransformLocalLines(uid);
+		}
 
 		private void OnMouseLeaveScene(object sender, EventArgs e)
 		{
-			//sceneMousePos.Hide();
+			isHoveringScene = false;
+			sceneMousePos.Hide();
 		}
 		private void OnMouseEnterScene(object sender, EventArgs e)
 		{
-			//sceneMousePos.Show();
+			isHoveringScene = true;
+			sceneMousePos.Show();
 		}
 		private void OnMouseMoveScene(object sender, MouseEventArgs e)
 		{
-			var view = window.GetView();
-			var scale = view.Size.ToSystem() / new Vector2(windowSplit.Panel1.Width, windowSplit.Panel1.Height);
-			var pos = new Vector2(MousePosition.X, MousePosition.Y) * scale;
-			var dist = prevMousePos.DistanceBetweenPoints(pos);
-			var ang = prevMousePos.AngleBetweenPoints(pos);
-			prevMousePos = pos;
+			if(e.Button == MouseButtons.Middle)
+			{
+				if(selectedUIDs.Count == 0)
+				{
+					var view = window.GetView();
+					view.Center = Drag(view.Center.ToSystem(), true).ToSFML();
+					window.SetView(view);
+				}
+				else
+				{
+					for(int i = 0; i < selectedUIDs.Count; i++)
+					{
+						var uid = selectedUIDs[i];
+						var pos = (Vector2)ThingManager.Get(uid, "Position");
 
-			if(e.Button != MouseButtons.Middle || dist == 0)
-				return;
+						ThingManager.Set(uid, "Position", Drag(pos, false, gridSnap.Checked));
+						TryTransformHitbox(uid);
+					}
+				}
 
-			view.Center = view.Center.ToSystem().PointMoveAtAngle(view.Rotation + ang, -dist, false).ToSFML();
-			window.SetView(view);
+				System.Windows.Forms.Cursor.Current = Cursors.NoMove2D;
+			}
 
-			System.Windows.Forms.Cursor.Current = Cursors.NoMove2D;
+			var gridSp = new Vector2(GetGridSpacing());
+			prevFormsMousePos = GetFormsMousePos();
+			prevFormsMousePosGrid = prevFormsMousePos.PointToGrid(gridSp) + gridSp * 0.5f;
 		}
 		private void OnSceneZoom(object sender, EventArgs e)
 		{
@@ -246,7 +351,7 @@ namespace SMPLSceneEditor
 
 			windowSplit.Panel1.Focus();
 
-			isSelecting = true;
+			isDragSelecting = true;
 			var pos = Mouse.GetPosition(window);
 			selectStartPos = new(pos.X, pos.Y);
 		}
@@ -258,7 +363,7 @@ namespace SMPLSceneEditor
 			if(e.Button != MouseButtons.Left && e.Button != MouseButtons.Right)
 				return;
 
-			isSelecting = false;
+			isDragSelecting = false;
 		}
 		private void OnKeyDownTopLeftTabs(object sender, System.Windows.Forms.KeyEventArgs e)
 		{
@@ -277,7 +382,10 @@ namespace SMPLSceneEditor
 		{
 			var uid = ThingManager.CreateSprite("sprite");
 			ThingManager.Set(uid, "Position", rightClickPos);
-			ThingManager.Set(uid, "Tint", Color.Red);
+			ThingManager.Set(uid, "Tint", Color.Blue);
+			ThingManager.Do(uid, "ApplyDefaultHitbox");
+			TryTransformHitbox(uid);
+			selectedUIDs.Add(uid);
 		}
 	}
 }

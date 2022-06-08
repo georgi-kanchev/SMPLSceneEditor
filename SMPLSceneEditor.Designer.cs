@@ -38,6 +38,7 @@
 			this.sceneMousePos = new System.Windows.Forms.Label();
 			this.panel1 = new System.Windows.Forms.Panel();
 			this.gridGroup = new System.Windows.Forms.GroupBox();
+			this.gridSnap = new System.Windows.Forms.CheckBox();
 			this.gridSpacing = new System.Windows.Forms.MaskedTextBox();
 			this.gridThickness = new System.Windows.Forms.TrackBar();
 			this.sceneAngle = new System.Windows.Forms.HScrollBar();
@@ -117,7 +118,7 @@
 			this.sceneMousePos.Dock = System.Windows.Forms.DockStyle.Left;
 			this.sceneMousePos.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.sceneMousePos.ForeColor = System.Drawing.Color.White;
-			this.sceneMousePos.Location = new System.Drawing.Point(0, 60);
+			this.sceneMousePos.Location = new System.Drawing.Point(0, 57);
 			this.sceneMousePos.Name = "sceneMousePos";
 			this.sceneMousePos.Size = new System.Drawing.Size(81, 21);
 			this.sceneMousePos.TabIndex = 3;
@@ -130,21 +131,32 @@
 			this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
 			this.panel1.Location = new System.Drawing.Point(0, 0);
 			this.panel1.Name = "panel1";
-			this.panel1.Size = new System.Drawing.Size(612, 60);
+			this.panel1.Size = new System.Drawing.Size(612, 57);
 			this.panel1.TabIndex = 2;
 			// 
 			// gridGroup
 			// 
+			this.gridGroup.Controls.Add(this.gridSnap);
 			this.gridGroup.Controls.Add(this.gridSpacing);
 			this.gridGroup.Controls.Add(this.gridThickness);
 			this.gridGroup.Dock = System.Windows.Forms.DockStyle.Left;
 			this.gridGroup.ForeColor = System.Drawing.Color.White;
 			this.gridGroup.Location = new System.Drawing.Point(0, 0);
 			this.gridGroup.Name = "gridGroup";
-			this.gridGroup.Size = new System.Drawing.Size(162, 56);
+			this.gridGroup.Size = new System.Drawing.Size(218, 53);
 			this.gridGroup.TabIndex = 0;
 			this.gridGroup.TabStop = false;
 			this.gridGroup.Text = "Grid";
+			// 
+			// gridSnap
+			// 
+			this.gridSnap.AutoSize = true;
+			this.gridSnap.Location = new System.Drawing.Point(162, 21);
+			this.gridSnap.Name = "gridSnap";
+			this.gridSnap.Size = new System.Drawing.Size(52, 19);
+			this.gridSnap.TabIndex = 2;
+			this.gridSnap.Text = "Snap";
+			this.gridSnap.UseVisualStyleBackColor = true;
 			// 
 			// gridSpacing
 			// 
@@ -169,7 +181,7 @@
 			this.gridThickness.LargeChange = 1;
 			this.gridThickness.Location = new System.Drawing.Point(3, 19);
 			this.gridThickness.Name = "gridThickness";
-			this.gridThickness.Size = new System.Drawing.Size(104, 34);
+			this.gridThickness.Size = new System.Drawing.Size(104, 31);
 			this.gridThickness.TabIndex = 0;
 			this.gridThickness.TabStop = false;
 			this.gridThickness.Value = 2;
@@ -239,5 +251,6 @@
 		private ToolStripSeparator sceneRightClickMenuSeparator1;
 		private ToolStripMenuItem sceneRightClickMenuResetView;
 		private ToolStripMenuItem sceneRightClickMenuCreateSprite;
+		private CheckBox gridSnap;
 	}
 }
