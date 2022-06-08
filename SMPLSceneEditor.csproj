@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\SFML\SMPL2\SMPL\bin\Debug\net6.0-windows\SMPL.dll" Link="SMPL.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="fasterflect" Version="3.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="SFML.Net" Version="2.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="SMPL">
+      <HintPath>SMPL.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
