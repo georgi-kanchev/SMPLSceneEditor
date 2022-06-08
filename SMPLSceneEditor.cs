@@ -13,6 +13,7 @@ namespace SMPLSceneEditor
 		private readonly System.Windows.Forms.Timer loop;
 		private readonly RenderWindow window;
 		private float sceneSc = 1;
+		private int selectDepthIndex;
 		private bool isDragSelecting, isHoveringScene;
 		private Vector2 prevFormsMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos;
 		private readonly List<string> selectedUIDs = new();
@@ -157,27 +158,17 @@ namespace SMPLSceneEditor
 			var rawMousePos = Mouse.GetPosition(window);
 			var uids = ThingManager.GetUIDs();
 			var dragSelHitbox = GetDragSelectionHitbox();
-			var clickedUIDs = new SortedDictionary<int, string>();
+			var clickedUIDs = new List<string>();
 			var dist = selectStartPos.DistanceBetweenPoints(new(rawMousePos.X, rawMousePos.Y));
+			var ctrl = Keyboard.IsKeyPressed(Keyboard.Key.LControl);
+			var alt = Keyboard.IsKeyPressed(Keyboard.Key.LAlt);
 
 			if(click)
 			{
-				selectedUIDs.Clear();
-				for(int i = 0; i < uids.Count; i++)
-				{
-					var uid = uids[i];
-					var hitbox = GetHitbox(uid);
-					if(hitbox == null || ThingManager.HasGet(uid, "Depth") == false)
-						continue;
+				if(ctrl == false && alt == false)
+					selectedUIDs.Clear();
 
-					TryTransformHitbox(uid);
-					if(hitbox.ConvexContains(mousePos))
-						clickedUIDs[(int)ThingManager.Get(uid, "Depth")] = uid;
-				}
-			}
-			else if(left && dist > 1)
-			{
-				selectedUIDs.Clear();
+				var sum = 0;
 				for(int i = 0; i < uids.Count; i++)
 				{
 					var uid = uids[i];
@@ -187,15 +178,51 @@ namespace SMPLSceneEditor
 
 					TryTransformHitbox(uid);
 
-					if(dragSelHitbox != null && dragSelHitbox.ConvexContains(hitbox))
-						selectedUIDs.Add(uid);
+					// don't count an object in a multi unselect cycle if it is not selected
+					var unselectSpecialCase = alt && selectedUIDs.Contains(uid) == false;
+					// same for opposite
+					var oppositeSpecialCase = ctrl && selectedUIDs.Contains(uid);
+
+					if(hitbox.ConvexContains(mousePos) && unselectSpecialCase == false && oppositeSpecialCase == false)
+					{
+						clickedUIDs.Add(uid);
+						sum++;
+					}
+				}
+				selectDepthIndex = clickedUIDs.Count == 0 ? -1 : (selectDepthIndex + 1).Limit(0, sum, Extensions.Limitation.Overflow);
+			}
+			else if(left && dist > 1)
+			{
+				if(ctrl == false && alt == false)
+					selectedUIDs.Clear();
+				for(int i = 0; i < uids.Count; i++)
+				{
+					var uid = uids[i];
+					var hitbox = GetHitbox(uid);
+					if(hitbox == null)
+						continue;
+
+					TryTransformHitbox(uid);
+
+					var hitboxIsDragSelected = dragSelHitbox != null && dragSelHitbox.ConvexContains(hitbox);
+
+					if(hitboxIsDragSelected)
+					{
+						if(selectedUIDs.Contains(uid) == false)
+							selectedUIDs.Add(uid);
+						if(alt)
+							selectedUIDs.Remove(uid);
+					}
 				}
 			}
 
-			foreach(var kvp in clickedUIDs)
+			if(clickedUIDs.Count > 0)
 			{
-				selectedUIDs.Add(kvp.Value);
-				break;
+				var uid = clickedUIDs[selectDepthIndex];
+				if(selectedUIDs.Contains(uid) == false)
+					selectedUIDs.Add(uid);
+				if(alt)
+					selectedUIDs.Remove(uid);
 			}
 		}
 		private void TryDrawSelection()
@@ -204,9 +231,9 @@ namespace SMPLSceneEditor
 				Draw((Hitbox)ThingManager.Get(selectedUIDs[i], "Hitbox"));
 
 			if(isDragSelecting)
-				Draw(GetDragSelectionHitbox());
+				Draw(GetDragSelectionHitbox(), Keyboard.IsKeyPressed(Keyboard.Key.LAlt));
 
-			void Draw(Hitbox? hitbox)
+			void Draw(Hitbox? hitbox, bool unselect = false)
 			{
 				if(hitbox == null)
 					return;
@@ -215,7 +242,7 @@ namespace SMPLSceneEditor
 				var topR = hitbox.Lines[0].B;
 				var botR = hitbox.Lines[1].B;
 				var botL = hitbox.Lines[2].B;
-				var fillCol = new Color(0, 180, 255, 100);
+				var fillCol = unselect ? new Color(255, 180, 0, 100) : new Color(0, 180, 255, 100);
 				var outCol = Color.White;
 				var fill = new Vertex[]
 				{
@@ -382,10 +409,8 @@ namespace SMPLSceneEditor
 		{
 			var uid = ThingManager.CreateSprite("sprite");
 			ThingManager.Set(uid, "Position", rightClickPos);
-			ThingManager.Set(uid, "Tint", Color.Blue);
 			ThingManager.Do(uid, "ApplyDefaultHitbox");
 			TryTransformHitbox(uid);
-			selectedUIDs.Add(uid);
 		}
 	}
 }
