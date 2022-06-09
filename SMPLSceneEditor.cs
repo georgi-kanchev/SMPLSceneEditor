@@ -1,14 +1,15 @@
+global using System.Collections.ObjectModel;
 global using System.Numerics;
 global using SFML.Graphics;
+global using SFML.System;
 global using SFML.Window;
 global using SMPL;
 global using SMPL.Tools;
 global using Color = SFML.Graphics.Color;
-using SFML.System;
 
 namespace SMPLSceneEditor
 {
-	public partial class SMPLSceneEditor : Form
+	public partial class FormWindow : Form
 	{
 		private readonly System.Windows.Forms.Timer loop;
 		private readonly RenderWindow window;
@@ -18,22 +19,19 @@ namespace SMPLSceneEditor
 		private Vector2 prevFormsMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos;
 		private readonly List<string> selectedUIDs = new();
 
-		public SMPLSceneEditor()
+		public FormWindow()
 		{
 			InitializeComponent();
 
 			WindowState = FormWindowState.Maximized;
 
 			window = new(windowSplit.Panel1.Handle);
-			var view = window.GetView();
-			view.Center = new();
-			window.SetView(view);
 
 			loop = new() { Interval = 1 };
 			loop.Tick += OnUpdate;
 			loop.Start();
 
-			ResetView();
+			SetView();
 		}
 
 		private void OnUpdate(object? sender, EventArgs e)
@@ -47,6 +45,7 @@ namespace SMPLSceneEditor
 			window.Clear();
 			DrawGrid();
 			TryShowMousePos();
+			UpdateFPS();
 
 			TrySelect();
 
@@ -58,6 +57,11 @@ namespace SMPLSceneEditor
 			window.Display();
 		}
 
+		private void UpdateFPS()
+		{
+			SMPL.Tools.Time.Update();
+			fps.Text = $"FPS [{SMPL.Tools.Time.FPS:F0}]";
+		}
 		private void DrawGrid()
 		{
 			if(gridThickness.Value == gridThickness.Minimum)
@@ -118,6 +122,10 @@ namespace SMPLSceneEditor
 			{
 				return coordinate == 0 || coordinate % 1000 == 0 ? specialCellVerts : cellVerts;
 			}
+		}
+		private float GetGridSpacing()
+		{
+			return MathF.Max(gridSpacing.Text.ToNumber(), 8);
 		}
 		private void TryShowMousePos()
 		{
@@ -204,26 +212,13 @@ namespace SMPLSceneEditor
 
 					TryTransformHitbox(uid);
 
-					var hitboxIsDragSelected = dragSelHitbox != null && dragSelHitbox.ConvexContains(hitbox);
-
-					if(hitboxIsDragSelected)
-					{
-						if(selectedUIDs.Contains(uid) == false)
-							selectedUIDs.Add(uid);
-						if(alt)
-							selectedUIDs.Remove(uid);
-					}
+					if(dragSelHitbox != null && dragSelHitbox.ConvexContains(hitbox))
+						SelectObject(uid);
 				}
 			}
 
 			if(clickedUIDs.Count > 0)
-			{
-				var uid = clickedUIDs[selectDepthIndex];
-				if(selectedUIDs.Contains(uid) == false)
-					selectedUIDs.Add(uid);
-				if(alt)
-					selectedUIDs.Remove(uid);
-			}
+				SelectObject(clickedUIDs[selectDepthIndex]);
 		}
 		private void TryDrawSelection()
 		{
@@ -271,30 +266,43 @@ namespace SMPLSceneEditor
 			var scale = view.Size.ToSystem() / new Vector2(windowSplit.Panel1.Width, windowSplit.Panel1.Height);
 			return new Vector2(MousePosition.X, MousePosition.Y) * scale;
 		}
-		private float GetGridSpacing()
-		{
-			return MathF.Max(gridSpacing.Text.ToNumber(), 8);
-		}
 		private Vector2 GetMousePosition()
 		{
 			var mp = Mouse.GetPosition(window);
 			var mp2 = window.MapPixelToCoords(new(mp.X, mp.Y), window.GetView());
 			return new Vector2(mp2.X, mp2.Y);
 		}
-		private void UpdateZoom()
+
+		private void SetView(Vector2 pos = default, float angle = 0, float scale = 1)
 		{
-			sceneSc = ((float)sceneZoom.Value).Map(0, 100, 0.1f, 10f);
+			SetViewPosition(pos);
+			SetViewAngle(angle);
+			SetViewScale(scale);
 		}
-		private void ResetView()
+		private void SetViewPosition(Vector2 pos)
 		{
-			sceneAngle.Value = 0;
-			sceneZoom.Value = 10;
 			var view = window.GetView();
-			view.Center = new();
-			view.Rotation = 0;
-			sceneSc = 1;
-			UpdateZoom();
+			view.Center = pos.ToSFML();
+			window.SetView(view);
 		}
+		private void SetViewAngle(float angle)
+		{
+			sceneAngle.Value = (int)angle.Map(0, 360, 0, 100);
+
+			var view = window.GetView();
+			view.Rotation = angle;
+			window.SetView(view);
+		}
+		private void SetViewScale(float scale)
+		{
+			sceneSc = scale;
+			sceneZoom.Value = (int)scale.Map(0.1f, 10, 0, 100);
+		}
+		private void UpdateSceneScale()
+		{
+			sceneSc = ((float)sceneZoom.Value).Map(0, 100, 0.1f, 10);
+		}
+
 		private Vector2 Drag(Vector2 point, bool reverse = false, bool snapToGrid = false)
 		{
 			var view = window.GetView();
@@ -318,19 +326,57 @@ namespace SMPLSceneEditor
 			if(ThingManager.HasGet(uid, "Hitbox") == false)
 				return;
 
+			var children = (ReadOnlyCollection<string>)ThingManager.Get(uid, "ChildrenUIDs");
 			var hitbox = (Hitbox)ThingManager.Get(uid, "Hitbox");
 			hitbox.TransformLocalLines(uid);
+
+			for(int i = 0; i < children.Count; i++)
+				TryTransformHitbox(children[i]);
+		}
+		private void MoveSelectedObject(bool up)
+		{
+			var selectedNode = sceneObjects.SelectedNode;
+			if(selectedNode == null)
+				return;
+
+			var nodes = selectedNode.Parent == null ? sceneObjects.Nodes : selectedNode.Parent.Nodes;
+			var selectedIndex = nodes.IndexOf(selectedNode);
+			if(selectedIndex == -1)
+				return;
+
+			nodes.RemoveAt(selectedIndex);
+			nodes.Insert(selectedIndex + (up ? -1 : 1), selectedNode);
+
+			sceneObjects.Select();
+			sceneObjects.SelectedNode = selectedNode;
+		}
+		private void SelectObject(string uid)
+		{
+			if(selectedUIDs.Contains(uid) == false)
+				selectedUIDs.Add(uid);
+			if(Keyboard.IsKeyPressed(Keyboard.Key.LAlt))
+				selectedUIDs.Remove(uid);
+		}
+		private void UpdateSceneObjectsTree()
+		{
+			if(selectedUIDs.Count == 0)
+				return;
+
+			var node = sceneObjects.Nodes.Find(selectedUIDs[0], true)[0];
+			sceneObjects.SelectedNode = node;
+			node.EnsureVisible();
+			sceneObjects.Select();
 		}
 
 		private void OnMouseLeaveScene(object sender, EventArgs e)
 		{
 			isHoveringScene = false;
-			sceneMousePos.Hide();
+			//sceneMousePos.Hide();
 		}
 		private void OnMouseEnterScene(object sender, EventArgs e)
 		{
 			isHoveringScene = true;
-			sceneMousePos.Show();
+			//sceneMousePos.Show();
 		}
 		private void OnMouseMoveScene(object sender, MouseEventArgs e)
 		{
@@ -347,9 +393,9 @@ namespace SMPLSceneEditor
 					for(int i = 0; i < selectedUIDs.Count; i++)
 					{
 						var uid = selectedUIDs[i];
-						var pos = (Vector2)ThingManager.Get(uid, "Position");
+						var pos = (Vector2)ThingManager.Get(uid, "LocalPosition");
 
-						ThingManager.Set(uid, "Position", Drag(pos, false, gridSnap.Checked));
+						ThingManager.Set(uid, "LocalPosition", Drag(pos, false, gridSnap.Checked));
 						TryTransformHitbox(uid);
 					}
 				}
@@ -363,7 +409,7 @@ namespace SMPLSceneEditor
 		}
 		private void OnSceneZoom(object sender, EventArgs e)
 		{
-			UpdateZoom();
+			UpdateSceneScale();
 		}
 		private void OnSceneRotate(object sender, EventArgs e)
 		{
@@ -391,26 +437,160 @@ namespace SMPLSceneEditor
 				return;
 
 			isDragSelecting = false;
+			UpdateSceneObjectsTree();
 		}
-		private void OnKeyDownTopLeftTabs(object sender, System.Windows.Forms.KeyEventArgs e)
+		private void OnObjectsSelectMoveUp(object sender, EventArgs e)
 		{
-			//Hotkey.TryTriggerHotkeys();
+			MoveSelectedObject(true);
+		}
+		private void OnObjectsSelectMoveDown(object sender, EventArgs e)
+		{
+			MoveSelectedObject(false);
+		}
+		private void OnSceneObjectClick(object sender, TreeNodeMouseClickEventArgs e)
+		{
+			selectedUIDs.Clear();
+			SelectObject(e.Node.Name);
+		}
+		private void OnSceneObjectDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
+		{
+			SetViewPosition((Vector2)ThingManager.Get(e.Node.Name, "Position"));
+		}
+		private void OnSaveClick(object sender, EventArgs e)
+		{
+			if(save.ShowDialog(this) != DialogResult.OK)
+				return;
+		}
+		private void OnSceneTreeObjectDrag(object sender, ItemDragEventArgs e)
+		{
+			if(e.Button != MouseButtons.Left)
+				return;
+
+			if(e.Item != null)
+			{
+				var node = (TreeNode)e.Item;
+				DoDragDrop(node, DragDropEffects.Move);
+			}
+		}
+		private void OnTreeObjectRename(object sender, NodeLabelEditEventArgs e)
+		{
+			var uid = e.Node.Name;
+			var newUID = e.Label;
+
+			e.CancelEdit = true;
+
+			if(string.IsNullOrWhiteSpace(newUID))
+				return;
+
+			if(ThingManager.Exists(newUID))
+			{
+				MessageBox.Show($"A {{Thing}} already exists with the [UID] '{newUID}'.", "Failed [UID] change!");
+				return;
+			}
+
+			ThingManager.Set(uid, "UID", newUID);
+			e.Node.Text = newUID;
+			e.Node.Name = newUID;
+
+			var selectionIndex = selectedUIDs.IndexOf(uid);
+			if(selectionIndex == -1)
+				return;
+			selectedUIDs.Remove(uid);
+			selectedUIDs.Insert(selectionIndex, newUID);
+		}
+		private void OnTreeObjectDragOver(object sender, DragEventArgs e)
+		{
+			var targetPoint = sceneObjects.PointToClient(new Point(e.X, e.Y));
+			sceneObjects.SelectedNode = sceneObjects.GetNodeAt(targetPoint);
+		}
+		private void OnTreeObjectDragEnter(object sender, DragEventArgs e)
+		{
+			e.Effect = e.AllowedEffect;
+		}
+		private void OnTreeObjectDragDrop(object sender, DragEventArgs e)
+		{
+			var targetPoint = sceneObjects.PointToClient(new Point(e.X, e.Y));
+			var targetNode = sceneObjects.GetNodeAt(targetPoint);
+			var draggedNode = e.Data != null ? (TreeNode)e.Data.GetData(typeof(TreeNode)) : default;
+
+			if(draggedNode != null && targetNode != draggedNode && ContainsNode(draggedNode, targetNode) == false)
+			{
+				if(e.Effect == DragDropEffects.Move)
+				{
+					draggedNode.Remove();
+					targetNode.Nodes.Add(draggedNode);
+					ThingManager.Set(draggedNode.Name, "ParentUID", targetNode.Name);
+				}
+
+				targetNode.Expand();
+			}
+
+			bool ContainsNode(TreeNode node1, TreeNode node2)
+			{
+				return node1 == node2.Parent || (node2.Parent != null && ContainsNode(node1, node2.Parent));
+			}
+		}
+		private void OnKeyDownObjectSearch(object sender, System.Windows.Forms.KeyEventArgs e)
+		{
+			if(e.KeyCode != Keys.Return || string.IsNullOrWhiteSpace(searchScene.Text))
+				return;
+
+			var bestGuessSymbolsMatch = 0;
+			var bestGuess = default(TreeNode);
+
+			Search(sceneObjects.Nodes);
+
+			if(bestGuess == null)
+				return;
+
+			searchScene.Text = "";
+			sceneObjects.SelectedNode = bestGuess;
+			sceneObjects.Select();
+			bestGuess.EnsureVisible();
+
+			void Search(TreeNodeCollection nodes)
+			{
+				if(nodes == null || searchScene.Text.Length == bestGuessSymbolsMatch)
+					return;
+
+				foreach(TreeNode node in nodes)
+				{
+					var curMatchingSymbols = 0;
+					for(int i = 0; i < node.Name.Length; i++)
+					{
+						if(searchScene.Text.Length <= i || node.Name[i] != searchScene.Text[i])
+							break;
+
+						curMatchingSymbols++;
+					}
+
+					if(curMatchingSymbols > bestGuessSymbolsMatch)
+					{
+						bestGuessSymbolsMatch = curMatchingSymbols;
+						bestGuess = node;
+					}
+					Search(node.Nodes);
+				}
+			}
 		}
 		private void OnSceneStatusClick(object sender, EventArgs e)
 		{
 			windowSplit.Panel1.Focus();
 		}
-
 		private void OnSceneRightClickMenuResetView(object sender, EventArgs e)
 		{
-			ResetView();
+			SetView();
 		}
 		private void OnSceneRightClickMenuCreateSprite(object sender, EventArgs e)
 		{
-			var uid = ThingManager.CreateSprite("sprite");
-			ThingManager.Set(uid, "Position", rightClickPos);
-			ThingManager.Do(uid, "ApplyDefaultHitbox");
-			TryTransformHitbox(uid);
+			for(int i = 0; i < 200; i++)
+			{
+				var uid = ThingManager.CreateSprite($"sprite{i}");
+				ThingManager.Set(uid, "Position", rightClickPos);
+				ThingManager.Do(uid, "ApplyDefaultHitbox");
+				TryTransformHitbox(uid);
+				sceneObjects.Nodes.Add(uid, uid);
+			}
 		}
 	}
 }
