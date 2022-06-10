@@ -6,6 +6,7 @@ global using SFML.Window;
 global using SMPL;
 global using SMPL.Tools;
 global using Color = SFML.Graphics.Color;
+using Cursor = System.Windows.Forms.Cursor;
 
 namespace SMPLSceneEditor
 {
@@ -15,9 +16,10 @@ namespace SMPLSceneEditor
 		private readonly RenderWindow window;
 		private float sceneSc = 1;
 		private int selectDepthIndex;
-		private bool isDragSelecting, isHoveringScene;
-		private Vector2 prevFormsMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos;
+		private bool isDragSelecting, isHoveringScene, confirmDeleteChildrenMsgShown;
+		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos;
 		private readonly List<string> selectedUIDs = new();
+		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
 
 		public FormWindow()
 		{
@@ -32,6 +34,9 @@ namespace SMPLSceneEditor
 			loop.Start();
 
 			SetView();
+
+			editSelectionOptions.SelectedIndex = 0;
+			FocusObjectsTree();
 		}
 
 		private void OnUpdate(object? sender, EventArgs e)
@@ -48,6 +53,7 @@ namespace SMPLSceneEditor
 			UpdateFPS();
 
 			TrySelect();
+			TryDestroy();
 
 			ThingManager.UpdateAllThings();
 			ThingManager.DrawAllVisuals(window);
@@ -125,7 +131,7 @@ namespace SMPLSceneEditor
 		}
 		private float GetGridSpacing()
 		{
-			return MathF.Max(gridSpacing.Text.ToNumber(), 8);
+			return MathF.Max(gridSpacing.Text.ToNumber(), (float)gridSpacing.Minimum);
 		}
 		private void TryShowMousePos()
 		{
@@ -174,7 +180,7 @@ namespace SMPLSceneEditor
 			if(click)
 			{
 				if(ctrl == false && alt == false)
-					selectedUIDs.Clear();
+					UnselectObjects();
 
 				var sum = 0;
 				for(int i = 0; i < uids.Count; i++)
@@ -202,7 +208,7 @@ namespace SMPLSceneEditor
 			else if(left && dist > 1)
 			{
 				if(ctrl == false && alt == false)
-					selectedUIDs.Clear();
+					UnselectObjects();
 				for(int i = 0; i < uids.Count; i++)
 				{
 					var uid = uids[i];
@@ -255,6 +261,39 @@ namespace SMPLSceneEditor
 				window.Draw(fill, PrimitiveType.Quads);
 			}
 		}
+		private void TryDestroy()
+		{
+			var delClick = Keyboard.IsKeyPressed(Keyboard.Key.Delete).Once("delete-selected-objects");
+
+			if(confirmDeleteChildrenMsgShown == false && selectedUIDs.Count > 0 && delClick)
+			{
+				confirmDeleteChildrenMsgShown = true;
+				var result = MessageBox.Show($"Also delete the children of the selected {{Things}}?", "Delete Selection", MessageBoxButtons.YesNoCancel);
+				confirmDeleteChildrenMsgShown = false;
+				var includeChildren = result == DialogResult.Yes;
+				if(result == DialogResult.Cancel)
+					return;
+
+				var sel = new List<string>(selectedUIDs);
+				for(int i = 0; i < sel.Count; i++)
+				{
+					var uid = selectedUIDs[i];
+					var node = sceneObjects.Nodes.Find(uid, true)[0];
+					selectedUIDs.Remove(uid);
+
+					if(includeChildren == false)
+						foreach(TreeNode childNode in node.Nodes)
+						{
+							childNode.Remove();
+							sceneObjects.Nodes[0].Nodes.Add(childNode);
+						}
+
+					node.Remove();
+
+					ThingManager.Destroy(uid, includeChildren);
+				}
+			}
+		}
 
 		private static Hitbox? GetHitbox(string uid)
 		{
@@ -287,20 +326,13 @@ namespace SMPLSceneEditor
 		}
 		private void SetViewAngle(float angle)
 		{
-			sceneAngle.Value = (int)angle.Map(0, 360, 0, 100);
-
 			var view = window.GetView();
 			view.Rotation = angle;
 			window.SetView(view);
 		}
 		private void SetViewScale(float scale)
 		{
-			sceneSc = scale;
-			sceneZoom.Value = (int)scale.Map(0.1f, 10, 0, 100);
-		}
-		private void UpdateSceneScale()
-		{
-			sceneSc = ((float)sceneZoom.Value).Map(0, 100, 0.1f, 10);
+			sceneSc = scale.Limit(0.1f, 10f);
 		}
 
 		private Vector2 Drag(Vector2 point, bool reverse = false, bool snapToGrid = false)
@@ -308,7 +340,7 @@ namespace SMPLSceneEditor
 			var view = window.GetView();
 			var prev = snapToGrid ? prevFormsMousePosGrid : prevFormsMousePos;
 			var pos = GetFormsMousePos();
-			var gridSp = new Vector2(GetGridSpacing());
+			var gridSp = new Vector2((float)snap.Value);
 
 			if(snapToGrid)
 				pos = pos.PointToGrid(gridSp) + gridSp * 0.5f;
@@ -321,6 +353,32 @@ namespace SMPLSceneEditor
 
 			return dist == 0 ? point : point.PointMoveAtAngle(view.Rotation + ang, dist, false);
 		}
+		private float DragAngle(Vector2 point, float angle, bool reverse = false)
+		{
+			var snapValue = (float)snap.Value;
+			var curAng = point.AngleBetweenPoints(GetMousePosition());
+			var prevAng = point.AngleBetweenPoints(prevMousePos);
+			curAng = AngToGrid(curAng, snapValue);
+			prevAng = AngToGrid(prevAng, snapValue);
+			var delta = curAng - prevAng;
+			return angle + (reverse ? -delta : delta);
+		}
+		private float DragScale(float scale, bool reverse = false)
+		{
+			var middle = new Vector2(windowSplit.Panel1.Width, windowSplit.Panel1.Height) * 0.5f;
+			var snapValue = (float)snap.Value;
+			var reduce = 1000f;
+			var curDist = middle.DistanceBetweenPoints(GetFormsMousePos());
+			var prevDist = middle.DistanceBetweenPoints(prevFormsMousePos);
+			curDist = AngToGrid(curDist, snapValue);
+			prevDist = AngToGrid(prevDist, snapValue);
+			var delta = curDist - prevDist;
+
+			delta /= reduce;
+
+			return scale + (reverse ? -delta : delta);
+		}
+
 		private static void TryTransformHitbox(string uid)
 		{
 			if(ThingManager.HasGet(uid, "Hitbox") == false)
@@ -347,7 +405,7 @@ namespace SMPLSceneEditor
 			nodes.RemoveAt(selectedIndex);
 			nodes.Insert(selectedIndex + (up ? -1 : 1), selectedNode);
 
-			sceneObjects.Select();
+			FocusObjectsTree();
 			sceneObjects.SelectedNode = selectedNode;
 		}
 		private void SelectObject(string uid)
@@ -365,7 +423,27 @@ namespace SMPLSceneEditor
 			var node = sceneObjects.Nodes.Find(selectedUIDs[0], true)[0];
 			sceneObjects.SelectedNode = node;
 			node.EnsureVisible();
+			FocusObjectsTree();
+		}
+		private void FocusObjectsTree()
+		{
+			if(selectedUIDs.Count == 0)
+			{
+				var world = sceneObjects.Nodes[0];
+				sceneObjects.SelectedNode = world;
+				world.EnsureVisible();
+			}
+
 			sceneObjects.Select();
+		}
+		private void UnselectObjects()
+		{
+			selectedUIDs.Clear();
+			FocusObjectsTree();
+		}
+		private static float AngToGrid(float ang, float gridSz)
+		{
+			return new Vector2(ang).PointToGrid(new(gridSz)).X;
 		}
 
 		private void OnMouseLeaveScene(object sender, EventArgs e)
@@ -382,47 +460,50 @@ namespace SMPLSceneEditor
 		{
 			if(e.Button == MouseButtons.Middle)
 			{
+				var editIndex = editSelectionOptions.SelectedIndex;
+
 				if(selectedUIDs.Count == 0)
 				{
 					var view = window.GetView();
-					view.Center = Drag(view.Center.ToSystem(), true).ToSFML();
-					window.SetView(view);
+					if(editIndex == 0)
+						SetViewPosition(Drag(window.GetView().Center.ToSystem(), true));
+					else if(editIndex == 1)
+						SetViewAngle(DragAngle(view.Center.ToSystem(), view.Rotation, true));
+					else
+						SetViewScale(DragScale(sceneSc, true));
 				}
 				else
 				{
 					for(int i = 0; i < selectedUIDs.Count; i++)
 					{
 						var uid = selectedUIDs[i];
-						var pos = (Vector2)ThingManager.Get(uid, "LocalPosition");
+						var pos = (Vector2)ThingManager.Get(uid, "Position");
+						var ang = (float)ThingManager.Get(uid, "Angle");
+						var sc = (float)ThingManager.Get(uid, "Scale");
 
-						ThingManager.Set(uid, "LocalPosition", Drag(pos, false, gridSnap.Checked));
+						if(editIndex == 0)
+							ThingManager.Set(uid, "Position", Drag(pos, false, true));
+						else if(editIndex == 1)
+							ThingManager.Set(uid, "Angle", DragAngle(pos, ang));
+						else
+							ThingManager.Set(uid, "Scale", DragScale(sc));
+
 						TryTransformHitbox(uid);
 					}
 				}
 
-				System.Windows.Forms.Cursor.Current = Cursors.NoMove2D;
+				Cursor.Current = editCursors[editIndex];
 			}
 
-			var gridSp = new Vector2(GetGridSpacing());
+			var gridSp = new Vector2((float)snap.Value);
 			prevFormsMousePos = GetFormsMousePos();
+			prevMousePos = GetMousePosition();
 			prevFormsMousePosGrid = prevFormsMousePos.PointToGrid(gridSp) + gridSp * 0.5f;
-		}
-		private void OnSceneZoom(object sender, EventArgs e)
-		{
-			UpdateSceneScale();
-		}
-		private void OnSceneRotate(object sender, EventArgs e)
-		{
-			var view = window.GetView();
-			view.Rotation = ((float)sceneAngle.Value).Map(0, 100, 0, 360);
-			window.SetView(view);
 		}
 		private void OnMouseDownScene(object sender, MouseEventArgs e)
 		{
 			if(e.Button != MouseButtons.Left)
 				return;
-
-			windowSplit.Panel1.Focus();
 
 			isDragSelecting = true;
 			var pos = Mouse.GetPosition(window);
@@ -449,17 +530,32 @@ namespace SMPLSceneEditor
 		}
 		private void OnSceneObjectClick(object sender, TreeNodeMouseClickEventArgs e)
 		{
+			if(e.Node == sceneObjects.Nodes[0])
+				return;
+
+			if(e.Button == MouseButtons.Right)
+			{
+				SetViewPosition((Vector2)ThingManager.Get(e.Node.Name, "Position"));
+				return;
+			}
+
 			selectedUIDs.Clear();
 			SelectObject(e.Node.Name);
 		}
 		private void OnSceneObjectDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
 		{
-			SetViewPosition((Vector2)ThingManager.Get(e.Node.Name, "Position"));
+			if(e.Node != null)
+				e.Node.BeginEdit();
 		}
 		private void OnSaveClick(object sender, EventArgs e)
 		{
 			if(save.ShowDialog(this) != DialogResult.OK)
+			{
+				FocusObjectsTree();
 				return;
+			}
+
+			FocusObjectsTree();
 		}
 		private void OnSceneTreeObjectDrag(object sender, ItemDragEventArgs e)
 		{
@@ -495,6 +591,7 @@ namespace SMPLSceneEditor
 			var selectionIndex = selectedUIDs.IndexOf(uid);
 			if(selectionIndex == -1)
 				return;
+
 			selectedUIDs.Remove(uid);
 			selectedUIDs.Insert(selectionIndex, newUID);
 		}
@@ -502,6 +599,31 @@ namespace SMPLSceneEditor
 		{
 			var targetPoint = sceneObjects.PointToClient(new Point(e.X, e.Y));
 			sceneObjects.SelectedNode = sceneObjects.GetNodeAt(targetPoint);
+		}
+		private void SelectObjectsTree(object sender, EventArgs e)
+		{
+			FocusObjectsTree();
+		}
+		private void OnRightTabSelect(object sender, TabControlEventArgs e)
+		{
+			if(e.TabPageIndex != 0)
+				return;
+
+			FocusObjectsTree();
+		}
+		private void OnUnparentSelectionButtonClick(object sender, EventArgs e)
+		{
+			var selectedNode = sceneObjects.SelectedNode;
+			var selectedNodeParent = selectedNode.Parent;
+			if(selectedNodeParent == null || selectedNodeParent == sceneObjects.Nodes[0])
+				return;
+
+			selectedNode.Remove();
+			sceneObjects.Nodes[0].Nodes.Add(selectedNode);
+			sceneObjects.SelectedNode = selectedNode;
+			selectedNode.EnsureVisible();
+			FocusObjectsTree();
+			ThingManager.Set(selectedNode.Name, "ParentUID", null);
 		}
 		private void OnTreeObjectDragEnter(object sender, DragEventArgs e)
 		{
@@ -511,6 +633,10 @@ namespace SMPLSceneEditor
 		{
 			var targetPoint = sceneObjects.PointToClient(new Point(e.X, e.Y));
 			var targetNode = sceneObjects.GetNodeAt(targetPoint);
+
+			if(targetNode == null)
+				return;
+
 			var draggedNode = e.Data != null ? (TreeNode)e.Data.GetData(typeof(TreeNode)) : default;
 
 			if(draggedNode != null && targetNode != draggedNode && ContainsNode(draggedNode, targetNode) == false)
@@ -519,7 +645,17 @@ namespace SMPLSceneEditor
 				{
 					draggedNode.Remove();
 					targetNode.Nodes.Add(draggedNode);
-					ThingManager.Set(draggedNode.Name, "ParentUID", targetNode.Name);
+
+					var uid = draggedNode.Name;
+
+					ThingManager.Set(uid, "ParentUID", targetNode == sceneObjects.Nodes[0] ? null : targetNode.Name);
+
+					TryTransformHitbox(uid);
+
+					selectedUIDs.Clear();
+					selectedUIDs.Add(draggedNode.Name);
+					sceneObjects.SelectedNode = draggedNode;
+					sceneObjects.Select();
 				}
 
 				targetNode.Expand();
@@ -538,14 +674,14 @@ namespace SMPLSceneEditor
 			var bestGuessSymbolsMatch = 0;
 			var bestGuess = default(TreeNode);
 
-			Search(sceneObjects.Nodes);
+			Search(sceneObjects.Nodes[0].Nodes);
 
 			if(bestGuess == null)
 				return;
 
 			searchScene.Text = "";
 			sceneObjects.SelectedNode = bestGuess;
-			sceneObjects.Select();
+			FocusObjectsTree();
 			bestGuess.EnsureVisible();
 
 			void Search(TreeNodeCollection nodes)
@@ -589,7 +725,10 @@ namespace SMPLSceneEditor
 				ThingManager.Set(uid, "Position", rightClickPos);
 				ThingManager.Do(uid, "ApplyDefaultHitbox");
 				TryTransformHitbox(uid);
-				sceneObjects.Nodes.Add(uid, uid);
+
+				var world = sceneObjects.Nodes[0];
+				world.Nodes.Add(uid, uid);
+				world.Expand();
 			}
 		}
 	}
