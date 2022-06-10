@@ -30,23 +30,24 @@
 		{
 			this.components = new System.ComponentModel.Container();
 			System.Windows.Forms.TreeNode treeNode1 = new System.Windows.Forms.TreeNode("World");
-			System.Windows.Forms.TreeNode treeNode2 = new System.Windows.Forms.TreeNode("folder");
 			this.windowSplit = new System.Windows.Forms.SplitContainer();
+			this.fps = new System.Windows.Forms.Label();
+			this.sceneMousePos = new System.Windows.Forms.Label();
+			this.sceneStatusPanel = new System.Windows.Forms.Panel();
+			this.editSelectionGroup = new System.Windows.Forms.GroupBox();
+			this.editSelectionOptions = new System.Windows.Forms.ListBox();
+			this.snap = new System.Windows.Forms.NumericUpDown();
+			this.saveButton = new System.Windows.Forms.Button();
+			this.gridGroup = new System.Windows.Forms.GroupBox();
+			this.gridSpacing = new System.Windows.Forms.NumericUpDown();
+			this.gridThickness = new System.Windows.Forms.TrackBar();
+			this.windowPicture = new System.Windows.Forms.PictureBox();
 			this.sceneRightClickMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
 			this.sceneRightClickMenuCreate = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateSprite = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.sceneRightClickMenuResetView = new System.Windows.Forms.ToolStripMenuItem();
-			this.fps = new System.Windows.Forms.Label();
-			this.sceneMousePos = new System.Windows.Forms.Label();
-			this.sceneStatusPanel = new System.Windows.Forms.Panel();
-			this.snap = new System.Windows.Forms.NumericUpDown();
-			this.editSelectionOptions = new System.Windows.Forms.ListBox();
-			this.saveButton = new System.Windows.Forms.Button();
-			this.gridGroup = new System.Windows.Forms.GroupBox();
-			this.gridSpacing = new System.Windows.Forms.NumericUpDown();
-			this.gridThickness = new System.Windows.Forms.TrackBar();
-			this.rightTabsPanel = new System.Windows.Forms.TabControl();
+			this.rightPanelTabs = new System.Windows.Forms.TabControl();
 			this.sceneObjectEdit = new System.Windows.Forms.TabPage();
 			this.thingSelectSplit = new System.Windows.Forms.SplitContainer();
 			this.sceneObjects = new System.Windows.Forms.TreeView();
@@ -61,13 +62,15 @@
 			this.windowSplit.Panel1.SuspendLayout();
 			this.windowSplit.Panel2.SuspendLayout();
 			this.windowSplit.SuspendLayout();
-			this.sceneRightClickMenu.SuspendLayout();
 			this.sceneStatusPanel.SuspendLayout();
+			this.editSelectionGroup.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize)(this.snap)).BeginInit();
 			this.gridGroup.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize)(this.gridSpacing)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.gridThickness)).BeginInit();
-			this.rightTabsPanel.SuspendLayout();
+			((System.ComponentModel.ISupportInitialize)(this.windowPicture)).BeginInit();
+			this.sceneRightClickMenu.SuspendLayout();
+			this.rightPanelTabs.SuspendLayout();
 			this.sceneObjectEdit.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize)(this.thingSelectSplit)).BeginInit();
 			this.thingSelectSplit.Panel1.SuspendLayout();
@@ -84,23 +87,191 @@
 			// 
 			// windowSplit.Panel1
 			// 
-			this.windowSplit.Panel1.ContextMenuStrip = this.sceneRightClickMenu;
 			this.windowSplit.Panel1.Controls.Add(this.fps);
 			this.windowSplit.Panel1.Controls.Add(this.sceneMousePos);
 			this.windowSplit.Panel1.Controls.Add(this.sceneStatusPanel);
-			this.windowSplit.Panel1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.OnMouseDownScene);
-			this.windowSplit.Panel1.MouseEnter += new System.EventHandler(this.OnMouseEnterScene);
-			this.windowSplit.Panel1.MouseLeave += new System.EventHandler(this.OnMouseLeaveScene);
-			this.windowSplit.Panel1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.OnMouseMoveScene);
-			this.windowSplit.Panel1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.OnMouseUpScene);
+			this.windowSplit.Panel1.Controls.Add(this.windowPicture);
 			// 
 			// windowSplit.Panel2
 			// 
-			this.windowSplit.Panel2.Controls.Add(this.rightTabsPanel);
+			this.windowSplit.Panel2.Controls.Add(this.rightPanelTabs);
 			this.windowSplit.Size = new System.Drawing.Size(1564, 761);
 			this.windowSplit.SplitterDistance = 1295;
 			this.windowSplit.TabIndex = 0;
 			this.windowSplit.TabStop = false;
+			// 
+			// fps
+			// 
+			this.fps.AutoSize = true;
+			this.fps.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+			this.fps.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.fps.ForeColor = System.Drawing.Color.White;
+			this.fps.Location = new System.Drawing.Point(0, 61);
+			this.fps.Name = "fps";
+			this.fps.Size = new System.Drawing.Size(31, 21);
+			this.fps.TabIndex = 4;
+			this.fps.Text = "fps";
+			// 
+			// sceneMousePos
+			// 
+			this.sceneMousePos.AutoSize = true;
+			this.sceneMousePos.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+			this.sceneMousePos.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.sceneMousePos.ForeColor = System.Drawing.Color.White;
+			this.sceneMousePos.Location = new System.Drawing.Point(0, 82);
+			this.sceneMousePos.Name = "sceneMousePos";
+			this.sceneMousePos.Size = new System.Drawing.Size(81, 21);
+			this.sceneMousePos.TabIndex = 3;
+			this.sceneMousePos.Text = "mousePos";
+			// 
+			// sceneStatusPanel
+			// 
+			this.sceneStatusPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+			this.sceneStatusPanel.Controls.Add(this.editSelectionGroup);
+			this.sceneStatusPanel.Controls.Add(this.saveButton);
+			this.sceneStatusPanel.Controls.Add(this.gridGroup);
+			this.sceneStatusPanel.Dock = System.Windows.Forms.DockStyle.Top;
+			this.sceneStatusPanel.Location = new System.Drawing.Point(0, 0);
+			this.sceneStatusPanel.Name = "sceneStatusPanel";
+			this.sceneStatusPanel.Size = new System.Drawing.Size(1295, 58);
+			this.sceneStatusPanel.TabIndex = 2;
+			// 
+			// editSelectionGroup
+			// 
+			this.editSelectionGroup.Controls.Add(this.editSelectionOptions);
+			this.editSelectionGroup.Controls.Add(this.snap);
+			this.editSelectionGroup.ForeColor = System.Drawing.Color.White;
+			this.editSelectionGroup.Location = new System.Drawing.Point(174, 0);
+			this.editSelectionGroup.Name = "editSelectionGroup";
+			this.editSelectionGroup.Size = new System.Drawing.Size(193, 54);
+			this.editSelectionGroup.TabIndex = 6;
+			this.editSelectionGroup.TabStop = false;
+			this.editSelectionGroup.Text = "Edit Selection";
+			// 
+			// editSelectionOptions
+			// 
+			this.editSelectionOptions.BackColor = System.Drawing.Color.Black;
+			this.editSelectionOptions.Dock = System.Windows.Forms.DockStyle.Left;
+			this.editSelectionOptions.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.editSelectionOptions.ForeColor = System.Drawing.Color.White;
+			this.editSelectionOptions.FormattingEnabled = true;
+			this.editSelectionOptions.Items.AddRange(new object[] {
+            "    Reposition",
+            "       Rotate"});
+			this.editSelectionOptions.Location = new System.Drawing.Point(3, 19);
+			this.editSelectionOptions.Name = "editSelectionOptions";
+			this.editSelectionOptions.Size = new System.Drawing.Size(91, 32);
+			this.editSelectionOptions.TabIndex = 3;
+			this.editSelectionOptions.Click += new System.EventHandler(this.SelectObjectsTree);
+			// 
+			// snap
+			// 
+			this.snap.BackColor = System.Drawing.Color.Black;
+			this.snap.DecimalPlaces = 2;
+			this.snap.Font = new System.Drawing.Font("Segoe UI", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.snap.ForeColor = System.Drawing.Color.White;
+			this.snap.Increment = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+			this.snap.Location = new System.Drawing.Point(100, 19);
+			this.snap.Maximum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+			this.snap.Name = "snap";
+			this.snap.Size = new System.Drawing.Size(82, 27);
+			this.snap.TabIndex = 5;
+			// 
+			// saveButton
+			// 
+			this.saveButton.BackColor = System.Drawing.Color.Black;
+			this.saveButton.Dock = System.Windows.Forms.DockStyle.Right;
+			this.saveButton.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.saveButton.ForeColor = System.Drawing.Color.White;
+			this.saveButton.Location = new System.Drawing.Point(1214, 0);
+			this.saveButton.Name = "saveButton";
+			this.saveButton.Size = new System.Drawing.Size(77, 54);
+			this.saveButton.TabIndex = 1;
+			this.saveButton.Text = "Save";
+			this.saveButton.UseVisualStyleBackColor = false;
+			this.saveButton.Click += new System.EventHandler(this.OnSaveClick);
+			// 
+			// gridGroup
+			// 
+			this.gridGroup.Controls.Add(this.gridSpacing);
+			this.gridGroup.Controls.Add(this.gridThickness);
+			this.gridGroup.Dock = System.Windows.Forms.DockStyle.Left;
+			this.gridGroup.ForeColor = System.Drawing.Color.White;
+			this.gridGroup.Location = new System.Drawing.Point(0, 0);
+			this.gridGroup.Name = "gridGroup";
+			this.gridGroup.Size = new System.Drawing.Size(168, 54);
+			this.gridGroup.TabIndex = 0;
+			this.gridGroup.TabStop = false;
+			this.gridGroup.Text = "Grid";
+			// 
+			// gridSpacing
+			// 
+			this.gridSpacing.BackColor = System.Drawing.Color.Black;
+			this.gridSpacing.Font = new System.Drawing.Font("Segoe UI", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.gridSpacing.ForeColor = System.Drawing.Color.White;
+			this.gridSpacing.Increment = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+			this.gridSpacing.Location = new System.Drawing.Point(110, 18);
+			this.gridSpacing.Maximum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+			this.gridSpacing.Minimum = new decimal(new int[] {
+            8,
+            0,
+            0,
+            0});
+			this.gridSpacing.Name = "gridSpacing";
+			this.gridSpacing.ReadOnly = true;
+			this.gridSpacing.Size = new System.Drawing.Size(49, 27);
+			this.gridSpacing.TabIndex = 6;
+			this.gridSpacing.Value = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+			this.gridSpacing.Click += new System.EventHandler(this.SelectObjectsTree);
+			// 
+			// gridThickness
+			// 
+			this.gridThickness.Cursor = System.Windows.Forms.Cursors.SizeWE;
+			this.gridThickness.Dock = System.Windows.Forms.DockStyle.Left;
+			this.gridThickness.LargeChange = 1;
+			this.gridThickness.Location = new System.Drawing.Point(3, 19);
+			this.gridThickness.Name = "gridThickness";
+			this.gridThickness.Size = new System.Drawing.Size(104, 32);
+			this.gridThickness.TabIndex = 0;
+			this.gridThickness.TabStop = false;
+			this.gridThickness.Value = 2;
+			this.gridThickness.ValueChanged += new System.EventHandler(this.SelectObjectsTree);
+			// 
+			// windowPicture
+			// 
+			this.windowPicture.BackColor = System.Drawing.Color.Black;
+			this.windowPicture.ContextMenuStrip = this.sceneRightClickMenu;
+			this.windowPicture.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.windowPicture.Location = new System.Drawing.Point(0, 0);
+			this.windowPicture.Name = "windowPicture";
+			this.windowPicture.Size = new System.Drawing.Size(1295, 761);
+			this.windowPicture.TabIndex = 5;
+			this.windowPicture.TabStop = false;
+			this.windowPicture.MouseDown += new System.Windows.Forms.MouseEventHandler(this.OnMouseDownScene);
+			this.windowPicture.MouseEnter += new System.EventHandler(this.OnMouseEnterScene);
+			this.windowPicture.MouseLeave += new System.EventHandler(this.OnMouseLeaveScene);
+			this.windowPicture.MouseMove += new System.Windows.Forms.MouseEventHandler(this.OnMouseMoveScene);
+			this.windowPicture.MouseUp += new System.Windows.Forms.MouseEventHandler(this.OnMouseUpScene);
 			// 
 			// sceneRightClickMenu
 			// 
@@ -138,163 +309,17 @@
 			this.sceneRightClickMenuResetView.Text = "Reset View";
 			this.sceneRightClickMenuResetView.Click += new System.EventHandler(this.OnSceneRightClickMenuResetView);
 			// 
-			// fps
+			// rightPanelTabs
 			// 
-			this.fps.AutoSize = true;
-			this.fps.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
-			this.fps.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.fps.ForeColor = System.Drawing.Color.White;
-			this.fps.Location = new System.Drawing.Point(0, 75);
-			this.fps.Name = "fps";
-			this.fps.Size = new System.Drawing.Size(31, 21);
-			this.fps.TabIndex = 4;
-			this.fps.Text = "fps";
-			// 
-			// sceneMousePos
-			// 
-			this.sceneMousePos.AutoSize = true;
-			this.sceneMousePos.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
-			this.sceneMousePos.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.sceneMousePos.ForeColor = System.Drawing.Color.White;
-			this.sceneMousePos.Location = new System.Drawing.Point(0, 96);
-			this.sceneMousePos.Name = "sceneMousePos";
-			this.sceneMousePos.Size = new System.Drawing.Size(81, 21);
-			this.sceneMousePos.TabIndex = 3;
-			this.sceneMousePos.Text = "mousePos";
-			// 
-			// sceneStatusPanel
-			// 
-			this.sceneStatusPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-			this.sceneStatusPanel.Controls.Add(this.snap);
-			this.sceneStatusPanel.Controls.Add(this.editSelectionOptions);
-			this.sceneStatusPanel.Controls.Add(this.saveButton);
-			this.sceneStatusPanel.Controls.Add(this.gridGroup);
-			this.sceneStatusPanel.Dock = System.Windows.Forms.DockStyle.Top;
-			this.sceneStatusPanel.Location = new System.Drawing.Point(0, 0);
-			this.sceneStatusPanel.Name = "sceneStatusPanel";
-			this.sceneStatusPanel.Size = new System.Drawing.Size(1295, 56);
-			this.sceneStatusPanel.TabIndex = 2;
-			// 
-			// snap
-			// 
-			this.snap.BackColor = System.Drawing.Color.Black;
-			this.snap.DecimalPlaces = 2;
-			this.snap.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.snap.ForeColor = System.Drawing.Color.White;
-			this.snap.Increment = new decimal(new int[] {
-            2,
-            0,
-            0,
-            0});
-			this.snap.Location = new System.Drawing.Point(844, 17);
-			this.snap.Maximum = new decimal(new int[] {
-            1000,
-            0,
-            0,
-            0});
-			this.snap.Name = "snap";
-			this.snap.Size = new System.Drawing.Size(82, 23);
-			this.snap.TabIndex = 5;
-			// 
-			// editSelectionOptions
-			// 
-			this.editSelectionOptions.BackColor = System.Drawing.Color.Black;
-			this.editSelectionOptions.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.editSelectionOptions.ForeColor = System.Drawing.Color.White;
-			this.editSelectionOptions.FormattingEnabled = true;
-			this.editSelectionOptions.Items.AddRange(new object[] {
-            "    Reposition",
-            "       Rotate",
-            "        Scale"});
-			this.editSelectionOptions.Location = new System.Drawing.Point(747, 5);
-			this.editSelectionOptions.Name = "editSelectionOptions";
-			this.editSelectionOptions.Size = new System.Drawing.Size(91, 43);
-			this.editSelectionOptions.TabIndex = 3;
-			this.editSelectionOptions.Click += new System.EventHandler(this.SelectObjectsTree);
-			// 
-			// saveButton
-			// 
-			this.saveButton.BackColor = System.Drawing.Color.Black;
-			this.saveButton.Dock = System.Windows.Forms.DockStyle.Right;
-			this.saveButton.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.saveButton.ForeColor = System.Drawing.Color.White;
-			this.saveButton.Location = new System.Drawing.Point(1214, 0);
-			this.saveButton.Name = "saveButton";
-			this.saveButton.Size = new System.Drawing.Size(77, 52);
-			this.saveButton.TabIndex = 1;
-			this.saveButton.Text = "Save";
-			this.saveButton.UseVisualStyleBackColor = false;
-			this.saveButton.Click += new System.EventHandler(this.OnSaveClick);
-			// 
-			// gridGroup
-			// 
-			this.gridGroup.Controls.Add(this.gridSpacing);
-			this.gridGroup.Controls.Add(this.gridThickness);
-			this.gridGroup.Dock = System.Windows.Forms.DockStyle.Left;
-			this.gridGroup.ForeColor = System.Drawing.Color.White;
-			this.gridGroup.Location = new System.Drawing.Point(0, 0);
-			this.gridGroup.Name = "gridGroup";
-			this.gridGroup.Size = new System.Drawing.Size(168, 52);
-			this.gridGroup.TabIndex = 0;
-			this.gridGroup.TabStop = false;
-			this.gridGroup.Text = "Grid";
-			// 
-			// gridSpacing
-			// 
-			this.gridSpacing.BackColor = System.Drawing.Color.Black;
-			this.gridSpacing.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.gridSpacing.ForeColor = System.Drawing.Color.White;
-			this.gridSpacing.Increment = new decimal(new int[] {
-            2,
-            0,
-            0,
-            0});
-			this.gridSpacing.Location = new System.Drawing.Point(107, 19);
-			this.gridSpacing.Maximum = new decimal(new int[] {
-            1000,
-            0,
-            0,
-            0});
-			this.gridSpacing.Minimum = new decimal(new int[] {
-            8,
-            0,
-            0,
-            0});
-			this.gridSpacing.Name = "gridSpacing";
-			this.gridSpacing.ReadOnly = true;
-			this.gridSpacing.Size = new System.Drawing.Size(49, 23);
-			this.gridSpacing.TabIndex = 6;
-			this.gridSpacing.Value = new decimal(new int[] {
-            100,
-            0,
-            0,
-            0});
-			this.gridSpacing.Click += new System.EventHandler(this.SelectObjectsTree);
-			// 
-			// gridThickness
-			// 
-			this.gridThickness.Cursor = System.Windows.Forms.Cursors.SizeWE;
-			this.gridThickness.Dock = System.Windows.Forms.DockStyle.Left;
-			this.gridThickness.LargeChange = 1;
-			this.gridThickness.Location = new System.Drawing.Point(3, 19);
-			this.gridThickness.Name = "gridThickness";
-			this.gridThickness.Size = new System.Drawing.Size(104, 30);
-			this.gridThickness.TabIndex = 0;
-			this.gridThickness.TabStop = false;
-			this.gridThickness.Value = 2;
-			this.gridThickness.ValueChanged += new System.EventHandler(this.SelectObjectsTree);
-			// 
-			// rightTabsPanel
-			// 
-			this.rightTabsPanel.Controls.Add(this.sceneObjectEdit);
-			this.rightTabsPanel.Controls.Add(this.assetsTab);
-			this.rightTabsPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.rightTabsPanel.Location = new System.Drawing.Point(0, 0);
-			this.rightTabsPanel.Name = "rightTabsPanel";
-			this.rightTabsPanel.SelectedIndex = 0;
-			this.rightTabsPanel.Size = new System.Drawing.Size(265, 761);
-			this.rightTabsPanel.TabIndex = 2;
-			this.rightTabsPanel.Selected += new System.Windows.Forms.TabControlEventHandler(this.OnRightTabSelect);
+			this.rightPanelTabs.Controls.Add(this.sceneObjectEdit);
+			this.rightPanelTabs.Controls.Add(this.assetsTab);
+			this.rightPanelTabs.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.rightPanelTabs.Location = new System.Drawing.Point(0, 0);
+			this.rightPanelTabs.Name = "rightPanelTabs";
+			this.rightPanelTabs.SelectedIndex = 0;
+			this.rightPanelTabs.Size = new System.Drawing.Size(265, 761);
+			this.rightPanelTabs.TabIndex = 2;
+			this.rightPanelTabs.Selected += new System.Windows.Forms.TabControlEventHandler(this.OnRightTabSelect);
 			// 
 			// sceneObjectEdit
 			// 
@@ -411,18 +436,18 @@
 			// 
 			// assets
 			// 
+			this.assets.AllowDrop = true;
 			this.assets.BackColor = System.Drawing.Color.Black;
 			this.assets.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.assets.ForeColor = System.Drawing.Color.WhiteSmoke;
 			this.assets.Location = new System.Drawing.Point(3, 3);
 			this.assets.Name = "assets";
-			treeNode2.Checked = true;
-			treeNode2.Name = "Node0";
-			treeNode2.Text = "folder";
-			this.assets.Nodes.AddRange(new System.Windows.Forms.TreeNode[] {
-            treeNode2});
+			this.assets.ShowLines = false;
+			this.assets.ShowRootLines = false;
 			this.assets.Size = new System.Drawing.Size(251, 727);
 			this.assets.TabIndex = 0;
+			this.assets.DragDrop += new System.Windows.Forms.DragEventHandler(this.OnAssetsDragDrop);
+			this.assets.DragEnter += new System.Windows.Forms.DragEventHandler(this.OnAssetsDragEnter);
 			// 
 			// save
 			// 
@@ -451,14 +476,16 @@
 			this.windowSplit.Panel2.ResumeLayout(false);
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).EndInit();
 			this.windowSplit.ResumeLayout(false);
-			this.sceneRightClickMenu.ResumeLayout(false);
 			this.sceneStatusPanel.ResumeLayout(false);
+			this.editSelectionGroup.ResumeLayout(false);
 			((System.ComponentModel.ISupportInitialize)(this.snap)).EndInit();
 			this.gridGroup.ResumeLayout(false);
 			this.gridGroup.PerformLayout();
 			((System.ComponentModel.ISupportInitialize)(this.gridSpacing)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.gridThickness)).EndInit();
-			this.rightTabsPanel.ResumeLayout(false);
+			((System.ComponentModel.ISupportInitialize)(this.windowPicture)).EndInit();
+			this.sceneRightClickMenu.ResumeLayout(false);
+			this.rightPanelTabs.ResumeLayout(false);
 			this.sceneObjectEdit.ResumeLayout(false);
 			this.thingSelectSplit.Panel1.ResumeLayout(false);
 			this.thingSelectSplit.Panel2.ResumeLayout(false);
@@ -483,7 +510,7 @@
 		private ToolStripMenuItem sceneRightClickMenuResetView;
 		private ToolStripMenuItem sceneRightClickMenuCreateSprite;
 		private TreeView sceneObjects;
-		private TabControl rightTabsPanel;
+		private TabControl rightPanelTabs;
 		private TabPage sceneObjectEdit;
 		private TabPage assetsTab;
 		private MaskedTextBox searchScene;
@@ -498,5 +525,7 @@
 		private NumericUpDown snap;
 		private NumericUpDown gridSpacing;
 		private Button unparentSelectionButton;
+		private PictureBox windowPicture;
+		private GroupBox editSelectionGroup;
 	}
 }

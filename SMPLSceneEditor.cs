@@ -1,12 +1,13 @@
 global using System.Collections.ObjectModel;
 global using System.Numerics;
+global using Microsoft.VisualBasic;
 global using SFML.Graphics;
 global using SFML.System;
 global using SFML.Window;
 global using SMPL;
 global using SMPL.Tools;
 global using Color = SFML.Graphics.Color;
-using Cursor = System.Windows.Forms.Cursor;
+global using Cursor = System.Windows.Forms.Cursor;
 
 namespace SMPLSceneEditor
 {
@@ -27,7 +28,8 @@ namespace SMPLSceneEditor
 
 			WindowState = FormWindowState.Maximized;
 
-			window = new(windowSplit.Panel1.Handle);
+			window = new(windowPicture.Handle);
+			windowPicture.MouseWheel += OnSceneScroll;
 
 			loop = new() { Interval = 1 };
 			loop.Tick += OnUpdate;
@@ -37,11 +39,12 @@ namespace SMPLSceneEditor
 
 			editSelectionOptions.SelectedIndex = 0;
 			FocusObjectsTree();
+
 		}
 
 		private void OnUpdate(object? sender, EventArgs e)
 		{
-			window.Size = new((uint)windowSplit.Panel1.Width, (uint)windowSplit.Panel1.Height);
+			window.Size = new((uint)windowPicture.Width, (uint)windowPicture.Height);
 
 			var view = window.GetView();
 			view.Size = new(window.Size.X * sceneSc, window.Size.Y * sceneSc);
@@ -75,7 +78,7 @@ namespace SMPLSceneEditor
 
 			var cellVerts = new VertexArray(PrimitiveType.Quads);
 			var specialCellVerts = new VertexArray(PrimitiveType.Quads);
-			var sz = new Vector2(windowSplit.Panel1.Width, windowSplit.Panel1.Height) * sceneSc;
+			var sz = new Vector2(windowPicture.Width, windowPicture.Height) * sceneSc;
 			var thickness = (float)gridThickness.Value;
 			var spacing = GetGridSpacing();
 			var viewPos = window.GetView().Center;
@@ -253,10 +256,10 @@ namespace SMPLSceneEditor
 					new(botL.ToSFML(), fillCol),
 				};
 
-				new Line(topL, topR).Draw(window, outCol);
-				new Line(topR, botR).Draw(window, outCol);
-				new Line(botR, botL).Draw(window, outCol);
-				new Line(botL, topL).Draw(window, outCol);
+				new Line(topL, topR).Draw(window, outCol, sceneSc * 4);
+				new Line(topR, botR).Draw(window, outCol, sceneSc * 4);
+				new Line(botR, botL).Draw(window, outCol, sceneSc * 4);
+				new Line(botL, topL).Draw(window, outCol, sceneSc * 4);
 
 				window.Draw(fill, PrimitiveType.Quads);
 			}
@@ -302,7 +305,7 @@ namespace SMPLSceneEditor
 		private Vector2 GetFormsMousePos()
 		{
 			var view = window.GetView();
-			var scale = view.Size.ToSystem() / new Vector2(windowSplit.Panel1.Width, windowSplit.Panel1.Height);
+			var scale = view.Size.ToSystem() / new Vector2(windowPicture.Width, windowPicture.Height);
 			return new Vector2(MousePosition.X, MousePosition.Y) * scale;
 		}
 		private Vector2 GetMousePosition()
@@ -362,21 +365,6 @@ namespace SMPLSceneEditor
 			prevAng = AngToGrid(prevAng, snapValue);
 			var delta = curAng - prevAng;
 			return angle + (reverse ? -delta : delta);
-		}
-		private float DragScale(float scale, bool reverse = false)
-		{
-			var middle = new Vector2(windowSplit.Panel1.Width, windowSplit.Panel1.Height) * 0.5f;
-			var snapValue = (float)snap.Value;
-			var reduce = 1000f;
-			var curDist = middle.DistanceBetweenPoints(GetFormsMousePos());
-			var prevDist = middle.DistanceBetweenPoints(prevFormsMousePos);
-			curDist = AngToGrid(curDist, snapValue);
-			prevDist = AngToGrid(prevDist, snapValue);
-			var delta = curDist - prevDist;
-
-			delta /= reduce;
-
-			return scale + (reverse ? -delta : delta);
 		}
 
 		private static void TryTransformHitbox(string uid)
@@ -446,6 +434,33 @@ namespace SMPLSceneEditor
 			return new Vector2(ang).PointToGrid(new(gridSz)).X;
 		}
 
+		private void OnSceneScroll(object? sender, MouseEventArgs e)
+		{
+			var delta = e.Delta < 0 ? 0.1f : -0.1f;
+
+			var pos = window.GetView().Center.ToSystem();
+			var mousePos = GetMousePosition();
+			var dist = pos.DistanceBetweenPoints(mousePos);
+
+			if(selectedUIDs.Count == 0)
+			{
+				if(delta < 0)
+				{
+					pos = pos.PointMoveTowardPoint(mousePos, -dist * delta * 0.7f, false);
+					SetViewPosition(pos);
+				}
+				SetViewScale(sceneSc + delta);
+			}
+
+			for(int i = 0; i < selectedUIDs.Count; i++)
+			{
+				var uid = selectedUIDs[i];
+				var sc = (float)ThingManager.Get(uid, "Scale");
+
+				ThingManager.Set(uid, "Scale", MathF.Max(sc + delta, 0.01f));
+				TryTransformHitbox(uid);
+			}
+		}
 		private void OnMouseLeaveScene(object sender, EventArgs e)
 		{
 			isHoveringScene = false;
@@ -465,12 +480,12 @@ namespace SMPLSceneEditor
 				if(selectedUIDs.Count == 0)
 				{
 					var view = window.GetView();
+					var pos = view.Center.ToSystem();
+
 					if(editIndex == 0)
-						SetViewPosition(Drag(window.GetView().Center.ToSystem(), true));
+						SetViewPosition(Drag(pos, true));
 					else if(editIndex == 1)
-						SetViewAngle(DragAngle(view.Center.ToSystem(), view.Rotation, true));
-					else
-						SetViewScale(DragScale(sceneSc, true));
+						SetViewAngle(DragAngle(pos, view.Rotation, true));
 				}
 				else
 				{
@@ -479,14 +494,12 @@ namespace SMPLSceneEditor
 						var uid = selectedUIDs[i];
 						var pos = (Vector2)ThingManager.Get(uid, "Position");
 						var ang = (float)ThingManager.Get(uid, "Angle");
-						var sc = (float)ThingManager.Get(uid, "Scale");
+
 
 						if(editIndex == 0)
 							ThingManager.Set(uid, "Position", Drag(pos, false, true));
 						else if(editIndex == 1)
 							ThingManager.Set(uid, "Angle", DragAngle(pos, ang));
-						else
-							ThingManager.Set(uid, "Scale", DragScale(sc));
 
 						TryTransformHitbox(uid);
 					}
@@ -627,7 +640,9 @@ namespace SMPLSceneEditor
 		}
 		private void OnTreeObjectDragEnter(object sender, DragEventArgs e)
 		{
-			e.Effect = e.AllowedEffect;
+			var droppedDataIsNode = e.Data != null && e.Data.GetFormats().ToList().Contains(typeof(TreeNode).ToString());
+			if(droppedDataIsNode)
+				e.Effect = e.AllowedEffect;
 		}
 		private void OnTreeObjectDragDrop(object sender, DragEventArgs e)
 		{
@@ -711,7 +726,7 @@ namespace SMPLSceneEditor
 		}
 		private void OnSceneStatusClick(object sender, EventArgs e)
 		{
-			windowSplit.Panel1.Focus();
+			FocusObjectsTree();
 		}
 		private void OnSceneRightClickMenuResetView(object sender, EventArgs e)
 		{
@@ -729,6 +744,89 @@ namespace SMPLSceneEditor
 				var world = sceneObjects.Nodes[0];
 				world.Nodes.Add(uid, uid);
 				world.Expand();
+			}
+		}
+		private void OnAssetsDragEnter(object sender, DragEventArgs e)
+		{
+			if(e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
+				e.Effect = DragDropEffects.Copy;
+		}
+		private void OnAssetsDragDrop(object sender, DragEventArgs e)
+		{
+			if(e.Data == null)
+				return;
+
+
+			var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+			if(files == null)
+				return;
+
+			for(int i = 0; i < files.Length; i++)
+			{
+				var file = files[i];
+				TryLoadFiles(file);
+			}
+
+			assets.Sort();
+
+			void TryLoadFiles(string path)
+			{
+				var isFolder = Path.HasExtension(path) == false;
+
+				if(isFolder)
+				{
+					var folderFiles = Directory.GetFiles(path);
+					var subFolders = Directory.GetDirectories(path);
+
+					for(int i = 0; i < subFolders.Length; i++)
+						TryLoadFiles(subFolders[i]);
+
+					for(int i = 0; i < folderFiles.Length; i++)
+						TryLoadFiles(folderFiles[i]);
+					return;
+				}
+
+				var baseDir = AppContext.BaseDirectory;
+				var input = GetInputFilePath();
+				if(input == "")
+					return;
+
+				while(IsValidFilename(input))
+				{
+					MessageBox.Show($"The path '{input}' contains invalid characters.", "Failed to Copy Asset");
+					input = GetInputFilePath();
+				}
+				while(assets.Nodes.ContainsKey(input))
+				{
+					MessageBox.Show($"A file already exists on the path '{input}'.", "Failed to Copy Asset");
+					input = GetInputFilePath();
+				}
+
+				input = input.Replace('/', '\\');
+				input += "." + Path.GetExtension(path);
+
+				if(assets.Nodes.ContainsKey(input) == false)
+					assets.Nodes.Add(input, input);
+
+				string GetInputFilePath()
+				{
+					return Interaction.InputBox(
+						$"The added asset needs to be copied to:\n" +
+						$"'{baseDir}'\n" +
+						$"Provide a new path/name for:\n" +
+						$"'{path}'\n" +
+						$"For example: 'RockTextures/rock5'",
+						"Add Asset to the Scene",
+						Path.GetFileNameWithoutExtension(path));
+				}
+				bool IsValidFilename(string fileName)
+				{
+					var invalidChars = Path.GetInvalidFileNameChars();
+					for(int i = 0; i < invalidChars.Length; i++)
+						if(fileName.Contains(invalidChars[i]))
+							return true;
+					return false;
+				}
 			}
 		}
 	}
