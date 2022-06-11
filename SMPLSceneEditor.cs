@@ -20,6 +20,7 @@ namespace SMPLSceneEditor
 		private bool isDragSelecting, isHoveringScene, confirmDeleteChildrenMsgShown;
 		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos;
 		private readonly List<string> selectedUIDs = new();
+		private Scene.AssetQueue assetQueue;
 		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
 
 		public FormWindow()
@@ -433,7 +434,112 @@ namespace SMPLSceneEditor
 		{
 			return new Vector2(ang).PointToGrid(new(gridSz)).X;
 		}
+		private void TryLoadFiles(string path)
+		{
+			var isFolder = Path.HasExtension(path) == false;
 
+			if(isFolder)
+			{
+				var folderFiles = Directory.GetFiles(path);
+				var subFolders = Directory.GetDirectories(path);
+
+				for(int i = 0; i < subFolders.Length; i++)
+					TryLoadFiles(subFolders[i]);
+
+				for(int i = 0; i < folderFiles.Length; i++)
+					TryLoadFiles(folderFiles[i]);
+				return;
+			}
+
+			var baseDir = AppContext.BaseDirectory;
+			var input = GetInputFilePath();
+			if(input == "")
+				return;
+
+			while(IsValidFilename(input))
+			{
+				MessageBox.Show($"The path '{input}' contains invalid characters.", "Failed to Copy Asset");
+				input = GetInputFilePath();
+			}
+			while(assets.Nodes.ContainsKey(input))
+			{
+				MessageBox.Show($"A file already exists on the path '{input}'.", "Failed to Copy Asset");
+				input = GetInputFilePath();
+			}
+
+			input = input.Replace('/', '\\');
+			input += Path.GetExtension(path);
+
+			if(assets.Nodes.ContainsKey(input))
+				return;
+
+			assets.Nodes.Add(input, input);
+
+			string GetInputFilePath()
+			{
+				return Interaction.InputBox(
+					$"The added asset needs to be copied to:\n" +
+					$"'{baseDir}'\n" +
+					$"Provide a new path/name for:\n" +
+					$"'{path}'\n" +
+					$"For example: 'RockTextures/rock5'",
+					"Add Asset to the Scene",
+					Path.GetFileNameWithoutExtension(path));
+			}
+			bool IsValidFilename(string fileName)
+			{
+				var invalidChars = Path.GetInvalidFileNameChars();
+				for(int i = 0; i < invalidChars.Length; i++)
+					if(fileName.Contains(invalidChars[i]))
+						return true;
+				return false;
+			}
+		}
+
+		private void OnTreeViewDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
+		{
+			if(e.Node == null)
+				return;
+
+			e.Node.BeginEdit();
+
+			if(e.Node.IsExpanded)
+				e.Node.Collapse();
+			else
+				e.Node.Expand();
+		}
+		#region Scene
+		#region SceneRightClick
+		private void OnSceneRightClickMenuResetView(object sender, EventArgs e)
+		{
+			SetView();
+		}
+		private void OnSceneRightClickMenuCreateSprite(object sender, EventArgs e)
+		{
+			for(int i = 0; i < 200; i++)
+			{
+				var uid = ThingManager.CreateSprite($"sprite{i}");
+				ThingManager.Set(uid, "Position", rightClickPos);
+				ThingManager.Do(uid, "ApplyDefaultHitbox");
+				TryTransformHitbox(uid);
+
+				var world = sceneObjects.Nodes[0];
+				world.Nodes.Add(uid, uid);
+				world.Expand();
+			}
+		}
+		#endregion
+
+		private void OnSaveClick(object sender, EventArgs e)
+		{
+			if(save.ShowDialog(this) != DialogResult.OK)
+			{
+				FocusObjectsTree();
+				return;
+			}
+
+			FocusObjectsTree();
+		}
 		private void OnSceneScroll(object? sender, MouseEventArgs e)
 		{
 			var delta = e.Delta < 0 ? 0.1f : -0.1f;
@@ -533,6 +639,12 @@ namespace SMPLSceneEditor
 			isDragSelecting = false;
 			UpdateSceneObjectsTree();
 		}
+		private void OnSceneStatusClick(object sender, EventArgs e)
+		{
+			FocusObjectsTree();
+		}
+		#endregion
+		#region SceneTreeObjects
 		private void OnObjectsSelectMoveUp(object sender, EventArgs e)
 		{
 			MoveSelectedObject(true);
@@ -555,21 +667,6 @@ namespace SMPLSceneEditor
 			selectedUIDs.Clear();
 			SelectObject(e.Node.Name);
 		}
-		private void OnSceneObjectDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
-		{
-			if(e.Node != null)
-				e.Node.BeginEdit();
-		}
-		private void OnSaveClick(object sender, EventArgs e)
-		{
-			if(save.ShowDialog(this) != DialogResult.OK)
-			{
-				FocusObjectsTree();
-				return;
-			}
-
-			FocusObjectsTree();
-		}
 		private void OnSceneTreeObjectDrag(object sender, ItemDragEventArgs e)
 		{
 			if(e.Button != MouseButtons.Left)
@@ -583,10 +680,12 @@ namespace SMPLSceneEditor
 		}
 		private void OnTreeObjectRename(object sender, NodeLabelEditEventArgs e)
 		{
+			e.CancelEdit = true;
+			if(e.Node == sceneObjects.Nodes[0])
+				return;
+
 			var uid = e.Node.Name;
 			var newUID = e.Label;
-
-			e.CancelEdit = true;
 
 			if(string.IsNullOrWhiteSpace(newUID))
 				return;
@@ -617,15 +716,9 @@ namespace SMPLSceneEditor
 		{
 			FocusObjectsTree();
 		}
-		private void OnRightTabSelect(object sender, TabControlEventArgs e)
-		{
-			if(e.TabPageIndex != 0)
-				return;
-
-			FocusObjectsTree();
-		}
 		private void OnUnparentSelectionButtonClick(object sender, EventArgs e)
 		{
+			sceneObjects.Select();
 			var selectedNode = sceneObjects.SelectedNode;
 			var selectedNodeParent = selectedNode.Parent;
 			if(selectedNodeParent == null || selectedNodeParent == sceneObjects.Nodes[0])
@@ -635,7 +728,6 @@ namespace SMPLSceneEditor
 			sceneObjects.Nodes[0].Nodes.Add(selectedNode);
 			sceneObjects.SelectedNode = selectedNode;
 			selectedNode.EnsureVisible();
-			FocusObjectsTree();
 			ThingManager.Set(selectedNode.Name, "ParentUID", null);
 		}
 		private void OnTreeObjectDragEnter(object sender, DragEventArgs e)
@@ -644,6 +736,7 @@ namespace SMPLSceneEditor
 			if(droppedDataIsNode)
 				e.Effect = e.AllowedEffect;
 		}
+
 		private void OnTreeObjectDragDrop(object sender, DragEventArgs e)
 		{
 			var targetPoint = sceneObjects.PointToClient(new Point(e.X, e.Y));
@@ -724,27 +817,30 @@ namespace SMPLSceneEditor
 				}
 			}
 		}
-		private void OnSceneStatusClick(object sender, EventArgs e)
+		#endregion
+		#region ObjectEditRightTab
+		private void OnRightTabSelect(object sender, TabControlEventArgs e)
 		{
+			if(e.TabPageIndex != 0)
+				return;
+
 			FocusObjectsTree();
 		}
-		private void OnSceneRightClickMenuResetView(object sender, EventArgs e)
+		#endregion
+		#region Assets
+		private void ImportAssetsClick(object sender, EventArgs e)
 		{
-			SetView();
-		}
-		private void OnSceneRightClickMenuCreateSprite(object sender, EventArgs e)
-		{
-			for(int i = 0; i < 200; i++)
+			if(importAssets.ShowDialog(this) != DialogResult.OK)
 			{
-				var uid = ThingManager.CreateSprite($"sprite{i}");
-				ThingManager.Set(uid, "Position", rightClickPos);
-				ThingManager.Do(uid, "ApplyDefaultHitbox");
-				TryTransformHitbox(uid);
-
-				var world = sceneObjects.Nodes[0];
-				world.Nodes.Add(uid, uid);
-				world.Expand();
+				FocusObjectsTree();
+				return;
 			}
+
+			var files = importAssets.FileNames;
+			for(int i = 0; i < files.Length; i++)
+				TryLoadFiles(files[i]);
+
+			FocusObjectsTree();
 		}
 		private void OnAssetsDragEnter(object sender, DragEventArgs e)
 		{
@@ -755,7 +851,6 @@ namespace SMPLSceneEditor
 		{
 			if(e.Data == null)
 				return;
-
 
 			var files = (string[])e.Data.GetData(DataFormats.FileDrop);
 			if(files == null)
@@ -768,66 +863,7 @@ namespace SMPLSceneEditor
 			}
 
 			assets.Sort();
-
-			void TryLoadFiles(string path)
-			{
-				var isFolder = Path.HasExtension(path) == false;
-
-				if(isFolder)
-				{
-					var folderFiles = Directory.GetFiles(path);
-					var subFolders = Directory.GetDirectories(path);
-
-					for(int i = 0; i < subFolders.Length; i++)
-						TryLoadFiles(subFolders[i]);
-
-					for(int i = 0; i < folderFiles.Length; i++)
-						TryLoadFiles(folderFiles[i]);
-					return;
-				}
-
-				var baseDir = AppContext.BaseDirectory;
-				var input = GetInputFilePath();
-				if(input == "")
-					return;
-
-				while(IsValidFilename(input))
-				{
-					MessageBox.Show($"The path '{input}' contains invalid characters.", "Failed to Copy Asset");
-					input = GetInputFilePath();
-				}
-				while(assets.Nodes.ContainsKey(input))
-				{
-					MessageBox.Show($"A file already exists on the path '{input}'.", "Failed to Copy Asset");
-					input = GetInputFilePath();
-				}
-
-				input = input.Replace('/', '\\');
-				input += "." + Path.GetExtension(path);
-
-				if(assets.Nodes.ContainsKey(input) == false)
-					assets.Nodes.Add(input, input);
-
-				string GetInputFilePath()
-				{
-					return Interaction.InputBox(
-						$"The added asset needs to be copied to:\n" +
-						$"'{baseDir}'\n" +
-						$"Provide a new path/name for:\n" +
-						$"'{path}'\n" +
-						$"For example: 'RockTextures/rock5'",
-						"Add Asset to the Scene",
-						Path.GetFileNameWithoutExtension(path));
-				}
-				bool IsValidFilename(string fileName)
-				{
-					var invalidChars = Path.GetInvalidFileNameChars();
-					for(int i = 0; i < invalidChars.Length; i++)
-						if(fileName.Contains(invalidChars[i]))
-							return true;
-					return false;
-				}
-			}
 		}
+		#endregion
 	}
 }
