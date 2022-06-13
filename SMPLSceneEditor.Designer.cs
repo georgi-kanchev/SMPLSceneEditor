@@ -394,7 +394,7 @@
 			this.sceneObjects.Size = new System.Drawing.Size(239, 160);
 			this.sceneObjects.TabIndex = 1;
 			this.sceneObjects.AfterLabelEdit += new System.Windows.Forms.NodeLabelEditEventHandler(this.OnTreeObjectRename);
-			this.sceneObjects.ItemDrag += new System.Windows.Forms.ItemDragEventHandler(this.OnSceneTreeObjectDrag);
+			this.sceneObjects.ItemDrag += new System.Windows.Forms.ItemDragEventHandler(this.OnTreeNodeDrag);
 			this.sceneObjects.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.OnSceneObjectClick);
 			this.sceneObjects.NodeMouseDoubleClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.OnTreeViewDoubleClick);
 			this.sceneObjects.DragDrop += new System.Windows.Forms.DragEventHandler(this.OnTreeObjectDragDrop);
@@ -539,6 +539,7 @@
 			this.assetsCreateFolderButton.TabIndex = 8;
 			this.assetsCreateFolderButton.Text = "Create Folder";
 			this.assetsCreateFolderButton.UseVisualStyleBackColor = false;
+			this.assetsCreateFolderButton.Click += new System.EventHandler(this.OnAssetsCreateFolderClick);
 			// 
 			// importAssetsButton
 			// 
@@ -565,9 +566,12 @@
 			this.assets.Name = "assets";
 			this.assets.Size = new System.Drawing.Size(245, 613);
 			this.assets.TabIndex = 0;
+			this.assets.AfterLabelEdit += new System.Windows.Forms.NodeLabelEditEventHandler(this.OnAssetRename);
+			this.assets.ItemDrag += new System.Windows.Forms.ItemDragEventHandler(this.OnTreeNodeDrag);
 			this.assets.NodeMouseDoubleClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.OnTreeViewDoubleClick);
 			this.assets.DragDrop += new System.Windows.Forms.DragEventHandler(this.OnAssetsDragDrop);
 			this.assets.DragEnter += new System.Windows.Forms.DragEventHandler(this.OnAssetsDragEnter);
+			this.assets.DragOver += new System.Windows.Forms.DragEventHandler(this.OnAssetsDragOver);
 			// 
 			// save
 			// 
