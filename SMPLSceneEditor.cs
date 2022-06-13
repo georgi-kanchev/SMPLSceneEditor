@@ -366,6 +366,10 @@ namespace SMPLSceneEditor
 			var delta = curAng - prevAng;
 			return angle + (reverse ? -delta : delta);
 		}
+		private static string GetAssetDirectory()
+		{
+			return $"{AppContext.BaseDirectory}Assets";
+		}
 
 		private static void TryTransformHitbox(string uid)
 		{
@@ -450,7 +454,8 @@ namespace SMPLSceneEditor
 				return;
 			}
 
-			var newPath = Path.GetFileName(path);
+			path = Path.GetFileName(path);
+			var newPath = $"{GetAssetDirectory()}\\{path}";
 
 			if(File.Exists(newPath))
 				File.Delete(newPath);
@@ -458,7 +463,7 @@ namespace SMPLSceneEditor
 			MainScene.Load(newPath);
 
 			if(assets.Nodes.ContainsKey(newPath) == false)
-				assets.Nodes.Add(newPath, newPath);
+				assets.Nodes.Add(newPath, path);
 		}
 		private static bool IsNodeDropped(TreeView tree, DragEventArgs e, out TreeNode? targetNode, out TreeNode? draggedNode, out string? prevFullPath)
 		{
@@ -474,7 +479,7 @@ namespace SMPLSceneEditor
 			{
 				if(e.Effect == DragDropEffects.Move)
 				{
-					prevFullPath = draggedNode.FullPath;
+					prevFullPath = $"{GetAssetDirectory()}\\{draggedNode.FullPath}";
 					draggedNode.Remove();
 					targetNode.Nodes.Add(draggedNode);
 
@@ -488,6 +493,30 @@ namespace SMPLSceneEditor
 			return false;
 
 			bool ContainsNode(TreeNode node1, TreeNode node2) => node1 == node2.Parent || (node2.Parent != null && ContainsNode(node1, node2.Parent));
+		}
+		private static void MoveFile(string prevPath, string newPath)
+		{
+			var isFolder = Path.HasExtension(prevPath) == false;
+
+			if(isFolder)
+				Directory.Move(prevPath, newPath);
+			else
+				File.Move(prevPath, newPath);
+		}
+		private static void DeleteFile(string path)
+		{
+			var files = Directory.GetFiles(path);
+			var dirs = Directory.GetDirectories(path);
+
+			for(int i = 0; i < files.Length; i++)
+				DeleteFile(files[i]);
+			for(int i = 0; i < dirs.Length; i++)
+				DeleteFile(dirs[i]);
+
+			if(Path.HasExtension(path))
+				File.Delete(path);
+			else
+				Directory.Delete(path);
 		}
 
 		private void OnTreeViewDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
@@ -785,34 +814,6 @@ namespace SMPLSceneEditor
 			world.Nodes.Add(uid, uid);
 			world.Expand();
 		}
-
-		private void OnAssetRename(object sender, NodeLabelEditEventArgs e)
-		{
-			e.CancelEdit = true;
-			var name = e.Node.Name;
-			var newName = e.Label;
-
-			if(string.IsNullOrWhiteSpace(newName) || IsInvalidFilename(newName))
-				return;
-
-			var isFolder = Path.HasExtension(newName) == false;
-			if(isFolder)
-				Directory.Move(name, newName);
-			else
-				File.Move(name, newName);
-
-			e.Node.Text = newName;
-			e.Node.Name = newName;
-
-			bool IsInvalidFilename(string fileName)
-			{
-				var invalidChars = Path.GetInvalidFileNameChars();
-				for(int i = 0; i < invalidChars.Length; i++)
-					if(fileName.Contains(invalidChars[i]))
-						return true;
-				return false;
-			}
-		}
 		#endregion
 
 		#region ObjectEditRightTab
@@ -825,7 +826,7 @@ namespace SMPLSceneEditor
 		}
 		#endregion
 		#region Assets
-		private void ImportAssetsClick(object sender, EventArgs e)
+		private void OnAssetsImportClick(object sender, EventArgs e)
 		{
 			if(importAssets.ShowDialog(this) != DialogResult.OK)
 			{
@@ -839,6 +840,19 @@ namespace SMPLSceneEditor
 
 			FocusObjectsTree();
 		}
+		private void OnAssetDeleteClick(object sender, EventArgs e)
+		{
+			var node = assets.SelectedNode;
+			if(node == null)
+				return;
+
+			var result = MessageBox.Show("Confirm?", "Delete Asset", MessageBoxButtons.OKCancel);
+			if(result != DialogResult.OK)
+				return;
+
+			DeleteFile(node.Name);
+			node.Remove();
+		}
 		private void OnAssetsCreateFolderClick(object sender, EventArgs e)
 		{
 			var node = assets.SelectedNode;
@@ -850,16 +864,29 @@ namespace SMPLSceneEditor
 
 			var path = selectedFolder + "Folder";
 			var i = 1;
-			var freePath = path;
+			var freePath = $"{GetAssetDirectory()}\\{path}";
 			while(Directory.Exists(freePath))
 			{
-				freePath = $"{path}{i}";
+				freePath = $"{GetAssetDirectory()}\\{path}{i}";
 				i++;
 			}
 			Directory.CreateDirectory(freePath);
-			assets.Nodes.Add(freePath, freePath);
+			assets.Nodes.Add(freePath, Path.GetFileName(freePath));
 		}
+		private void OnAssetMoveToRootClick(object sender, EventArgs e)
+		{
+			var node = assets.SelectedNode;
+			if(node == null)
+				return;
 
+			var prevPath = $"{GetAssetDirectory()}\\{node.FullPath}";
+			node.Remove();
+			assets.Nodes.Add(node);
+			assets.SelectedNode = node;
+			assets.Select();
+
+			MoveFile(prevPath, $"{GetAssetDirectory()}\\{node.FullPath}");
+		}
 		private void OnAssetsDragOver(object sender, DragEventArgs e)
 		{
 			assets.SelectedNode = assets.GetNodeAt(assets.PointToClient(new Point(e.X, e.Y)));
@@ -867,8 +894,8 @@ namespace SMPLSceneEditor
 		private void OnAssetsDragEnter(object sender, DragEventArgs e)
 		{
 			var droppedDataIsNode = e.Data != null && e.Data.GetFormats().ToList().Contains(typeof(TreeNode).ToString());
-			//if(e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
-			//	e.Effect = DragDropEffects.Copy;
+			if(e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
+				e.Effect = DragDropEffects.Copy;
 			if(droppedDataIsNode)
 				e.Effect = e.AllowedEffect;
 		}
@@ -882,12 +909,7 @@ namespace SMPLSceneEditor
 				if(targetNode == null || draggedNode == null || prevFullPath == null)
 					return;
 
-				var isFolder = Path.HasExtension(prevFullPath) == false;
-
-				if(isFolder)
-					Directory.Move(prevFullPath, draggedNode.FullPath);
-				else
-					File.Move(prevFullPath, draggedNode.FullPath);
+				MoveFile(prevFullPath, $"{GetAssetDirectory()}\\{draggedNode.FullPath}");
 				return;
 			}
 
@@ -902,6 +924,29 @@ namespace SMPLSceneEditor
 			}
 
 			assets.Sort();
+		}
+		private void OnAssetRename(object sender, NodeLabelEditEventArgs e)
+		{
+			e.CancelEdit = true;
+			var name = e.Node.Name;
+			var newName = e.Label;
+
+			if(string.IsNullOrWhiteSpace(newName) || IsInvalidFilename(newName))
+				return;
+
+			MoveFile(name, $"{GetAssetDirectory()}\\{newName}");
+
+			e.Node.Text = newName;
+			e.Node.Name = newName;
+
+			bool IsInvalidFilename(string fileName)
+			{
+				var invalidChars = Path.GetInvalidFileNameChars();
+				for(int i = 0; i < invalidChars.Length; i++)
+					if(fileName.Contains(invalidChars[i]))
+						return true;
+				return false;
+			}
 		}
 		#endregion
 	}

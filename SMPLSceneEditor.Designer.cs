@@ -60,6 +60,7 @@
 			this.sceneObjectsMoveUp = new System.Windows.Forms.Button();
 			this.assetsTab = new System.Windows.Forms.TabPage();
 			this.assetsSplit = new System.Windows.Forms.TableLayoutPanel();
+			this.assetDelete = new System.Windows.Forms.Button();
 			this.assetsMoveToRootButton = new System.Windows.Forms.Button();
 			this.assetsCreateFolderButton = new System.Windows.Forms.Button();
 			this.importAssetsButton = new System.Windows.Forms.Button();
@@ -421,7 +422,7 @@
 			// 
 			this.sceneObjectsMoveDown.BackColor = System.Drawing.Color.Black;
 			this.sceneObjectsMoveDown.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.sceneObjectsMoveDown.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.sceneObjectsMoveDown.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.sceneObjectsMoveDown.Location = new System.Drawing.Point(122, 3);
 			this.sceneObjectsMoveDown.Name = "sceneObjectsMoveDown";
 			this.sceneObjectsMoveDown.Size = new System.Drawing.Size(114, 25);
@@ -434,11 +435,11 @@
 			// 
 			this.searchScene.BackColor = System.Drawing.Color.Black;
 			this.searchScene.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.searchScene.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.searchScene.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.searchScene.ForeColor = System.Drawing.Color.White;
 			this.searchScene.Location = new System.Drawing.Point(3, 3);
 			this.searchScene.Name = "searchScene";
-			this.searchScene.Size = new System.Drawing.Size(113, 33);
+			this.searchScene.Size = new System.Drawing.Size(113, 26);
 			this.searchScene.TabIndex = 2;
 			this.searchScene.KeyDown += new System.Windows.Forms.KeyEventHandler(this.OnKeyDownObjectSearch);
 			// 
@@ -462,7 +463,7 @@
 			// 
 			this.unparentSelectionButton.BackColor = System.Drawing.Color.Black;
 			this.unparentSelectionButton.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.unparentSelectionButton.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.unparentSelectionButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.unparentSelectionButton.Location = new System.Drawing.Point(3, 3);
 			this.unparentSelectionButton.Name = "unparentSelectionButton";
 			this.unparentSelectionButton.Size = new System.Drawing.Size(113, 23);
@@ -475,7 +476,7 @@
 			// 
 			this.sceneObjectsMoveUp.BackColor = System.Drawing.Color.Black;
 			this.sceneObjectsMoveUp.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.sceneObjectsMoveUp.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.sceneObjectsMoveUp.Font = new System.Drawing.Font("Microsoft Sans Serif", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.sceneObjectsMoveUp.Location = new System.Drawing.Point(122, 3);
 			this.sceneObjectsMoveUp.Name = "sceneObjectsMoveUp";
 			this.sceneObjectsMoveUp.Size = new System.Drawing.Size(114, 23);
@@ -500,39 +501,55 @@
 			// 
 			this.assetsSplit.ColumnCount = 1;
 			this.assetsSplit.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+			this.assetsSplit.Controls.Add(this.assetDelete, 0, 3);
 			this.assetsSplit.Controls.Add(this.assetsMoveToRootButton, 0, 2);
 			this.assetsSplit.Controls.Add(this.assetsCreateFolderButton, 0, 1);
 			this.assetsSplit.Controls.Add(this.importAssetsButton, 0, 0);
-			this.assetsSplit.Controls.Add(this.assets, 0, 3);
+			this.assetsSplit.Controls.Add(this.assets, 0, 4);
 			this.assetsSplit.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.assetsSplit.Location = new System.Drawing.Point(3, 3);
 			this.assetsSplit.Name = "assetsSplit";
-			this.assetsSplit.RowCount = 4;
+			this.assetsSplit.RowCount = 5;
 			this.assetsSplit.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5F));
 			this.assetsSplit.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5F));
 			this.assetsSplit.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5F));
-			this.assetsSplit.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 85F));
+			this.assetsSplit.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5F));
+			this.assetsSplit.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
 			this.assetsSplit.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
 			this.assetsSplit.Size = new System.Drawing.Size(251, 727);
 			this.assetsSplit.TabIndex = 6;
+			// 
+			// assetDelete
+			// 
+			this.assetDelete.BackColor = System.Drawing.Color.Black;
+			this.assetDelete.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.assetDelete.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.assetDelete.Location = new System.Drawing.Point(3, 111);
+			this.assetDelete.Name = "assetDelete";
+			this.assetDelete.Size = new System.Drawing.Size(245, 30);
+			this.assetDelete.TabIndex = 10;
+			this.assetDelete.Text = "Delete";
+			this.assetDelete.UseVisualStyleBackColor = false;
+			this.assetDelete.Click += new System.EventHandler(this.OnAssetDeleteClick);
 			// 
 			// assetsMoveToRootButton
 			// 
 			this.assetsMoveToRootButton.BackColor = System.Drawing.Color.Black;
 			this.assetsMoveToRootButton.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.assetsMoveToRootButton.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.assetsMoveToRootButton.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.assetsMoveToRootButton.Location = new System.Drawing.Point(3, 75);
 			this.assetsMoveToRootButton.Name = "assetsMoveToRootButton";
 			this.assetsMoveToRootButton.Size = new System.Drawing.Size(245, 30);
 			this.assetsMoveToRootButton.TabIndex = 9;
 			this.assetsMoveToRootButton.Text = "Move to Root";
 			this.assetsMoveToRootButton.UseVisualStyleBackColor = false;
+			this.assetsMoveToRootButton.Click += new System.EventHandler(this.OnAssetMoveToRootClick);
 			// 
 			// assetsCreateFolderButton
 			// 
 			this.assetsCreateFolderButton.BackColor = System.Drawing.Color.Black;
 			this.assetsCreateFolderButton.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.assetsCreateFolderButton.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.assetsCreateFolderButton.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.assetsCreateFolderButton.Location = new System.Drawing.Point(3, 39);
 			this.assetsCreateFolderButton.Name = "assetsCreateFolderButton";
 			this.assetsCreateFolderButton.Size = new System.Drawing.Size(245, 30);
@@ -545,14 +562,14 @@
 			// 
 			this.importAssetsButton.BackColor = System.Drawing.Color.Black;
 			this.importAssetsButton.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.importAssetsButton.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.importAssetsButton.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.importAssetsButton.Location = new System.Drawing.Point(3, 3);
 			this.importAssetsButton.Name = "importAssetsButton";
 			this.importAssetsButton.Size = new System.Drawing.Size(245, 30);
 			this.importAssetsButton.TabIndex = 7;
-			this.importAssetsButton.Text = "Import Assets";
+			this.importAssetsButton.Text = "Import";
 			this.importAssetsButton.UseVisualStyleBackColor = false;
-			this.importAssetsButton.Click += new System.EventHandler(this.ImportAssetsClick);
+			this.importAssetsButton.Click += new System.EventHandler(this.OnAssetsImportClick);
 			// 
 			// assets
 			// 
@@ -562,9 +579,9 @@
 			this.assets.ForeColor = System.Drawing.Color.WhiteSmoke;
 			this.assets.FullRowSelect = true;
 			this.assets.LabelEdit = true;
-			this.assets.Location = new System.Drawing.Point(3, 111);
+			this.assets.Location = new System.Drawing.Point(3, 147);
 			this.assets.Name = "assets";
-			this.assets.Size = new System.Drawing.Size(245, 613);
+			this.assets.Size = new System.Drawing.Size(245, 577);
 			this.assets.TabIndex = 0;
 			this.assets.AfterLabelEdit += new System.Windows.Forms.NodeLabelEditEventHandler(this.OnAssetRename);
 			this.assets.ItemDrag += new System.Windows.Forms.ItemDragEventHandler(this.OnTreeNodeDrag);
@@ -670,5 +687,6 @@
 		private TableLayoutPanel sceneTreeObjectsTable;
 		private TableLayoutPanel sceneTreeObjectsBottomTable;
 		private TableLayoutPanel sceneTreeObjectsTopTable;
+		private Button assetDelete;
 	}
 }
