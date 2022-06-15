@@ -67,8 +67,8 @@
 			this.importAssetsButton = new System.Windows.Forms.Button();
 			this.assets = new System.Windows.Forms.TreeView();
 			this.importAssets = new System.Windows.Forms.OpenFileDialog();
-			this.load = new System.Windows.Forms.FolderBrowserDialog();
 			this.save = new System.Windows.Forms.FolderBrowserDialog();
+			this.load = new System.Windows.Forms.OpenFileDialog();
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).BeginInit();
 			this.windowSplit.Panel1.SuspendLayout();
 			this.windowSplit.Panel2.SuspendLayout();
@@ -632,6 +632,11 @@
 			this.importAssets.Multiselect = true;
 			this.importAssets.Title = "Import Assets";
 			// 
+			// load
+			// 
+			this.load.Filter = "Scene|*.scene";
+			this.load.Title = "Load Scene";
+			// 
 			// FormWindow
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -714,7 +719,7 @@
 		private TableLayoutPanel sceneTreeObjectsTopTable;
 		private Button assetDelete;
 		private Button loadButton;
-		private FolderBrowserDialog load;
 		private FolderBrowserDialog save;
+		private OpenFileDialog load;
 	}
 }

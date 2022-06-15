@@ -1,5 +1,6 @@
 global using System.Collections.ObjectModel;
 global using System.Numerics;
+global using Microsoft.VisualBasic;
 global using SFML.Graphics;
 global using SFML.System;
 global using SFML.Window;
@@ -12,8 +13,6 @@ namespace SMPLSceneEditor
 {
 	public partial class FormWindow : Form
 	{
-		private const string ASSETS_DIRECTORY = "Assets\\";
-
 		private readonly System.Windows.Forms.Timer loop;
 		private readonly RenderWindow window;
 		private float sceneSc = 1;
@@ -452,13 +451,15 @@ namespace SMPLSceneEditor
 				return;
 			}
 
-			var newPath = $"{ASSETS_DIRECTORY}{Path.GetFileName(path)}";
-			Directory.CreateDirectory(ASSETS_DIRECTORY);
+			var newPath = Path.GetFileName(path);
+			var targetPath = $"{Scene.CurrentScene.AssetsDirectory}\\{newPath}";
 
-			if(File.Exists(newPath))
-				File.Delete(newPath);
-			File.Copy(path, newPath);
-			MainScene.Load(newPath);
+			Directory.CreateDirectory(Scene.CurrentScene.AssetsDirectory);
+
+			if(File.Exists(targetPath))
+				File.Delete(targetPath);
+			File.Copy(path, targetPath);
+			MainScene.LoadAsset(newPath);
 
 			var shortPath = Path.GetFileName(newPath);
 			if(assets.Nodes.ContainsKey(shortPath) == false)
@@ -478,7 +479,7 @@ namespace SMPLSceneEditor
 			{
 				if(e.Effect == DragDropEffects.Move)
 				{
-					prevFullPath = $"{ASSETS_DIRECTORY}{draggedNode.FullPath}";
+					prevFullPath = draggedNode.FullPath;
 					draggedNode.Remove();
 					targetNode.Nodes.Add(draggedNode);
 
@@ -502,8 +503,11 @@ namespace SMPLSceneEditor
 			else
 				File.Move(prevPath, newPath);
 		}
-		private static void DeleteFile(string path)
+		internal static void DeleteFile(string path)
 		{
+			if(Directory.Exists(path) == false && File.Exists(path) == false)
+				return;
+
 			if(Path.HasExtension(path))
 			{
 				File.Delete(path);
@@ -547,23 +551,55 @@ namespace SMPLSceneEditor
 		#region Scene
 		private void OnSaveClick(object sender, EventArgs e)
 		{
-			if(save.ShowDialog(this) != DialogResult.OK)
-			{
-				FocusObjectsTree();
-				return;
-			}
-
 			FocusObjectsTree();
+
+			if(save.ShowDialog(this) != DialogResult.OK)
+				return;
+
+			var name = Interaction.InputBox("Choose a name for the Scene.", "Save Scene", "myScene");
+
+			if(name == "")
+				return;
+
+			var assets = Scene.CurrentScene.AssetsDirectory;
+			Directory.CreateDirectory($"{save.SelectedPath}\\{name}");
+
+			CopyDirectory(AppContext.BaseDirectory + assets, $"{save.SelectedPath}\\{name}\\{assets}");
+			MainScene.SetSavePath($"{save.SelectedPath}\\{name}\\{name}.scene");
+			MainScene.SaveScene();
+
+			static void CopyDirectory(string sourceDir, string destinationDir)
+			{
+				if(Directory.Exists(sourceDir) == false || Directory.Exists(destinationDir) == false)
+					return;
+
+				var dir = new DirectoryInfo(sourceDir);
+				var dirs = dir.GetDirectories();
+
+				Directory.CreateDirectory(destinationDir);
+
+				foreach(var file in dir.GetFiles())
+				{
+					var targetFilePath = Path.Combine(destinationDir, file.Name);
+					if(File.Exists(targetFilePath))
+						File.Delete(targetFilePath);
+					file.CopyTo(targetFilePath);
+				}
+
+				foreach(var subDir in dirs)
+				{
+					var newDestinationDir = Path.Combine(destinationDir, subDir.Name);
+					CopyDirectory(subDir.FullName, newDestinationDir);
+				}
+			}
 		}
 		private void OnLoadClick(object sender, EventArgs e)
 		{
-			if(load.ShowDialog(this) != DialogResult.OK)
-			{
-				FocusObjectsTree();
-				return;
-			}
-
 			FocusObjectsTree();
+			if(load.ShowDialog(this) != DialogResult.OK)
+				return;
+
+			Scene.CurrentScene = Scene.Load<MainScene>(load.FileName);
 		}
 		private void OnSceneScroll(object? sender, MouseEventArgs e)
 		{
@@ -862,10 +898,9 @@ namespace SMPLSceneEditor
 			if(result != DialogResult.OK)
 				return;
 
-			DeleteFile(node.Name);
+			DeleteFile($"{Scene.CurrentScene.AssetsDirectory}\\{node.Name}");
 			node.Remove();
 		}
-
 
 		private void OnAssetsCreateFolderClick(object sender, EventArgs e)
 		{
@@ -878,10 +913,10 @@ namespace SMPLSceneEditor
 
 			var path = selectedFolder + "Folder";
 			var i = 1;
-			var freePath = $"{ASSETS_DIRECTORY}{path}";
+			var freePath = path;
 			while(Directory.Exists(freePath))
 			{
-				freePath = $"{ASSETS_DIRECTORY}{path}{i}";
+				freePath = $"{path}{i}";
 				i++;
 			}
 			Directory.CreateDirectory(freePath);
@@ -893,13 +928,13 @@ namespace SMPLSceneEditor
 			if(node == null)
 				return;
 
-			var prevPath = $"{ASSETS_DIRECTORY}{node.FullPath}";
+			var prevPath = node.FullPath;
 			node.Remove();
 			assets.Nodes.Add(node);
 			assets.SelectedNode = node;
 			assets.Select();
 
-			MoveFile(prevPath, $"{ASSETS_DIRECTORY}{node.FullPath}");
+			MoveFile(prevPath, node.FullPath);
 		}
 		private void OnAssetsDragOver(object sender, DragEventArgs e)
 		{
@@ -923,7 +958,7 @@ namespace SMPLSceneEditor
 				if(targetNode == null || draggedNode == null || prevFullPath == null)
 					return;
 
-				MoveFile(prevFullPath, $"{ASSETS_DIRECTORY}{draggedNode.FullPath}");
+				MoveFile(prevFullPath, draggedNode.FullPath);
 				return;
 			}
 
@@ -948,7 +983,7 @@ namespace SMPLSceneEditor
 			if(string.IsNullOrWhiteSpace(newName) || IsInvalidFilename(newName))
 				return;
 
-			MoveFile(name, $"{ASSETS_DIRECTORY}{newName}");
+			MoveFile(name, newName);
 
 			e.Node.Text = newName;
 			e.Node.Name = newName;
