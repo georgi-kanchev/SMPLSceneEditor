@@ -34,6 +34,7 @@
 			this.fps = new System.Windows.Forms.Label();
 			this.sceneMousePos = new System.Windows.Forms.Label();
 			this.sceneStatusPanel = new System.Windows.Forms.Panel();
+			this.loadButton = new System.Windows.Forms.Button();
 			this.editSelectionGroup = new System.Windows.Forms.GroupBox();
 			this.editSelectionOptions = new System.Windows.Forms.ListBox();
 			this.snap = new System.Windows.Forms.NumericUpDown();
@@ -65,8 +66,9 @@
 			this.assetsCreateFolderButton = new System.Windows.Forms.Button();
 			this.importAssetsButton = new System.Windows.Forms.Button();
 			this.assets = new System.Windows.Forms.TreeView();
-			this.save = new System.Windows.Forms.SaveFileDialog();
 			this.importAssets = new System.Windows.Forms.OpenFileDialog();
+			this.load = new System.Windows.Forms.FolderBrowserDialog();
+			this.save = new System.Windows.Forms.FolderBrowserDialog();
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).BeginInit();
 			this.windowSplit.Panel1.SuspendLayout();
 			this.windowSplit.Panel2.SuspendLayout();
@@ -139,6 +141,7 @@
 			// sceneStatusPanel
 			// 
 			this.sceneStatusPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+			this.sceneStatusPanel.Controls.Add(this.loadButton);
 			this.sceneStatusPanel.Controls.Add(this.editSelectionGroup);
 			this.sceneStatusPanel.Controls.Add(this.saveButton);
 			this.sceneStatusPanel.Controls.Add(this.gridGroup);
@@ -147,6 +150,21 @@
 			this.sceneStatusPanel.Name = "sceneStatusPanel";
 			this.sceneStatusPanel.Size = new System.Drawing.Size(1295, 58);
 			this.sceneStatusPanel.TabIndex = 2;
+			// 
+			// loadButton
+			// 
+			this.loadButton.BackColor = System.Drawing.Color.Black;
+			this.loadButton.Dock = System.Windows.Forms.DockStyle.Right;
+			this.loadButton.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.loadButton.ForeColor = System.Drawing.Color.White;
+			this.loadButton.Location = new System.Drawing.Point(1137, 0);
+			this.loadButton.Name = "loadButton";
+			this.loadButton.Size = new System.Drawing.Size(77, 54);
+			this.loadButton.TabIndex = 7;
+			this.loadButton.TabStop = false;
+			this.loadButton.Text = "Load";
+			this.loadButton.UseVisualStyleBackColor = false;
+			this.loadButton.Click += new System.EventHandler(this.OnLoadClick);
 			// 
 			// editSelectionGroup
 			// 
@@ -174,6 +192,7 @@
 			this.editSelectionOptions.Name = "editSelectionOptions";
 			this.editSelectionOptions.Size = new System.Drawing.Size(91, 32);
 			this.editSelectionOptions.TabIndex = 3;
+			this.editSelectionOptions.TabStop = false;
 			this.editSelectionOptions.Click += new System.EventHandler(this.SelectObjectsTree);
 			// 
 			// snap
@@ -196,6 +215,7 @@
 			this.snap.Name = "snap";
 			this.snap.Size = new System.Drawing.Size(82, 27);
 			this.snap.TabIndex = 5;
+			this.snap.TabStop = false;
 			// 
 			// saveButton
 			// 
@@ -206,7 +226,8 @@
 			this.saveButton.Location = new System.Drawing.Point(1214, 0);
 			this.saveButton.Name = "saveButton";
 			this.saveButton.Size = new System.Drawing.Size(77, 54);
-			this.saveButton.TabIndex = 1;
+			this.saveButton.TabIndex = 8;
+			this.saveButton.TabStop = false;
 			this.saveButton.Text = "Save";
 			this.saveButton.UseVisualStyleBackColor = false;
 			this.saveButton.Click += new System.EventHandler(this.OnSaveClick);
@@ -249,6 +270,7 @@
 			this.gridSpacing.ReadOnly = true;
 			this.gridSpacing.Size = new System.Drawing.Size(49, 27);
 			this.gridSpacing.TabIndex = 6;
+			this.gridSpacing.TabStop = false;
 			this.gridSpacing.Value = new decimal(new int[] {
             100,
             0,
@@ -331,6 +353,7 @@
 			this.rightPanelTabs.SelectedIndex = 0;
 			this.rightPanelTabs.Size = new System.Drawing.Size(265, 761);
 			this.rightPanelTabs.TabIndex = 2;
+			this.rightPanelTabs.TabStop = false;
 			this.rightPanelTabs.Selected += new System.Windows.Forms.TabControlEventHandler(this.OnRightTabSelect);
 			// 
 			// sceneObjectEdit
@@ -359,6 +382,7 @@
 			this.thingSelectSplit.Size = new System.Drawing.Size(247, 723);
 			this.thingSelectSplit.SplitterDistance = 242;
 			this.thingSelectSplit.TabIndex = 3;
+			this.thingSelectSplit.TabStop = false;
 			// 
 			// sceneTreeObjectsTable
 			// 
@@ -394,6 +418,7 @@
             treeNode1});
 			this.sceneObjects.Size = new System.Drawing.Size(239, 160);
 			this.sceneObjects.TabIndex = 1;
+			this.sceneObjects.TabStop = false;
 			this.sceneObjects.AfterLabelEdit += new System.Windows.Forms.NodeLabelEditEventHandler(this.OnTreeObjectRename);
 			this.sceneObjects.ItemDrag += new System.Windows.Forms.ItemDragEventHandler(this.OnTreeNodeDrag);
 			this.sceneObjects.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.OnSceneObjectClick);
@@ -427,6 +452,7 @@
 			this.sceneObjectsMoveDown.Name = "sceneObjectsMoveDown";
 			this.sceneObjectsMoveDown.Size = new System.Drawing.Size(114, 25);
 			this.sceneObjectsMoveDown.TabIndex = 4;
+			this.sceneObjectsMoveDown.TabStop = false;
 			this.sceneObjectsMoveDown.Text = "v";
 			this.sceneObjectsMoveDown.UseVisualStyleBackColor = false;
 			this.sceneObjectsMoveDown.Click += new System.EventHandler(this.OnObjectsSelectMoveDown);
@@ -441,6 +467,7 @@
 			this.searchScene.Name = "searchScene";
 			this.searchScene.Size = new System.Drawing.Size(113, 26);
 			this.searchScene.TabIndex = 2;
+			this.searchScene.TabStop = false;
 			this.searchScene.KeyDown += new System.Windows.Forms.KeyEventHandler(this.OnKeyDownObjectSearch);
 			// 
 			// sceneTreeObjectsTopTable
@@ -468,6 +495,7 @@
 			this.unparentSelectionButton.Name = "unparentSelectionButton";
 			this.unparentSelectionButton.Size = new System.Drawing.Size(113, 23);
 			this.unparentSelectionButton.TabIndex = 5;
+			this.unparentSelectionButton.TabStop = false;
 			this.unparentSelectionButton.Text = "Unparent";
 			this.unparentSelectionButton.UseVisualStyleBackColor = false;
 			this.unparentSelectionButton.Click += new System.EventHandler(this.OnUnparentSelectionButtonClick);
@@ -481,6 +509,7 @@
 			this.sceneObjectsMoveUp.Name = "sceneObjectsMoveUp";
 			this.sceneObjectsMoveUp.Size = new System.Drawing.Size(114, 23);
 			this.sceneObjectsMoveUp.TabIndex = 3;
+			this.sceneObjectsMoveUp.TabStop = false;
 			this.sceneObjectsMoveUp.Text = "^";
 			this.sceneObjectsMoveUp.UseVisualStyleBackColor = false;
 			this.sceneObjectsMoveUp.Click += new System.EventHandler(this.OnObjectsSelectMoveUp);
@@ -528,6 +557,7 @@
 			this.assetDelete.Name = "assetDelete";
 			this.assetDelete.Size = new System.Drawing.Size(245, 30);
 			this.assetDelete.TabIndex = 10;
+			this.assetDelete.TabStop = false;
 			this.assetDelete.Text = "Delete";
 			this.assetDelete.UseVisualStyleBackColor = false;
 			this.assetDelete.Click += new System.EventHandler(this.OnAssetDeleteClick);
@@ -541,6 +571,7 @@
 			this.assetsMoveToRootButton.Name = "assetsMoveToRootButton";
 			this.assetsMoveToRootButton.Size = new System.Drawing.Size(245, 30);
 			this.assetsMoveToRootButton.TabIndex = 9;
+			this.assetsMoveToRootButton.TabStop = false;
 			this.assetsMoveToRootButton.Text = "Move to Root";
 			this.assetsMoveToRootButton.UseVisualStyleBackColor = false;
 			this.assetsMoveToRootButton.Click += new System.EventHandler(this.OnAssetMoveToRootClick);
@@ -554,6 +585,7 @@
 			this.assetsCreateFolderButton.Name = "assetsCreateFolderButton";
 			this.assetsCreateFolderButton.Size = new System.Drawing.Size(245, 30);
 			this.assetsCreateFolderButton.TabIndex = 8;
+			this.assetsCreateFolderButton.TabStop = false;
 			this.assetsCreateFolderButton.Text = "Create Folder";
 			this.assetsCreateFolderButton.UseVisualStyleBackColor = false;
 			this.assetsCreateFolderButton.Click += new System.EventHandler(this.OnAssetsCreateFolderClick);
@@ -567,6 +599,7 @@
 			this.importAssetsButton.Name = "importAssetsButton";
 			this.importAssetsButton.Size = new System.Drawing.Size(245, 30);
 			this.importAssetsButton.TabIndex = 7;
+			this.importAssetsButton.TabStop = false;
 			this.importAssetsButton.Text = "Import";
 			this.importAssetsButton.UseVisualStyleBackColor = false;
 			this.importAssetsButton.Click += new System.EventHandler(this.OnAssetsImportClick);
@@ -583,20 +616,13 @@
 			this.assets.Name = "assets";
 			this.assets.Size = new System.Drawing.Size(245, 577);
 			this.assets.TabIndex = 0;
+			this.assets.TabStop = false;
 			this.assets.AfterLabelEdit += new System.Windows.Forms.NodeLabelEditEventHandler(this.OnAssetRename);
 			this.assets.ItemDrag += new System.Windows.Forms.ItemDragEventHandler(this.OnTreeNodeDrag);
 			this.assets.NodeMouseDoubleClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.OnTreeViewDoubleClick);
 			this.assets.DragDrop += new System.Windows.Forms.DragEventHandler(this.OnAssetsDragDrop);
 			this.assets.DragEnter += new System.Windows.Forms.DragEventHandler(this.OnAssetsDragEnter);
 			this.assets.DragOver += new System.Windows.Forms.DragEventHandler(this.OnAssetsDragOver);
-			// 
-			// save
-			// 
-			this.save.DefaultExt = "cdb";
-			this.save.FileName = "scene";
-			this.save.Filter = "Database (CastleDB)|*.cdb";
-			this.save.InitialDirectory = ".";
-			this.save.Title = "Save Scene";
 			// 
 			// importAssets
 			// 
@@ -669,7 +695,6 @@
 		private SplitContainer thingSelectSplit;
 		private Button sceneObjectsMoveDown;
 		private Button sceneObjectsMoveUp;
-		private SaveFileDialog save;
 		private Button saveButton;
 		private Label fps;
 		private ListBox editSelectionOptions;
@@ -688,5 +713,8 @@
 		private TableLayoutPanel sceneTreeObjectsBottomTable;
 		private TableLayoutPanel sceneTreeObjectsTopTable;
 		private Button assetDelete;
+		private Button loadButton;
+		private FolderBrowserDialog load;
+		private FolderBrowserDialog save;
 	}
 }
