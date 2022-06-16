@@ -29,11 +29,12 @@
 		private void InitializeComponent()
 		{
 			this.components = new System.ComponentModel.Container();
-			System.Windows.Forms.TreeNode treeNode1 = new System.Windows.Forms.TreeNode("World");
 			this.windowSplit = new System.Windows.Forms.SplitContainer();
 			this.fps = new System.Windows.Forms.Label();
 			this.sceneMousePos = new System.Windows.Forms.Label();
 			this.sceneStatusPanel = new System.Windows.Forms.Panel();
+			this.searchBox = new System.Windows.Forms.GroupBox();
+			this.searchScene = new System.Windows.Forms.MaskedTextBox();
 			this.loadButton = new System.Windows.Forms.Button();
 			this.editSelectionGroup = new System.Windows.Forms.GroupBox();
 			this.editSelectionOptions = new System.Windows.Forms.ListBox();
@@ -48,32 +49,24 @@
 			this.sceneRightClickMenuCreateSprite = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.sceneRightClickMenuResetView = new System.Windows.Forms.ToolStripMenuItem();
-			this.rightPanelTabs = new System.Windows.Forms.TabControl();
-			this.sceneObjectEdit = new System.Windows.Forms.TabPage();
-			this.thingSelectSplit = new System.Windows.Forms.SplitContainer();
-			this.sceneTreeObjectsTable = new System.Windows.Forms.TableLayoutPanel();
-			this.sceneObjects = new System.Windows.Forms.TreeView();
-			this.sceneTreeObjectsBottomTable = new System.Windows.Forms.TableLayoutPanel();
-			this.sceneObjectsMoveDown = new System.Windows.Forms.Button();
-			this.searchScene = new System.Windows.Forms.MaskedTextBox();
-			this.sceneTreeObjectsTopTable = new System.Windows.Forms.TableLayoutPanel();
-			this.unparentSelectionButton = new System.Windows.Forms.Button();
-			this.sceneObjectsMoveUp = new System.Windows.Forms.Button();
-			this.assetsTab = new System.Windows.Forms.TabPage();
-			this.assetsSplit = new System.Windows.Forms.TableLayoutPanel();
-			this.assetDelete = new System.Windows.Forms.Button();
-			this.assetsMoveToRootButton = new System.Windows.Forms.Button();
-			this.assetsCreateFolderButton = new System.Windows.Forms.Button();
-			this.importAssetsButton = new System.Windows.Forms.Button();
-			this.assets = new System.Windows.Forms.TreeView();
-			this.importAssets = new System.Windows.Forms.OpenFileDialog();
-			this.save = new System.Windows.Forms.FolderBrowserDialog();
+			this.editThingTable = new System.Windows.Forms.TableLayoutPanel();
+			this.childrenUIDsLabel = new System.Windows.Forms.Label();
+			this.propChildrenUIDs = new System.Windows.Forms.ComboBox();
+			this.propOldUID = new System.Windows.Forms.TextBox();
+			this.propUID = new System.Windows.Forms.TextBox();
+			this.uidLabel = new System.Windows.Forms.Label();
+			this.labelParentUID = new System.Windows.Forms.Label();
+			this.propParentUID = new System.Windows.Forms.TextBox();
+			this.labelOldUID = new System.Windows.Forms.Label();
+			this.gameDir = new System.Windows.Forms.FolderBrowserDialog();
 			this.load = new System.Windows.Forms.OpenFileDialog();
+			this.save = new System.Windows.Forms.SaveFileDialog();
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).BeginInit();
 			this.windowSplit.Panel1.SuspendLayout();
 			this.windowSplit.Panel2.SuspendLayout();
 			this.windowSplit.SuspendLayout();
 			this.sceneStatusPanel.SuspendLayout();
+			this.searchBox.SuspendLayout();
 			this.editSelectionGroup.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize)(this.snap)).BeginInit();
 			this.gridGroup.SuspendLayout();
@@ -81,16 +74,7 @@
 			((System.ComponentModel.ISupportInitialize)(this.gridThickness)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.windowPicture)).BeginInit();
 			this.sceneRightClickMenu.SuspendLayout();
-			this.rightPanelTabs.SuspendLayout();
-			this.sceneObjectEdit.SuspendLayout();
-			((System.ComponentModel.ISupportInitialize)(this.thingSelectSplit)).BeginInit();
-			this.thingSelectSplit.Panel1.SuspendLayout();
-			this.thingSelectSplit.SuspendLayout();
-			this.sceneTreeObjectsTable.SuspendLayout();
-			this.sceneTreeObjectsBottomTable.SuspendLayout();
-			this.sceneTreeObjectsTopTable.SuspendLayout();
-			this.assetsTab.SuspendLayout();
-			this.assetsSplit.SuspendLayout();
+			this.editThingTable.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// windowSplit
@@ -108,7 +92,7 @@
 			// 
 			// windowSplit.Panel2
 			// 
-			this.windowSplit.Panel2.Controls.Add(this.rightPanelTabs);
+			this.windowSplit.Panel2.Controls.Add(this.editThingTable);
 			this.windowSplit.Size = new System.Drawing.Size(1564, 761);
 			this.windowSplit.SplitterDistance = 1295;
 			this.windowSplit.TabIndex = 0;
@@ -141,6 +125,7 @@
 			// sceneStatusPanel
 			// 
 			this.sceneStatusPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+			this.sceneStatusPanel.Controls.Add(this.searchBox);
 			this.sceneStatusPanel.Controls.Add(this.loadButton);
 			this.sceneStatusPanel.Controls.Add(this.editSelectionGroup);
 			this.sceneStatusPanel.Controls.Add(this.saveButton);
@@ -150,6 +135,30 @@
 			this.sceneStatusPanel.Name = "sceneStatusPanel";
 			this.sceneStatusPanel.Size = new System.Drawing.Size(1295, 58);
 			this.sceneStatusPanel.TabIndex = 2;
+			// 
+			// searchBox
+			// 
+			this.searchBox.Controls.Add(this.searchScene);
+			this.searchBox.ForeColor = System.Drawing.Color.White;
+			this.searchBox.Location = new System.Drawing.Point(365, 1);
+			this.searchBox.Name = "searchBox";
+			this.searchBox.Size = new System.Drawing.Size(142, 53);
+			this.searchBox.TabIndex = 9;
+			this.searchBox.TabStop = false;
+			this.searchBox.Text = "Search Thing";
+			// 
+			// searchScene
+			// 
+			this.searchScene.BackColor = System.Drawing.Color.Black;
+			this.searchScene.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.searchScene.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.searchScene.ForeColor = System.Drawing.Color.White;
+			this.searchScene.Location = new System.Drawing.Point(3, 19);
+			this.searchScene.Name = "searchScene";
+			this.searchScene.Size = new System.Drawing.Size(136, 26);
+			this.searchScene.TabIndex = 2;
+			this.searchScene.TabStop = false;
+			this.searchScene.KeyDown += new System.Windows.Forms.KeyEventHandler(this.OnKeyDownObjectSearch);
 			// 
 			// loadButton
 			// 
@@ -173,7 +182,7 @@
 			this.editSelectionGroup.ForeColor = System.Drawing.Color.White;
 			this.editSelectionGroup.Location = new System.Drawing.Point(174, 0);
 			this.editSelectionGroup.Name = "editSelectionGroup";
-			this.editSelectionGroup.Size = new System.Drawing.Size(193, 54);
+			this.editSelectionGroup.Size = new System.Drawing.Size(186, 54);
 			this.editSelectionGroup.TabIndex = 6;
 			this.editSelectionGroup.TabStop = false;
 			this.editSelectionGroup.Text = "Edit Selection";
@@ -193,7 +202,6 @@
 			this.editSelectionOptions.Size = new System.Drawing.Size(91, 32);
 			this.editSelectionOptions.TabIndex = 3;
 			this.editSelectionOptions.TabStop = false;
-			this.editSelectionOptions.Click += new System.EventHandler(this.SelectObjectsTree);
 			// 
 			// snap
 			// 
@@ -276,7 +284,6 @@
             0,
             0,
             0});
-			this.gridSpacing.Click += new System.EventHandler(this.SelectObjectsTree);
 			// 
 			// gridThickness
 			// 
@@ -289,7 +296,6 @@
 			this.gridThickness.TabIndex = 0;
 			this.gridThickness.TabStop = false;
 			this.gridThickness.Value = 2;
-			this.gridThickness.ValueChanged += new System.EventHandler(this.SelectObjectsTree);
 			// 
 			// windowPicture
 			// 
@@ -343,299 +349,173 @@
 			this.sceneRightClickMenuResetView.Text = "Reset View";
 			this.sceneRightClickMenuResetView.Click += new System.EventHandler(this.OnSceneRightClickMenuResetView);
 			// 
-			// rightPanelTabs
+			// editThingTable
 			// 
-			this.rightPanelTabs.Controls.Add(this.sceneObjectEdit);
-			this.rightPanelTabs.Controls.Add(this.assetsTab);
-			this.rightPanelTabs.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.rightPanelTabs.Location = new System.Drawing.Point(0, 0);
-			this.rightPanelTabs.Name = "rightPanelTabs";
-			this.rightPanelTabs.SelectedIndex = 0;
-			this.rightPanelTabs.Size = new System.Drawing.Size(265, 761);
-			this.rightPanelTabs.TabIndex = 2;
-			this.rightPanelTabs.TabStop = false;
-			this.rightPanelTabs.Selected += new System.Windows.Forms.TabControlEventHandler(this.OnRightTabSelect);
+			this.editThingTable.ColumnCount = 2;
+			this.editThingTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+			this.editThingTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+			this.editThingTable.Controls.Add(this.childrenUIDsLabel, 1, 3);
+			this.editThingTable.Controls.Add(this.propChildrenUIDs, 0, 3);
+			this.editThingTable.Controls.Add(this.propOldUID, 0, 1);
+			this.editThingTable.Controls.Add(this.propUID, 0, 0);
+			this.editThingTable.Controls.Add(this.uidLabel, 1, 0);
+			this.editThingTable.Controls.Add(this.labelParentUID, 1, 2);
+			this.editThingTable.Controls.Add(this.propParentUID, 0, 2);
+			this.editThingTable.Controls.Add(this.labelOldUID, 1, 1);
+			this.editThingTable.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.editThingTable.Location = new System.Drawing.Point(0, 0);
+			this.editThingTable.Name = "editThingTable";
+			this.editThingTable.RowCount = 30;
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
+			this.editThingTable.Size = new System.Drawing.Size(265, 761);
+			this.editThingTable.TabIndex = 0;
 			// 
-			// sceneObjectEdit
+			// childrenUIDsLabel
 			// 
-			this.sceneObjectEdit.BackColor = System.Drawing.Color.Black;
-			this.sceneObjectEdit.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-			this.sceneObjectEdit.Controls.Add(this.thingSelectSplit);
-			this.sceneObjectEdit.ForeColor = System.Drawing.Color.White;
-			this.sceneObjectEdit.Location = new System.Drawing.Point(4, 24);
-			this.sceneObjectEdit.Name = "sceneObjectEdit";
-			this.sceneObjectEdit.Padding = new System.Windows.Forms.Padding(3);
-			this.sceneObjectEdit.Size = new System.Drawing.Size(257, 733);
-			this.sceneObjectEdit.TabIndex = 0;
-			this.sceneObjectEdit.Text = "Edit Thing";
+			this.childrenUIDsLabel.AutoSize = true;
+			this.childrenUIDsLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.childrenUIDsLabel.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.childrenUIDsLabel.ForeColor = System.Drawing.Color.White;
+			this.childrenUIDsLabel.Location = new System.Drawing.Point(135, 75);
+			this.childrenUIDsLabel.Name = "childrenUIDsLabel";
+			this.childrenUIDsLabel.Size = new System.Drawing.Size(127, 25);
+			this.childrenUIDsLabel.TabIndex = 7;
+			this.childrenUIDsLabel.Text = "Children UIDs";
 			// 
-			// thingSelectSplit
+			// propChildrenUIDs
 			// 
-			this.thingSelectSplit.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.thingSelectSplit.Location = new System.Drawing.Point(3, 3);
-			this.thingSelectSplit.Name = "thingSelectSplit";
-			this.thingSelectSplit.Orientation = System.Windows.Forms.Orientation.Horizontal;
+			this.propChildrenUIDs.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.propChildrenUIDs.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.propChildrenUIDs.FormattingEnabled = true;
+			this.propChildrenUIDs.Location = new System.Drawing.Point(3, 78);
+			this.propChildrenUIDs.MaxDropDownItems = 5;
+			this.propChildrenUIDs.Name = "propChildrenUIDs";
+			this.propChildrenUIDs.Size = new System.Drawing.Size(126, 23);
+			this.propChildrenUIDs.TabIndex = 6;
+			this.propChildrenUIDs.TabStop = false;
+			this.propChildrenUIDs.DropDown += new System.EventHandler(this.OnChildrenDropDown);
+			this.propChildrenUIDs.SelectedIndexChanged += new System.EventHandler(this.OnSelectChild);
+			this.propChildrenUIDs.DropDownClosed += new System.EventHandler(this.OnChildrenDropDownClose);
 			// 
-			// thingSelectSplit.Panel1
+			// propOldUID
 			// 
-			this.thingSelectSplit.Panel1.Controls.Add(this.sceneTreeObjectsTable);
-			this.thingSelectSplit.Size = new System.Drawing.Size(247, 723);
-			this.thingSelectSplit.SplitterDistance = 242;
-			this.thingSelectSplit.TabIndex = 3;
-			this.thingSelectSplit.TabStop = false;
+			this.propOldUID.BackColor = System.Drawing.Color.Black;
+			this.propOldUID.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.propOldUID.Enabled = false;
+			this.propOldUID.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.propOldUID.ForeColor = System.Drawing.Color.White;
+			this.propOldUID.Location = new System.Drawing.Point(3, 28);
+			this.propOldUID.Name = "propOldUID";
+			this.propOldUID.ReadOnly = true;
+			this.propOldUID.Size = new System.Drawing.Size(126, 29);
+			this.propOldUID.TabIndex = 5;
+			this.propOldUID.TabStop = false;
 			// 
-			// sceneTreeObjectsTable
+			// propUID
 			// 
-			this.sceneTreeObjectsTable.CellBorderStyle = System.Windows.Forms.TableLayoutPanelCellBorderStyle.Single;
-			this.sceneTreeObjectsTable.ColumnCount = 1;
-			this.sceneTreeObjectsTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-			this.sceneTreeObjectsTable.Controls.Add(this.sceneObjects, 0, 1);
-			this.sceneTreeObjectsTable.Controls.Add(this.sceneTreeObjectsBottomTable, 0, 2);
-			this.sceneTreeObjectsTable.Controls.Add(this.sceneTreeObjectsTopTable, 0, 0);
-			this.sceneTreeObjectsTable.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.sceneTreeObjectsTable.Location = new System.Drawing.Point(0, 0);
-			this.sceneTreeObjectsTable.Name = "sceneTreeObjectsTable";
-			this.sceneTreeObjectsTable.RowCount = 3;
-			this.sceneTreeObjectsTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 15F));
-			this.sceneTreeObjectsTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 70F));
-			this.sceneTreeObjectsTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 15F));
-			this.sceneTreeObjectsTable.Size = new System.Drawing.Size(247, 242);
-			this.sceneTreeObjectsTable.TabIndex = 6;
+			this.propUID.BackColor = System.Drawing.Color.Black;
+			this.propUID.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.propUID.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.propUID.ForeColor = System.Drawing.Color.White;
+			this.propUID.Location = new System.Drawing.Point(3, 3);
+			this.propUID.Name = "propUID";
+			this.propUID.Size = new System.Drawing.Size(126, 29);
+			this.propUID.TabIndex = 0;
+			this.propUID.TabStop = false;
 			// 
-			// sceneObjects
+			// uidLabel
 			// 
-			this.sceneObjects.AllowDrop = true;
-			this.sceneObjects.BackColor = System.Drawing.Color.Black;
-			this.sceneObjects.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.sceneObjects.ForeColor = System.Drawing.Color.White;
-			this.sceneObjects.FullRowSelect = true;
-			this.sceneObjects.LabelEdit = true;
-			this.sceneObjects.Location = new System.Drawing.Point(4, 40);
-			this.sceneObjects.Name = "sceneObjects";
-			treeNode1.Name = "world";
-			treeNode1.Text = "World";
-			this.sceneObjects.Nodes.AddRange(new System.Windows.Forms.TreeNode[] {
-            treeNode1});
-			this.sceneObjects.Size = new System.Drawing.Size(239, 160);
-			this.sceneObjects.TabIndex = 1;
-			this.sceneObjects.TabStop = false;
-			this.sceneObjects.AfterLabelEdit += new System.Windows.Forms.NodeLabelEditEventHandler(this.OnTreeObjectRename);
-			this.sceneObjects.ItemDrag += new System.Windows.Forms.ItemDragEventHandler(this.OnTreeNodeDrag);
-			this.sceneObjects.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.OnSceneObjectClick);
-			this.sceneObjects.NodeMouseDoubleClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.OnTreeViewDoubleClick);
-			this.sceneObjects.DragDrop += new System.Windows.Forms.DragEventHandler(this.OnTreeObjectDragDrop);
-			this.sceneObjects.DragEnter += new System.Windows.Forms.DragEventHandler(this.OnTreeObjectDragEnter);
-			this.sceneObjects.DragOver += new System.Windows.Forms.DragEventHandler(this.OnTreeObjectDragOver);
+			this.uidLabel.AutoSize = true;
+			this.uidLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.uidLabel.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.uidLabel.ForeColor = System.Drawing.Color.White;
+			this.uidLabel.Location = new System.Drawing.Point(135, 0);
+			this.uidLabel.Name = "uidLabel";
+			this.uidLabel.Size = new System.Drawing.Size(127, 25);
+			this.uidLabel.TabIndex = 1;
+			this.uidLabel.Text = "UID";
 			// 
-			// sceneTreeObjectsBottomTable
+			// labelParentUID
 			// 
-			this.sceneTreeObjectsBottomTable.ColumnCount = 2;
-			this.sceneTreeObjectsBottomTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-			this.sceneTreeObjectsBottomTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-			this.sceneTreeObjectsBottomTable.Controls.Add(this.sceneObjectsMoveDown, 1, 0);
-			this.sceneTreeObjectsBottomTable.Controls.Add(this.searchScene, 0, 0);
-			this.sceneTreeObjectsBottomTable.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.sceneTreeObjectsBottomTable.Location = new System.Drawing.Point(4, 207);
-			this.sceneTreeObjectsBottomTable.Name = "sceneTreeObjectsBottomTable";
-			this.sceneTreeObjectsBottomTable.RowCount = 1;
-			this.sceneTreeObjectsBottomTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-			this.sceneTreeObjectsBottomTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-			this.sceneTreeObjectsBottomTable.Size = new System.Drawing.Size(239, 31);
-			this.sceneTreeObjectsBottomTable.TabIndex = 8;
+			this.labelParentUID.AutoSize = true;
+			this.labelParentUID.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.labelParentUID.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.labelParentUID.ForeColor = System.Drawing.Color.White;
+			this.labelParentUID.Location = new System.Drawing.Point(135, 50);
+			this.labelParentUID.Name = "labelParentUID";
+			this.labelParentUID.Size = new System.Drawing.Size(127, 25);
+			this.labelParentUID.TabIndex = 2;
+			this.labelParentUID.Text = "Parent UID";
 			// 
-			// sceneObjectsMoveDown
+			// propParentUID
 			// 
-			this.sceneObjectsMoveDown.BackColor = System.Drawing.Color.Black;
-			this.sceneObjectsMoveDown.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.sceneObjectsMoveDown.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.sceneObjectsMoveDown.Location = new System.Drawing.Point(122, 3);
-			this.sceneObjectsMoveDown.Name = "sceneObjectsMoveDown";
-			this.sceneObjectsMoveDown.Size = new System.Drawing.Size(114, 25);
-			this.sceneObjectsMoveDown.TabIndex = 4;
-			this.sceneObjectsMoveDown.TabStop = false;
-			this.sceneObjectsMoveDown.Text = "v";
-			this.sceneObjectsMoveDown.UseVisualStyleBackColor = false;
-			this.sceneObjectsMoveDown.Click += new System.EventHandler(this.OnObjectsSelectMoveDown);
+			this.propParentUID.BackColor = System.Drawing.Color.Black;
+			this.propParentUID.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.propParentUID.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.propParentUID.ForeColor = System.Drawing.Color.White;
+			this.propParentUID.Location = new System.Drawing.Point(3, 53);
+			this.propParentUID.Name = "propParentUID";
+			this.propParentUID.Size = new System.Drawing.Size(126, 29);
+			this.propParentUID.TabIndex = 3;
+			this.propParentUID.TabStop = false;
 			// 
-			// searchScene
+			// labelOldUID
 			// 
-			this.searchScene.BackColor = System.Drawing.Color.Black;
-			this.searchScene.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.searchScene.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.searchScene.ForeColor = System.Drawing.Color.White;
-			this.searchScene.Location = new System.Drawing.Point(3, 3);
-			this.searchScene.Name = "searchScene";
-			this.searchScene.Size = new System.Drawing.Size(113, 26);
-			this.searchScene.TabIndex = 2;
-			this.searchScene.TabStop = false;
-			this.searchScene.KeyDown += new System.Windows.Forms.KeyEventHandler(this.OnKeyDownObjectSearch);
+			this.labelOldUID.AutoSize = true;
+			this.labelOldUID.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.labelOldUID.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.labelOldUID.ForeColor = System.Drawing.Color.White;
+			this.labelOldUID.Location = new System.Drawing.Point(135, 25);
+			this.labelOldUID.Name = "labelOldUID";
+			this.labelOldUID.Size = new System.Drawing.Size(127, 25);
+			this.labelOldUID.TabIndex = 4;
+			this.labelOldUID.Text = "Old UID";
 			// 
-			// sceneTreeObjectsTopTable
+			// gameDir
 			// 
-			this.sceneTreeObjectsTopTable.ColumnCount = 2;
-			this.sceneTreeObjectsTopTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-			this.sceneTreeObjectsTopTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-			this.sceneTreeObjectsTopTable.Controls.Add(this.unparentSelectionButton, 0, 0);
-			this.sceneTreeObjectsTopTable.Controls.Add(this.sceneObjectsMoveUp, 1, 0);
-			this.sceneTreeObjectsTopTable.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.sceneTreeObjectsTopTable.Location = new System.Drawing.Point(4, 4);
-			this.sceneTreeObjectsTopTable.Name = "sceneTreeObjectsTopTable";
-			this.sceneTreeObjectsTopTable.RowCount = 1;
-			this.sceneTreeObjectsTopTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-			this.sceneTreeObjectsTopTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-			this.sceneTreeObjectsTopTable.Size = new System.Drawing.Size(239, 29);
-			this.sceneTreeObjectsTopTable.TabIndex = 7;
-			// 
-			// unparentSelectionButton
-			// 
-			this.unparentSelectionButton.BackColor = System.Drawing.Color.Black;
-			this.unparentSelectionButton.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.unparentSelectionButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.unparentSelectionButton.Location = new System.Drawing.Point(3, 3);
-			this.unparentSelectionButton.Name = "unparentSelectionButton";
-			this.unparentSelectionButton.Size = new System.Drawing.Size(113, 23);
-			this.unparentSelectionButton.TabIndex = 5;
-			this.unparentSelectionButton.TabStop = false;
-			this.unparentSelectionButton.Text = "Unparent";
-			this.unparentSelectionButton.UseVisualStyleBackColor = false;
-			this.unparentSelectionButton.Click += new System.EventHandler(this.OnUnparentSelectionButtonClick);
-			// 
-			// sceneObjectsMoveUp
-			// 
-			this.sceneObjectsMoveUp.BackColor = System.Drawing.Color.Black;
-			this.sceneObjectsMoveUp.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.sceneObjectsMoveUp.Font = new System.Drawing.Font("Microsoft Sans Serif", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.sceneObjectsMoveUp.Location = new System.Drawing.Point(122, 3);
-			this.sceneObjectsMoveUp.Name = "sceneObjectsMoveUp";
-			this.sceneObjectsMoveUp.Size = new System.Drawing.Size(114, 23);
-			this.sceneObjectsMoveUp.TabIndex = 3;
-			this.sceneObjectsMoveUp.TabStop = false;
-			this.sceneObjectsMoveUp.Text = "^";
-			this.sceneObjectsMoveUp.UseVisualStyleBackColor = false;
-			this.sceneObjectsMoveUp.Click += new System.EventHandler(this.OnObjectsSelectMoveUp);
-			// 
-			// assetsTab
-			// 
-			this.assetsTab.BackColor = System.Drawing.Color.Black;
-			this.assetsTab.Controls.Add(this.assetsSplit);
-			this.assetsTab.ForeColor = System.Drawing.Color.White;
-			this.assetsTab.Location = new System.Drawing.Point(4, 24);
-			this.assetsTab.Name = "assetsTab";
-			this.assetsTab.Padding = new System.Windows.Forms.Padding(3);
-			this.assetsTab.Size = new System.Drawing.Size(257, 733);
-			this.assetsTab.TabIndex = 1;
-			this.assetsTab.Text = "Assets";
-			// 
-			// assetsSplit
-			// 
-			this.assetsSplit.ColumnCount = 1;
-			this.assetsSplit.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-			this.assetsSplit.Controls.Add(this.assetDelete, 0, 3);
-			this.assetsSplit.Controls.Add(this.assetsMoveToRootButton, 0, 2);
-			this.assetsSplit.Controls.Add(this.assetsCreateFolderButton, 0, 1);
-			this.assetsSplit.Controls.Add(this.importAssetsButton, 0, 0);
-			this.assetsSplit.Controls.Add(this.assets, 0, 4);
-			this.assetsSplit.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.assetsSplit.Location = new System.Drawing.Point(3, 3);
-			this.assetsSplit.Name = "assetsSplit";
-			this.assetsSplit.RowCount = 5;
-			this.assetsSplit.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5F));
-			this.assetsSplit.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5F));
-			this.assetsSplit.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5F));
-			this.assetsSplit.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5F));
-			this.assetsSplit.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
-			this.assetsSplit.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-			this.assetsSplit.Size = new System.Drawing.Size(251, 727);
-			this.assetsSplit.TabIndex = 6;
-			// 
-			// assetDelete
-			// 
-			this.assetDelete.BackColor = System.Drawing.Color.Black;
-			this.assetDelete.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.assetDelete.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.assetDelete.Location = new System.Drawing.Point(3, 111);
-			this.assetDelete.Name = "assetDelete";
-			this.assetDelete.Size = new System.Drawing.Size(245, 30);
-			this.assetDelete.TabIndex = 10;
-			this.assetDelete.TabStop = false;
-			this.assetDelete.Text = "Delete";
-			this.assetDelete.UseVisualStyleBackColor = false;
-			this.assetDelete.Click += new System.EventHandler(this.OnAssetDeleteClick);
-			// 
-			// assetsMoveToRootButton
-			// 
-			this.assetsMoveToRootButton.BackColor = System.Drawing.Color.Black;
-			this.assetsMoveToRootButton.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.assetsMoveToRootButton.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.assetsMoveToRootButton.Location = new System.Drawing.Point(3, 75);
-			this.assetsMoveToRootButton.Name = "assetsMoveToRootButton";
-			this.assetsMoveToRootButton.Size = new System.Drawing.Size(245, 30);
-			this.assetsMoveToRootButton.TabIndex = 9;
-			this.assetsMoveToRootButton.TabStop = false;
-			this.assetsMoveToRootButton.Text = "Move to Root";
-			this.assetsMoveToRootButton.UseVisualStyleBackColor = false;
-			this.assetsMoveToRootButton.Click += new System.EventHandler(this.OnAssetMoveToRootClick);
-			// 
-			// assetsCreateFolderButton
-			// 
-			this.assetsCreateFolderButton.BackColor = System.Drawing.Color.Black;
-			this.assetsCreateFolderButton.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.assetsCreateFolderButton.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.assetsCreateFolderButton.Location = new System.Drawing.Point(3, 39);
-			this.assetsCreateFolderButton.Name = "assetsCreateFolderButton";
-			this.assetsCreateFolderButton.Size = new System.Drawing.Size(245, 30);
-			this.assetsCreateFolderButton.TabIndex = 8;
-			this.assetsCreateFolderButton.TabStop = false;
-			this.assetsCreateFolderButton.Text = "Create Folder";
-			this.assetsCreateFolderButton.UseVisualStyleBackColor = false;
-			this.assetsCreateFolderButton.Click += new System.EventHandler(this.OnAssetsCreateFolderClick);
-			// 
-			// importAssetsButton
-			// 
-			this.importAssetsButton.BackColor = System.Drawing.Color.Black;
-			this.importAssetsButton.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.importAssetsButton.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.importAssetsButton.Location = new System.Drawing.Point(3, 3);
-			this.importAssetsButton.Name = "importAssetsButton";
-			this.importAssetsButton.Size = new System.Drawing.Size(245, 30);
-			this.importAssetsButton.TabIndex = 7;
-			this.importAssetsButton.TabStop = false;
-			this.importAssetsButton.Text = "Import";
-			this.importAssetsButton.UseVisualStyleBackColor = false;
-			this.importAssetsButton.Click += new System.EventHandler(this.OnAssetsImportClick);
-			// 
-			// assets
-			// 
-			this.assets.AllowDrop = true;
-			this.assets.BackColor = System.Drawing.Color.Black;
-			this.assets.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.assets.ForeColor = System.Drawing.Color.WhiteSmoke;
-			this.assets.FullRowSelect = true;
-			this.assets.LabelEdit = true;
-			this.assets.Location = new System.Drawing.Point(3, 147);
-			this.assets.Name = "assets";
-			this.assets.Size = new System.Drawing.Size(245, 577);
-			this.assets.TabIndex = 0;
-			this.assets.TabStop = false;
-			this.assets.AfterLabelEdit += new System.Windows.Forms.NodeLabelEditEventHandler(this.OnAssetRename);
-			this.assets.ItemDrag += new System.Windows.Forms.ItemDragEventHandler(this.OnTreeNodeDrag);
-			this.assets.NodeMouseDoubleClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.OnTreeViewDoubleClick);
-			this.assets.DragDrop += new System.Windows.Forms.DragEventHandler(this.OnAssetsDragDrop);
-			this.assets.DragEnter += new System.Windows.Forms.DragEventHandler(this.OnAssetsDragEnter);
-			this.assets.DragOver += new System.Windows.Forms.DragEventHandler(this.OnAssetsDragOver);
-			// 
-			// importAssets
-			// 
-			this.importAssets.Filter = "Texture|*.png|Texture|*.jpg|Texture|*.bmp|Audio|*.ogg|Audio|*.flac|Audio|*.wav|Fo" +
-    "nt|*.ttf|Font|*.otf|Database (CastleDB)|*.cdb|Shader|*.frag|Shader|*.vert|Model|" +
-    "*.obj";
-			this.importAssets.Multiselect = true;
-			this.importAssets.Title = "Import Assets";
+			this.gameDir.Description = "Select a Game Directory";
+			this.gameDir.UseDescriptionForTitle = true;
 			// 
 			// load
 			// 
 			this.load.Filter = "Scene|*.scene";
 			this.load.Title = "Load Scene";
+			// 
+			// save
+			// 
+			this.save.DefaultExt = "scene";
+			this.save.FileName = "myScene";
+			this.save.Filter = "Scene|*.scene";
+			this.save.Title = "Save Scene";
 			// 
 			// FormWindow
 			// 
@@ -657,6 +537,8 @@
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).EndInit();
 			this.windowSplit.ResumeLayout(false);
 			this.sceneStatusPanel.ResumeLayout(false);
+			this.searchBox.ResumeLayout(false);
+			this.searchBox.PerformLayout();
 			this.editSelectionGroup.ResumeLayout(false);
 			((System.ComponentModel.ISupportInitialize)(this.snap)).EndInit();
 			this.gridGroup.ResumeLayout(false);
@@ -665,17 +547,8 @@
 			((System.ComponentModel.ISupportInitialize)(this.gridThickness)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.windowPicture)).EndInit();
 			this.sceneRightClickMenu.ResumeLayout(false);
-			this.rightPanelTabs.ResumeLayout(false);
-			this.sceneObjectEdit.ResumeLayout(false);
-			this.thingSelectSplit.Panel1.ResumeLayout(false);
-			((System.ComponentModel.ISupportInitialize)(this.thingSelectSplit)).EndInit();
-			this.thingSelectSplit.ResumeLayout(false);
-			this.sceneTreeObjectsTable.ResumeLayout(false);
-			this.sceneTreeObjectsBottomTable.ResumeLayout(false);
-			this.sceneTreeObjectsBottomTable.PerformLayout();
-			this.sceneTreeObjectsTopTable.ResumeLayout(false);
-			this.assetsTab.ResumeLayout(false);
-			this.assetsSplit.ResumeLayout(false);
+			this.editThingTable.ResumeLayout(false);
+			this.editThingTable.PerformLayout();
 			this.ResumeLayout(false);
 
 		}
@@ -692,34 +565,27 @@
 		private ToolStripSeparator sceneRightClickMenuSeparator1;
 		private ToolStripMenuItem sceneRightClickMenuResetView;
 		private ToolStripMenuItem sceneRightClickMenuCreateSprite;
-		private TreeView sceneObjects;
-		private TabControl rightPanelTabs;
-		private TabPage sceneObjectEdit;
-		private TabPage assetsTab;
 		private MaskedTextBox searchScene;
-		private SplitContainer thingSelectSplit;
-		private Button sceneObjectsMoveDown;
-		private Button sceneObjectsMoveUp;
 		private Button saveButton;
 		private Label fps;
 		private ListBox editSelectionOptions;
 		private NumericUpDown snap;
 		private NumericUpDown gridSpacing;
-		private Button unparentSelectionButton;
 		private PictureBox windowPicture;
 		private GroupBox editSelectionGroup;
-		private Button importAssetsButton;
-		private TreeView assets;
-		private TableLayoutPanel assetsSplit;
-		private OpenFileDialog importAssets;
-		private Button assetsCreateFolderButton;
-		private Button assetsMoveToRootButton;
-		private TableLayoutPanel sceneTreeObjectsTable;
-		private TableLayoutPanel sceneTreeObjectsBottomTable;
-		private TableLayoutPanel sceneTreeObjectsTopTable;
-		private Button assetDelete;
 		private Button loadButton;
-		private FolderBrowserDialog save;
+		private FolderBrowserDialog gameDir;
 		private OpenFileDialog load;
+		private SaveFileDialog save;
+		private GroupBox searchBox;
+		private TableLayoutPanel editThingTable;
+		private TextBox propUID;
+		private Label uidLabel;
+		private Label labelParentUID;
+		private TextBox propParentUID;
+		private Label labelOldUID;
+		private TextBox propOldUID;
+		private ComboBox propChildrenUIDs;
+		private Label childrenUIDsLabel;
 	}
 }

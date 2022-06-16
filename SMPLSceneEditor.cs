@@ -1,6 +1,4 @@
-global using System.Collections.ObjectModel;
 global using System.Numerics;
-global using Microsoft.VisualBasic;
 global using SFML.Graphics;
 global using SFML.System;
 global using SFML.Window;
@@ -13,18 +11,22 @@ namespace SMPLSceneEditor
 {
 	public partial class FormWindow : Form
 	{
+		private const string SELECT_CHILDREN_TIP = "(select to focus)                                     ";
 		private readonly System.Windows.Forms.Timer loop;
 		private readonly RenderWindow window;
 		private float sceneSc = 1;
 		private int selectDepthIndex;
-		private bool isDragSelecting, isHoveringScene, confirmDeleteChildrenMsgShown;
+		private bool isDragSelecting, isHoveringScene, confirmDeleteChildrenMsgShown, selectGameDirShown;
 		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos;
 		private readonly List<string> selectedUIDs = new();
 		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
+		private readonly FileSystemWatcher assetsWatcher;
+		private string? finalGameDir;
 
 		public FormWindow()
 		{
 			InitializeComponent();
+			UpdateEditSelectionPanel();
 
 			WindowState = FormWindowState.Maximized;
 
@@ -38,13 +40,16 @@ namespace SMPLSceneEditor
 			SetView();
 
 			editSelectionOptions.SelectedIndex = 0;
-			FocusObjectsTree();
 
 			Scene.CurrentScene = new MainScene();
+
+			assetsWatcher = new(AppContext.BaseDirectory) { EnableRaisingEvents = true };
 		}
 
 		private void OnUpdate(object? sender, EventArgs e)
 		{
+			TryUpdateGameDir();
+
 			window.Size = new((uint)windowPicture.Width, (uint)windowPicture.Height);
 
 			var view = window.GetView();
@@ -133,10 +138,7 @@ namespace SMPLSceneEditor
 				return coordinate == 0 || coordinate % 1000 == 0 ? specialCellVerts : cellVerts;
 			}
 		}
-		private float GetGridSpacing()
-		{
-			return MathF.Max(gridSpacing.Text.ToNumber(), (float)gridSpacing.Minimum);
-		}
+
 		private void TryShowMousePos()
 		{
 			if(sceneMousePos.Visible == false)
@@ -149,20 +151,38 @@ namespace SMPLSceneEditor
 				$"Cursor [{(int)mousePos.X} {(int)mousePos.Y}]\n" +
 				$"Grid [{(int)inGrid.X} {(int)inGrid.Y}]";
 		}
-
-		private Hitbox GetDragSelectionHitbox()
+		private void TryUpdateGameDir()
 		{
-			var mousePos = Mouse.GetPosition(window);
-			var topLeft = new Vector2i((int)selectStartPos.X, (int)selectStartPos.Y);
-			var botRight = new Vector2i(mousePos.X, mousePos.Y);
-			var topRight = new Vector2i(botRight.X, topLeft.Y);
-			var botLeft = new Vector2i(topLeft.X, botRight.Y);
-			var tl = window.MapPixelToCoords(topLeft).ToSystem();
-			var tr = window.MapPixelToCoords(topRight).ToSystem();
-			var br = window.MapPixelToCoords(botRight).ToSystem();
-			var bl = window.MapPixelToCoords(botLeft).ToSystem();
+			if(Directory.Exists(finalGameDir) || selectGameDirShown)
+				return;
 
-			return new Hitbox(tl, tr, br, bl, tl);
+			selectGameDirShown = true;
+
+			if(finalGameDir != null)
+				MessageBox.Show("Find the game directory or select a new one.", "Game directory has changed!");
+
+			if(gameDir.ShowDialog(this) != DialogResult.OK)
+			{
+				Application.Exit();
+				return;
+			}
+			selectGameDirShown = false;
+			finalGameDir = gameDir.SelectedPath;
+
+			var assetsPath = finalGameDir + "\\Assets";
+			Directory.CreateDirectory(assetsPath);
+
+			assetsWatcher.Path = assetsPath;
+			assetsWatcher.Deleted += OnAssetDelete;
+			assetsWatcher.Created += OnAssetCreate;
+			assetsWatcher.Renamed += OnAssetRename;
+
+			var mirrorPath = GetMirrorAssetPath(assetsPath);
+			if(Directory.Exists(mirrorPath))
+				DeleteMirrorFiles(assetsPath);
+
+			CopyMirrorFiles(assetsPath);
+			MainScene.LoadAsset(mirrorPath);
 		}
 		private void TrySelect()
 		{
@@ -184,7 +204,7 @@ namespace SMPLSceneEditor
 			if(click)
 			{
 				if(ctrl == false && alt == false)
-					UnselectObjects();
+					selectedUIDs.Clear();
 
 				var sum = 0;
 				for(int i = 0; i < uids.Count; i++)
@@ -212,7 +232,7 @@ namespace SMPLSceneEditor
 			else if(left && dist > 1)
 			{
 				if(ctrl == false && alt == false)
-					UnselectObjects();
+					selectedUIDs.Clear();
 				for(int i = 0; i < uids.Count; i++)
 				{
 					var uid = uids[i];
@@ -229,6 +249,14 @@ namespace SMPLSceneEditor
 
 			if(clickedUIDs.Count > 0)
 				SelectObject(clickedUIDs[selectDepthIndex]);
+
+			void SelectObject(string uid)
+			{
+				if(selectedUIDs.Contains(uid) == false)
+					selectedUIDs.Add(uid);
+				if(Keyboard.IsKeyPressed(Keyboard.Key.LAlt))
+					selectedUIDs.Remove(uid);
+			}
 		}
 		private void TryDrawSelection()
 		{
@@ -282,26 +310,47 @@ namespace SMPLSceneEditor
 				for(int i = 0; i < sel.Count; i++)
 				{
 					var uid = selectedUIDs[i];
-					var node = sceneObjects.Nodes.Find(uid, true)[0];
+
 					selectedUIDs.Remove(uid);
-
-					if(includeChildren == false)
-						foreach(TreeNode childNode in node.Nodes)
-						{
-							childNode.Remove();
-							sceneObjects.Nodes[0].Nodes.Add(childNode);
-						}
-
-					node.Remove();
-
 					ThingManager.Destroy(uid, includeChildren);
 				}
+				UpdateEditSelectionPanel();
 			}
+		}
+		private static void TryTransformHitbox(string uid)
+		{
+			if(ThingManager.HasGet(uid, "Hitbox") == false)
+				return;
+
+			var children = (List<string>)ThingManager.Get(uid, "ChildrenUIDs");
+			var hitbox = (Hitbox)ThingManager.Get(uid, "Hitbox");
+			hitbox.TransformLocalLines(uid);
+
+			for(int i = 0; i < children.Count; i++)
+				TryTransformHitbox(children[i]);
 		}
 
 		private static Hitbox? GetHitbox(string uid)
 		{
 			return ThingManager.HasGet(uid, "Hitbox") == false ? default : (Hitbox)ThingManager.Get(uid, "Hitbox");
+		}
+		private float GetGridSpacing()
+		{
+			return MathF.Max(gridSpacing.Text.ToNumber(), (float)gridSpacing.Minimum);
+		}
+		private Hitbox GetDragSelectionHitbox()
+		{
+			var mousePos = Mouse.GetPosition(window);
+			var topLeft = new Vector2i((int)selectStartPos.X, (int)selectStartPos.Y);
+			var botRight = new Vector2i(mousePos.X, mousePos.Y);
+			var topRight = new Vector2i(botRight.X, topLeft.Y);
+			var botLeft = new Vector2i(topLeft.X, botRight.Y);
+			var tl = window.MapPixelToCoords(topLeft).ToSystem();
+			var tr = window.MapPixelToCoords(topRight).ToSystem();
+			var br = window.MapPixelToCoords(botRight).ToSystem();
+			var bl = window.MapPixelToCoords(botLeft).ToSystem();
+
+			return new Hitbox(tl, tr, br, bl, tl);
 		}
 		private Vector2 GetFormsMousePos()
 		{
@@ -368,205 +417,143 @@ namespace SMPLSceneEditor
 			return angle + (reverse ? -delta : delta);
 		}
 
-		private static void TryTransformHitbox(string uid)
+		private void UpdateEditSelectionPanel()
 		{
-			if(ThingManager.HasGet(uid, "Hitbox") == false)
-				return;
+			editThingTable.Visible = selectedUIDs.Count > 0;
 
-			var children = (ReadOnlyCollection<string>)ThingManager.Get(uid, "ChildrenUIDs");
-			var hitbox = (Hitbox)ThingManager.Get(uid, "Hitbox");
-			hitbox.TransformLocalLines(uid);
-
-			for(int i = 0; i < children.Count; i++)
-				TryTransformHitbox(children[i]);
-		}
-		private void MoveSelectedObject(bool up)
-		{
-			var selectedNode = sceneObjects.SelectedNode;
-			if(selectedNode == null)
-				return;
-
-			var nodes = selectedNode.Parent == null ? sceneObjects.Nodes : selectedNode.Parent.Nodes;
-			var selectedIndex = nodes.IndexOf(selectedNode);
-			if(selectedIndex == -1)
-				return;
-
-			nodes.RemoveAt(selectedIndex);
-			nodes.Insert(selectedIndex + (up ? -1 : 1), selectedNode);
-
-			FocusObjectsTree();
-			sceneObjects.SelectedNode = selectedNode;
-		}
-		private void SelectObject(string uid)
-		{
-			if(selectedUIDs.Contains(uid) == false)
-				selectedUIDs.Add(uid);
-			if(Keyboard.IsKeyPressed(Keyboard.Key.LAlt))
-				selectedUIDs.Remove(uid);
-		}
-		private void UpdateSceneObjectsTree()
-		{
 			if(selectedUIDs.Count == 0)
 				return;
-
-			var node = sceneObjects.Nodes.Find(selectedUIDs[0], true)[0];
-			sceneObjects.SelectedNode = node;
-			node.EnsureVisible();
-			FocusObjectsTree();
-		}
-		private void FocusObjectsTree()
-		{
-			if(selectedUIDs.Count == 0)
+			else if(selectedUIDs.Count > 1)
 			{
-				var world = sceneObjects.Nodes[0];
-				sceneObjects.SelectedNode = world;
-				world.EnsureVisible();
+				propUID.Enabled = false;
+				propUID.Text = "(multiple values)";
+				return;
 			}
 
-			sceneObjects.Select();
+			var uid = selectedUIDs[0];
+			propUID.Enabled = true;
+			propUID.Text = uid;
+			propOldUID.Text = (string)ThingManager.Get(uid, "OldUID");
+			propParentUID.Text = (string)ThingManager.Get(uid, "ParentUID");
+
+			propChildrenUIDs.Items.Clear();
+			propChildrenUIDs.Items.Add(SELECT_CHILDREN_TIP);
+			var childrenUIDs = (List<string>)ThingManager.Get(uid, "ChildrenUIDs");
+			propChildrenUIDs.Enabled = childrenUIDs.Count > 0;
+			if(childrenUIDs.Count > 0)
+			{
+				for(int i = 0; i < childrenUIDs.Count; i++)
+					propChildrenUIDs.Items.Add(childrenUIDs[i]);
+			}
+			propChildrenUIDs.SelectedIndex = 0;
 		}
-		private void UnselectObjects()
-		{
-			selectedUIDs.Clear();
-			FocusObjectsTree();
-		}
+
 		private static float AngToGrid(float ang, float gridSz)
 		{
 			return new Vector2(ang).PointToGrid(new(gridSz)).X;
 		}
-		private void TryLoadFiles(string path)
+		private void CopyMirrorFiles(string path)
 		{
-			var isFolder = Path.HasExtension(path) == false;
+			var targetPath = GetMirrorAssetPath(path);
+			var targetDir = Path.GetDirectoryName(targetPath);
 
-			if(isFolder)
-			{
-				var folderFiles = Directory.GetFiles(path);
-				var subFolders = Directory.GetDirectories(path);
-
-				for(int i = 0; i < subFolders.Length; i++)
-					TryLoadFiles(subFolders[i]);
-
-				for(int i = 0; i < folderFiles.Length; i++)
-					TryLoadFiles(folderFiles[i]);
-				return;
-			}
-
-			var newPath = Path.GetFileName(path);
-			var targetPath = $"{Scene.CurrentScene.AssetsDirectory}\\{newPath}";
-
-			Directory.CreateDirectory(Scene.CurrentScene.AssetsDirectory);
-
-			if(File.Exists(targetPath))
-				File.Delete(targetPath);
-			File.Copy(path, targetPath);
-			MainScene.LoadAsset(newPath);
-
-			var shortPath = Path.GetFileName(newPath);
-			if(assets.Nodes.ContainsKey(shortPath) == false)
-				assets.Nodes.Add(shortPath, shortPath);
-		}
-		private static bool IsNodeDropped(TreeView tree, DragEventArgs e, out TreeNode? targetNode, out TreeNode? draggedNode, out string? prevFullPath)
-		{
-			var targetPoint = tree.PointToClient(new Point(e.X, e.Y));
-			targetNode = tree.GetNodeAt(targetPoint);
-			draggedNode = e.Data != null ? (TreeNode)e.Data.GetData(typeof(TreeNode)) : default;
-			prevFullPath = null;
-
-			if(targetNode == null)
-				return false;
-
-			if(draggedNode != null && targetNode != draggedNode && ContainsNode(draggedNode, targetNode) == false)
-			{
-				if(e.Effect == DragDropEffects.Move)
-				{
-					prevFullPath = draggedNode.FullPath;
-					draggedNode.Remove();
-					targetNode.Nodes.Add(draggedNode);
-
-					tree.SelectedNode = draggedNode;
-					tree.Select();
-					return true;
-				}
-				targetNode.Expand();
-			}
-
-			return false;
-
-			bool ContainsNode(TreeNode node1, TreeNode node2) => node1 == node2.Parent || (node2.Parent != null && ContainsNode(node1, node2.Parent));
-		}
-		private static void MoveFile(string prevPath, string newPath)
-		{
-			var isFolder = Path.HasExtension(prevPath) == false;
-
-			if(isFolder)
-				Directory.Move(prevPath, newPath);
-			else
-				File.Move(prevPath, newPath);
-		}
-		internal static void DeleteFile(string path)
-		{
-			if(Directory.Exists(path) == false && File.Exists(path) == false)
-				return;
+			if(string.IsNullOrWhiteSpace(targetDir) == false)
+				Directory.CreateDirectory(targetDir);
 
 			if(Path.HasExtension(path))
 			{
-				File.Delete(path);
+				File.Copy(path, targetPath);
 				return;
 			}
 
-			var files = Directory.GetFiles(path);
+			Directory.CreateDirectory(targetPath);
+
 			var dirs = Directory.GetDirectories(path);
+			var files = Directory.GetFiles(path);
 
-			for(int i = 0; i < files?.Length; i++)
-				DeleteFile(files[i]);
 			for(int i = 0; i < dirs?.Length; i++)
-				DeleteFile(dirs[i]);
-
-			Directory.Delete(path);
+				CopyMirrorFiles(dirs[i]);
+			for(int i = 0; i < files?.Length; i++)
+				CopyMirrorFiles(files[i]);
 		}
-
-		private void OnTreeViewDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
+		private void DeleteMirrorFiles(string path)
 		{
-			if(e.Node == null)
-				return;
+			var targetPath = GetMirrorAssetPath(path);
+			var targetDir = Path.GetDirectoryName(targetPath);
 
-			e.Node.BeginEdit();
+			if(string.IsNullOrWhiteSpace(targetDir) == false)
+				Directory.CreateDirectory(targetDir);
 
-			if(e.Node.IsExpanded)
-				e.Node.Collapse();
-			else
-				e.Node.Expand();
-		}
-		private void OnTreeNodeDrag(object sender, ItemDragEventArgs e)
-		{
-			if(e.Button != MouseButtons.Left)
-				return;
-
-			if(e.Item != null)
+			if(Path.HasExtension(path))
 			{
-				var node = (TreeNode)e.Item;
-				DoDragDrop(node, DragDropEffects.Move);
+				File.Delete(targetPath);
+				return;
 			}
+
+			var dirs = Directory.GetDirectories(path);
+			var files = Directory.GetFiles(path);
+
+			for(int i = 0; i < dirs?.Length; i++)
+				DeleteMirrorFiles(dirs[i]);
+			for(int i = 0; i < files?.Length; i++)
+				DeleteMirrorFiles(files[i]);
+
+			Directory.Delete(targetPath);
 		}
+		private string GetMirrorAssetPath(string path)
+		{
+			var targetPath = path;
+			if(finalGameDir != null)
+				targetPath = targetPath.Replace(finalGameDir + "\\", "");
+			return targetPath;
+		}
+
 		#region Scene
+		private void OnKeyDownObjectSearch(object sender, System.Windows.Forms.KeyEventArgs e)
+		{
+			if(e.KeyCode != Keys.Return || string.IsNullOrWhiteSpace(searchScene.Text))
+				return;
+
+			var bestGuessSymbolsMatch = 0;
+			var bestGuess = default(string);
+			var uids = ThingManager.GetUIDs();
+
+			for(int i = 0; i < uids.Count; i++)
+			{
+				var curMatchingSymbols = 0;
+				var uid = uids[i];
+
+				for(int j = 0; j < uid.Length; j++)
+				{
+					if(searchScene.Text.Length <= j || uid[j] != searchScene.Text[j])
+						break;
+
+					curMatchingSymbols++;
+				}
+
+				if(curMatchingSymbols > bestGuessSymbolsMatch)
+				{
+					bestGuessSymbolsMatch = curMatchingSymbols;
+					bestGuess = uid;
+				}
+			}
+
+			if(bestGuess == null)
+				return;
+
+			searchScene.Text = "";
+			selectedUIDs.Clear();
+			selectedUIDs.Add(bestGuess);
+			UpdateEditSelectionPanel();
+			SetViewPosition((Vector2)ThingManager.Get(bestGuess, "Position"));
+		}
 		private void OnSaveClick(object sender, EventArgs e)
 		{
-			FocusObjectsTree();
-
+			save.InitialDirectory = finalGameDir;
 			if(save.ShowDialog(this) != DialogResult.OK)
 				return;
 
-			var name = Interaction.InputBox("Choose a name for the Scene.", "Save Scene", "myScene");
-
-			if(name == "")
-				return;
-
-			var assets = Scene.CurrentScene.AssetsDirectory;
-			Directory.CreateDirectory($"{save.SelectedPath}\\{name}");
-
-			CopyDirectory(AppContext.BaseDirectory + assets, $"{save.SelectedPath}\\{name}\\{assets}");
-			MainScene.SetSavePath($"{save.SelectedPath}\\{name}\\{name}.scene");
-			MainScene.SaveScene();
+			MainScene.SaveScene(save.FileName);
 
 			static void CopyDirectory(string sourceDir, string destinationDir)
 			{
@@ -595,11 +582,16 @@ namespace SMPLSceneEditor
 		}
 		private void OnLoadClick(object sender, EventArgs e)
 		{
-			FocusObjectsTree();
 			if(load.ShowDialog(this) != DialogResult.OK)
 				return;
 
+			if(MessageBox.Show("Confirm? Any unsaved changes will be lost.", "Confirm Load", MessageBoxButtons.OKCancel) != DialogResult.OK)
+				return;
+
+			ThingManager.DestroyAll();
+
 			Scene.CurrentScene = Scene.Load<MainScene>(load.FileName);
+			MainScene.LoadAsset("Assets");
 		}
 		private void OnSceneScroll(object? sender, MouseEventArgs e)
 		{
@@ -682,6 +674,8 @@ namespace SMPLSceneEditor
 		}
 		private void OnMouseDownScene(object sender, MouseEventArgs e)
 		{
+			searchBox.Select();
+
 			if(e.Button != MouseButtons.Left)
 				return;
 
@@ -698,153 +692,10 @@ namespace SMPLSceneEditor
 				return;
 
 			isDragSelecting = false;
-			UpdateSceneObjectsTree();
-		}
-		private void OnSceneStatusClick(object sender, EventArgs e)
-		{
-			FocusObjectsTree();
+			UpdateEditSelectionPanel();
 		}
 		#endregion
-		#region SceneTreeObjects
-		private void OnObjectsSelectMoveUp(object sender, EventArgs e)
-		{
-			MoveSelectedObject(true);
-		}
-		private void OnObjectsSelectMoveDown(object sender, EventArgs e)
-		{
-			MoveSelectedObject(false);
-		}
-		private void OnSceneObjectClick(object sender, TreeNodeMouseClickEventArgs e)
-		{
-			if(e.Node == sceneObjects.Nodes[0])
-				return;
 
-			if(e.Button == MouseButtons.Right)
-			{
-				SetViewPosition((Vector2)ThingManager.Get(e.Node.Name, "Position"));
-				return;
-			}
-
-			selectedUIDs.Clear();
-			SelectObject(e.Node.Name);
-		}
-		private void OnTreeObjectRename(object sender, NodeLabelEditEventArgs e)
-		{
-			e.CancelEdit = true;
-			if(e.Node == sceneObjects.Nodes[0])
-				return;
-
-			var uid = e.Node.Name;
-			var newUID = e.Label;
-
-			if(string.IsNullOrWhiteSpace(newUID))
-				return;
-
-			if(ThingManager.Exists(newUID))
-			{
-				MessageBox.Show($"A {{Thing}} already exists with the [UID] '{newUID}'.", "Failed [UID] change!");
-				return;
-			}
-
-			ThingManager.Set(uid, "UID", newUID);
-			e.Node.Text = newUID;
-			e.Node.Name = newUID;
-
-			var selectionIndex = selectedUIDs.IndexOf(uid);
-			if(selectionIndex == -1)
-				return;
-
-			selectedUIDs.Remove(uid);
-			selectedUIDs.Insert(selectionIndex, newUID);
-		}
-		private void SelectObjectsTree(object sender, EventArgs e)
-		{
-			FocusObjectsTree();
-		}
-		private void OnUnparentSelectionButtonClick(object sender, EventArgs e)
-		{
-			sceneObjects.Select();
-			var selectedNode = sceneObjects.SelectedNode;
-			var selectedNodeParent = selectedNode.Parent;
-			if(selectedNodeParent == null || selectedNodeParent == sceneObjects.Nodes[0])
-				return;
-
-			selectedNode.Remove();
-			sceneObjects.Nodes[0].Nodes.Add(selectedNode);
-			sceneObjects.SelectedNode = selectedNode;
-			selectedNode.EnsureVisible();
-			ThingManager.Set(selectedNode.Name, "ParentUID", null);
-		}
-		private void OnKeyDownObjectSearch(object sender, System.Windows.Forms.KeyEventArgs e)
-		{
-			if(e.KeyCode != Keys.Return || string.IsNullOrWhiteSpace(searchScene.Text))
-				return;
-
-			var bestGuessSymbolsMatch = 0;
-			var bestGuess = default(TreeNode);
-
-			Search(sceneObjects.Nodes[0].Nodes);
-
-			if(bestGuess == null)
-				return;
-
-			searchScene.Text = "";
-			sceneObjects.SelectedNode = bestGuess;
-			FocusObjectsTree();
-			bestGuess.EnsureVisible();
-
-			void Search(TreeNodeCollection nodes)
-			{
-				if(nodes == null || searchScene.Text.Length == bestGuessSymbolsMatch)
-					return;
-
-				foreach(TreeNode node in nodes)
-				{
-					var curMatchingSymbols = 0;
-					for(int i = 0; i < node.Name.Length; i++)
-					{
-						if(searchScene.Text.Length <= i || node.Name[i] != searchScene.Text[i])
-							break;
-
-						curMatchingSymbols++;
-					}
-
-					if(curMatchingSymbols > bestGuessSymbolsMatch)
-					{
-						bestGuessSymbolsMatch = curMatchingSymbols;
-						bestGuess = node;
-					}
-					Search(node.Nodes);
-				}
-			}
-		}
-
-		private void OnTreeObjectDragOver(object sender, DragEventArgs e)
-		{
-			sceneObjects.SelectedNode = sceneObjects.GetNodeAt(sceneObjects.PointToClient(new Point(e.X, e.Y)));
-		}
-		private void OnTreeObjectDragEnter(object sender, DragEventArgs e)
-		{
-			var droppedDataIsNode = e.Data != null && e.Data.GetFormats().ToList().Contains(typeof(TreeNode).ToString());
-			if(droppedDataIsNode)
-				e.Effect = e.AllowedEffect;
-		}
-		private void OnTreeObjectDragDrop(object sender, DragEventArgs e)
-		{
-			if(IsNodeDropped(sceneObjects, e, out var targetNode, out var draggedNode, out _) == false)
-				return;
-
-			if(targetNode == null || draggedNode == null)
-				return;
-
-			var uid = draggedNode.Name;
-			ThingManager.Set(uid, "ParentUID", targetNode == sceneObjects.Nodes[0] ? null : targetNode.Name);
-			TryTransformHitbox(uid);
-
-			selectedUIDs.Clear();
-			selectedUIDs.Add(draggedNode.Name);
-		}
-		#endregion
 		#region SceneRightClick
 		private void OnSceneRightClickMenuResetView(object sender, EventArgs e)
 		{
@@ -852,150 +703,61 @@ namespace SMPLSceneEditor
 		}
 		private void OnSceneRightClickMenuCreateSprite(object sender, EventArgs e)
 		{
-			var uid = ThingManager.CreateSprite($"sprite");
+			var uid = ThingManager.CreateSprite("sprite");
 			ThingManager.Set(uid, "Position", rightClickPos);
 			ThingManager.Do(uid, "ApplyDefaultHitbox");
-			ThingManager.Set(uid, "TexturePath", "explosive.jpg");
+			ThingManager.Set(uid, "TexturePath", "Assets\\explosive.jpg");
 			TryTransformHitbox(uid);
 
-			var world = sceneObjects.Nodes[0];
-			world.Nodes.Add(uid, uid);
-			world.Expand();
+			var uid2 = ThingManager.CreateSprite("sprite");
+			ThingManager.Set(uid2, "Position", rightClickPos);
+			ThingManager.Do(uid2, "ApplyDefaultHitbox");
+			ThingManager.Set(uid2, "TexturePath", "Assets\\explosive.jpg");
+			ThingManager.Set(uid2, "ParentUID", uid);
+			TryTransformHitbox(uid2);
 		}
 		#endregion
-
-		#region ObjectEditRightTab
-		private void OnRightTabSelect(object sender, TabControlEventArgs e)
+		#region EditThingPanel
+		private void OnSelectChild(object sender, EventArgs e)
 		{
-			if(e.TabPageIndex != 0)
+			var uid = (string)propChildrenUIDs.SelectedItem;
+			if(uid == SELECT_CHILDREN_TIP)
 				return;
 
-			FocusObjectsTree();
+			SetViewPosition((Vector2)ThingManager.Get(uid, "Position"));
+			selectedUIDs.Clear();
+			selectedUIDs.Add(uid);
+			UpdateEditSelectionPanel();
+		}
+		private void OnChildrenDropDown(object sender, EventArgs e)
+		{
+			propChildrenUIDs.Items.Remove(SELECT_CHILDREN_TIP);
+			propChildrenUIDs.SelectedIndex = -1;
+		}
+		private void OnChildrenDropDownClose(object sender, EventArgs e)
+		{
+			if(propChildrenUIDs.SelectedIndex != -1)
+				return;
+
+			propChildrenUIDs.Items.Add(SELECT_CHILDREN_TIP);
+			propChildrenUIDs.SelectedItem = SELECT_CHILDREN_TIP;
 		}
 		#endregion
 		#region Assets
-		private void OnAssetsImportClick(object sender, EventArgs e)
+		private void OnAssetRename(object sender, RenamedEventArgs e)
 		{
-			if(importAssets.ShowDialog(this) != DialogResult.OK)
-			{
-				FocusObjectsTree();
-				return;
-			}
-
-			var files = importAssets.FileNames;
-			for(int i = 0; i < files.Length; i++)
-				TryLoadFiles(files[i]);
-
-			FocusObjectsTree();
+			MainScene.UnloadAsset(e.OldFullPath);
+			MainScene.LoadAsset(e.FullPath);
 		}
-		private void OnAssetDeleteClick(object sender, EventArgs e)
+		private void OnAssetCreate(object sender, FileSystemEventArgs e)
 		{
-			var node = assets.SelectedNode;
-			if(node == null)
-				return;
-
-			var result = MessageBox.Show("Confirm?", "Delete Asset", MessageBoxButtons.OKCancel);
-			if(result != DialogResult.OK)
-				return;
-
-			DeleteFile($"{Scene.CurrentScene.AssetsDirectory}\\{node.Name}");
-			node.Remove();
+			CopyMirrorFiles(e.FullPath);
+			MainScene.LoadAsset(GetMirrorAssetPath(e.FullPath));
 		}
-
-		private void OnAssetsCreateFolderClick(object sender, EventArgs e)
+		private void OnAssetDelete(object sender, FileSystemEventArgs e)
 		{
-			var node = assets.SelectedNode;
-			var selectedNodeIsFolder = node != null && Path.HasExtension(node.Name);
-			var selectedFolder = "";
-
-			if(selectedNodeIsFolder == false && node != null && node.Parent != null)
-				selectedFolder = $"{node.Parent.Name}/";
-
-			var path = selectedFolder + "Folder";
-			var i = 1;
-			var freePath = path;
-			while(Directory.Exists(freePath))
-			{
-				freePath = $"{path}{i}";
-				i++;
-			}
-			Directory.CreateDirectory(freePath);
-			assets.Nodes.Add(freePath, Path.GetFileName(freePath));
-		}
-		private void OnAssetMoveToRootClick(object sender, EventArgs e)
-		{
-			var node = assets.SelectedNode;
-			if(node == null)
-				return;
-
-			var prevPath = node.FullPath;
-			node.Remove();
-			assets.Nodes.Add(node);
-			assets.SelectedNode = node;
-			assets.Select();
-
-			MoveFile(prevPath, node.FullPath);
-		}
-		private void OnAssetsDragOver(object sender, DragEventArgs e)
-		{
-			assets.SelectedNode = assets.GetNodeAt(assets.PointToClient(new Point(e.X, e.Y)));
-		}
-		private void OnAssetsDragEnter(object sender, DragEventArgs e)
-		{
-			var droppedDataIsNode = e.Data != null && e.Data.GetFormats().ToList().Contains(typeof(TreeNode).ToString());
-			if(e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
-				e.Effect = DragDropEffects.Copy;
-			if(droppedDataIsNode)
-				e.Effect = e.AllowedEffect;
-		}
-		private void OnAssetsDragDrop(object sender, DragEventArgs e)
-		{
-			if(e.Data == null)
-				return;
-
-			if(IsNodeDropped(assets, e, out var targetNode, out var draggedNode, out var prevFullPath))
-			{
-				if(targetNode == null || draggedNode == null || prevFullPath == null)
-					return;
-
-				MoveFile(prevFullPath, draggedNode.FullPath);
-				return;
-			}
-
-			var files = (string[])e.Data.GetData(DataFormats.FileDrop);
-			if(files == null)
-				return;
-
-			for(int i = 0; i < files.Length; i++)
-			{
-				var file = files[i];
-				TryLoadFiles(file);
-			}
-
-			assets.Sort();
-		}
-		private void OnAssetRename(object sender, NodeLabelEditEventArgs e)
-		{
-			e.CancelEdit = true;
-			var name = e.Node.Name;
-			var newName = e.Label;
-
-			if(string.IsNullOrWhiteSpace(newName) || IsInvalidFilename(newName))
-				return;
-
-			MoveFile(name, newName);
-
-			e.Node.Text = newName;
-			e.Node.Name = newName;
-
-			bool IsInvalidFilename(string fileName)
-			{
-				var invalidChars = Path.GetInvalidFileNameChars();
-				for(int i = 0; i < invalidChars.Length; i++)
-					if(fileName.Contains(invalidChars[i]))
-						return true;
-				return false;
-			}
+			DeleteMirrorFiles(e.FullPath);
+			MainScene.UnloadAsset(GetMirrorAssetPath(e.FullPath));
 		}
 		#endregion
 	}

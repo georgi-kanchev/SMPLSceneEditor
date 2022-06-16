@@ -2,21 +2,17 @@
 {
 	public class MainScene : Scene
 	{
-		public MainScene()
-		{
-			FormWindow.DeleteFile(AssetsDirectory);
-		}
 		public static void LoadAsset(string path)
 		{
 			((MainScene)CurrentScene).LoadAssets(path);
 		}
-		public static void SaveScene()
+		public static void UnloadAsset(string path)
 		{
-			((MainScene)CurrentScene).Save();
+			((MainScene)CurrentScene).UnloadAssets(path);
 		}
-		public static void SetSavePath(string path)
+		public static void SaveScene(string path)
 		{
-			((MainScene)CurrentScene).SavePath = path;
+			((MainScene)CurrentScene).Save(path);
 		}
 	}
 }
