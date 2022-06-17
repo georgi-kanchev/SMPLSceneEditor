@@ -11,7 +11,12 @@ namespace SMPLSceneEditor
 {
 	public partial class FormWindow : Form
 	{
-		private const string SELECT_CHILDREN_TIP = "(select to focus)                                     ";
+		#region Fields
+		private Dictionary<string, string> listBoxPlaceholderTexts = new()
+		{
+			{ "Children UIDs", "(select to focus)                                     " },
+		};
+
 		private readonly System.Windows.Forms.Timer loop;
 		private readonly RenderWindow window;
 		private float sceneSc = 1;
@@ -22,11 +27,13 @@ namespace SMPLSceneEditor
 		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
 		private readonly FileSystemWatcher assetsWatcher;
 		private string? finalGameDir;
+		#endregion
 
+		#region Init
 		public FormWindow()
 		{
 			InitializeComponent();
-			UpdateEditSelectionPanel();
+			UpdateThingPanel();
 
 			WindowState = FormWindowState.Maximized;
 
@@ -44,8 +51,130 @@ namespace SMPLSceneEditor
 			Scene.CurrentScene = new MainScene();
 
 			assetsWatcher = new(AppContext.BaseDirectory) { EnableRaisingEvents = true };
-		}
 
+			AddThingProperty("Types", typeof(List<string>));
+			AddThingProperty("Thing", null, rightLabel: true);
+			AddThingProperty("Properties", null);
+			AddThingProperty("UID", typeof(string));
+			AddThingProperty("Old UID", typeof(string), readOnly: true);
+			AddThingProperty("Parent UID", typeof(string));
+			AddThingProperty("Children UIDs", typeof(List<string>));
+			AddThingProperty("Update Order", typeof(int));
+			AddThingProperty("", null); AddThingProperty("", null);
+			AddThingProperty("Local Position", typeof(Vector2));
+			AddThingProperty("Local Angle", typeof(float));
+			AddThingProperty("Local Direction", typeof(Vector2), readOnly: true, smallNumericStep: true);
+			AddThingProperty("Local Scale", typeof(float), smallNumericStep: true);
+
+			AddThingProperty("Reset", typeof(Button), last: true); AddThingProperty("Apply", typeof(Button), last: true);
+		}
+		private void AddThingProperty(string name, Type? valueType, bool readOnly = false, bool rightLabel = false, bool smallNumericStep = false,
+			bool last = false)
+		{
+			const string FONT = "Segoe UI";
+			const float FONT_SIZE = 12f;
+
+			var prop = default(Control);
+			var label = new Label() { Text = name };
+			SetDefault(label, FONT_SIZE + 3, reverseColors: true);
+			label.Enabled = true;
+
+			if(valueType == null)
+			{
+				label.TextAlign = rightLabel ? ContentAlignment.TopRight : ContentAlignment.TopLeft;
+				editThingTable.Controls.Add(label);
+				return;
+			}
+
+			if(valueType == typeof(string))
+				prop = new TextBox();
+			else if(valueType == typeof(int))
+			{
+				prop = new NumericUpDown();
+				SetDefaultNumeric((NumericUpDown)prop, true);
+			}
+			else if(valueType == typeof(float))
+			{
+				prop = new NumericUpDown();
+				SetDefaultNumeric((NumericUpDown)prop, false);
+			}
+			else if(valueType == typeof(List<string>))
+			{
+				prop = new ComboBox
+				{
+					DropDownStyle = ComboBoxStyle.DropDownList,
+					FormattingEnabled = true,
+				};
+				var list = (ComboBox)prop;
+				list.DropDown += new EventHandler(OnListThingDropDown);
+				list.SelectedIndexChanged += new EventHandler(OnListSelectThing);
+				list.DropDownClosed += new EventHandler(OnListThingDropDownClose);
+			}
+			else if(valueType == typeof(Button))
+				prop = new Button() { Text = name };
+			else if(valueType == typeof(Vector2))
+			{
+				prop = new TableLayoutPanel();
+				var table = (TableLayoutPanel)prop;
+				SetDefault(table);
+				table.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
+				for(int i = 0; i < 2; i++)
+					table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+				table.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+				table.ColumnCount = 2;
+				table.RowCount = 1;
+				var x = new NumericUpDown();
+				var y = new NumericUpDown();
+				x.BorderStyle = BorderStyle.None;
+				y.BorderStyle = BorderStyle.None;
+				SetDefault(x);
+				SetDefault(y);
+				SetDefaultNumeric(x, false);
+				SetDefaultNumeric(y, false);
+				table.Controls.Add(x);
+				table.Controls.Add(y);
+			}
+
+			if(prop != null)
+			{
+				SetDefault(prop);
+				label.ForeColor = prop.Enabled ? System.Drawing.Color.White : System.Drawing.Color.Gray;
+			}
+
+			if(last)
+				editThingTable.Controls.Add(prop, 0, 24);
+			else
+				editThingTable.Controls.Add(prop);
+			if(valueType != typeof(Button))
+				editThingTable.Controls.Add(label);
+
+			void SetDefault(Control control, float fontSize = FONT_SIZE, bool reverseColors = false)
+			{
+				var black = System.Drawing.Color.Black;
+				var white = System.Drawing.Color.White;
+				var isLabel = control is Label;
+
+				if(isLabel)
+					reverseColors = !reverseColors;
+
+				control.Enabled = readOnly == false;
+				control.Font = new System.Drawing.Font(FONT, fontSize, FontStyle.Regular, GraphicsUnit.Point);
+				control.BackColor = reverseColors ? white : black;
+				control.ForeColor = reverseColors ? black : white;
+				control.Name = name;
+				control.TabStop = false;
+				control.Dock = DockStyle.Fill;
+			}
+			void SetDefaultNumeric(NumericUpDown numeric, bool isInt)
+			{
+				numeric.Increment = (decimal)(smallNumericStep ? 0.1 : 1);
+				numeric.DecimalPlaces = isInt ? 0 : (smallNumericStep ? 3 : 1);
+				numeric.Minimum = int.MinValue;
+				numeric.Maximum = int.MaxValue;
+			}
+		}
+		#endregion
+		#region Update
 		private void OnUpdate(object? sender, EventArgs e)
 		{
 			TryUpdateGameDir();
@@ -70,6 +199,79 @@ namespace SMPLSceneEditor
 			TryDrawSelection();
 
 			window.Display();
+		}
+		private void UpdateThingPanel()
+		{
+			editThingTable.Visible = selectedUIDs.Count == 1;
+			selectThingTip.Visible = selectedUIDs.Count != 1;
+
+			if(editThingTable.Visible == false)
+				return;
+
+			var types = (ComboBox)Controls.Find("Types", true)[0];
+			var uid = (TextBox)Controls.Find("UID", true)[0];
+			var propOldUID = (TextBox)Controls.Find("Old UID", true)[0];
+			var propParentUID = (TextBox)Controls.Find("Parent UID", true)[0];
+			var propChildrenUIDs = (ComboBox)Controls.Find("Children UIDs", true)[0];
+			var propUpdateOrder = (NumericUpDown)Controls.Find("Update Order", true)[0];
+			var propLocalPos = (TableLayoutPanel)Controls.Find("Local Position", true)[0];
+			var localX = (NumericUpDown)propLocalPos.Controls[0];
+			var localY = (NumericUpDown)propLocalPos.Controls[1];
+			var propLocalAng = (NumericUpDown)Controls.Find("Local Angle", true)[0];
+			var propLocalSc = (NumericUpDown)Controls.Find("Local Scale", true)[0];
+			var propLocalDir = (TableLayoutPanel)Controls.Find("Local Direction", true)[0];
+			var localDirX = (NumericUpDown)propLocalDir.Controls[0];
+			var localDirY = (NumericUpDown)propLocalDir.Controls[1];
+
+			var uidStr = selectedUIDs[0];
+
+			SetText(uid, uidStr);
+			SetText(propOldUID, (string)ThingManager.Get(uidStr, "OldUID"), readOnly: true);
+			SetText(propParentUID, (string)ThingManager.Get(uidStr, "ParentUID"));
+			SetNumber(propUpdateOrder, (int)ThingManager.Get(uidStr, "UpdateOrder"));
+			SetNumber(propLocalAng, ((float)ThingManager.Get(uidStr, "LocalAngle")).AngleTo360());
+			SetNumber(propLocalSc, (float)ThingManager.Get(uidStr, "LocalScale"));
+
+			var localPos = (Vector2)ThingManager.Get(uidStr, "LocalPosition");
+			SetNumber(localX, localPos.X);
+			SetNumber(localY, localPos.Y);
+			var localDir = (Vector2)ThingManager.Get(uidStr, "LocalDirection");
+			SetNumber(localDirX, localDir.X);
+			SetNumber(localDirY, localDir.Y);
+
+			ProcessThingList(types, "Types");
+			ProcessThingList(propChildrenUIDs, "ChildrenUIDs");
+
+			void ProcessThingList(ComboBox list, string propName)
+			{
+				list.Items.Clear();
+
+				var propList = (List<string>)ThingManager.Get(uidStr, propName);
+				list.Enabled = propList.Count > 0;
+
+				if(list.Enabled && listBoxPlaceholderTexts.ContainsKey(list.Name))
+					list.Items.Add(listBoxPlaceholderTexts[list.Name]);
+				else if(list.Enabled == false)
+					list.Items.Add("(none)");
+
+				if(propList.Count > 0)
+				{
+					for(int i = 0; i < propList.Count; i++)
+						list.Items.Add(propList[i]);
+				}
+
+				list.SelectedIndex = 0;
+			}
+			void SetText(TextBox text, string value, bool readOnly = false)
+			{
+				text.Enabled = readOnly == false;
+				text.Text = value;
+			}
+			void SetNumber(NumericUpDown number, float value, bool readOnly = false)
+			{
+				number.Enabled = readOnly == false;
+				number.Value = (decimal)value.Limit((float)number.Minimum, (float)number.Maximum);
+			}
 		}
 
 		private void UpdateFPS()
@@ -314,7 +516,7 @@ namespace SMPLSceneEditor
 					selectedUIDs.Remove(uid);
 					ThingManager.Destroy(uid, includeChildren);
 				}
-				UpdateEditSelectionPanel();
+				UpdateThingPanel();
 			}
 		}
 		private static void TryTransformHitbox(string uid)
@@ -329,7 +531,33 @@ namespace SMPLSceneEditor
 			for(int i = 0; i < children.Count; i++)
 				TryTransformHitbox(children[i]);
 		}
+		#endregion
 
+		#region View
+		private void SetView(Vector2 pos = default, float angle = 0, float scale = 1)
+		{
+			SetViewPosition(pos);
+			SetViewAngle(angle);
+			SetViewScale(scale);
+		}
+		private void SetViewPosition(Vector2 pos)
+		{
+			var view = window.GetView();
+			view.Center = pos.ToSFML();
+			window.SetView(view);
+		}
+		private void SetViewAngle(float angle)
+		{
+			var view = window.GetView();
+			view.Rotation = angle;
+			window.SetView(view);
+		}
+		private void SetViewScale(float scale)
+		{
+			sceneSc = scale.Limit(0.1f, 10f);
+		}
+		#endregion
+		#region Get
 		private static Hitbox? GetHitbox(string uid)
 		{
 			return ThingManager.HasGet(uid, "Hitbox") == false ? default : (Hitbox)ThingManager.Get(uid, "Hitbox");
@@ -364,94 +592,8 @@ namespace SMPLSceneEditor
 			var mp2 = window.MapPixelToCoords(new(mp.X, mp.Y), window.GetView());
 			return new Vector2(mp2.X, mp2.Y);
 		}
-
-		private void SetView(Vector2 pos = default, float angle = 0, float scale = 1)
-		{
-			SetViewPosition(pos);
-			SetViewAngle(angle);
-			SetViewScale(scale);
-		}
-		private void SetViewPosition(Vector2 pos)
-		{
-			var view = window.GetView();
-			view.Center = pos.ToSFML();
-			window.SetView(view);
-		}
-		private void SetViewAngle(float angle)
-		{
-			var view = window.GetView();
-			view.Rotation = angle;
-			window.SetView(view);
-		}
-		private void SetViewScale(float scale)
-		{
-			sceneSc = scale.Limit(0.1f, 10f);
-		}
-
-		private Vector2 Drag(Vector2 point, bool reverse = false, bool snapToGrid = false)
-		{
-			var view = window.GetView();
-			var prev = snapToGrid ? prevFormsMousePosGrid : prevFormsMousePos;
-			var pos = GetFormsMousePos();
-			var gridSp = new Vector2((float)snap.Value);
-
-			if(snapToGrid)
-				pos = pos.PointToGrid(gridSp) + gridSp * 0.5f;
-
-			var dist = prev.DistanceBetweenPoints(pos);
-			var ang = prev.AngleBetweenPoints(pos);
-
-			if(reverse)
-				dist *= -1;
-
-			return dist == 0 ? point : point.PointMoveAtAngle(view.Rotation + ang, dist, false);
-		}
-		private float DragAngle(Vector2 point, float angle, bool reverse = false)
-		{
-			var snapValue = (float)snap.Value;
-			var curAng = point.AngleBetweenPoints(GetMousePosition());
-			var prevAng = point.AngleBetweenPoints(prevMousePos);
-			curAng = AngToGrid(curAng, snapValue);
-			prevAng = AngToGrid(prevAng, snapValue);
-			var delta = curAng - prevAng;
-			return angle + (reverse ? -delta : delta);
-		}
-
-		private void UpdateEditSelectionPanel()
-		{
-			editThingTable.Visible = selectedUIDs.Count > 0;
-
-			if(selectedUIDs.Count == 0)
-				return;
-			else if(selectedUIDs.Count > 1)
-			{
-				propUID.Enabled = false;
-				propUID.Text = "(multiple values)";
-				return;
-			}
-
-			var uid = selectedUIDs[0];
-			propUID.Enabled = true;
-			propUID.Text = uid;
-			propOldUID.Text = (string)ThingManager.Get(uid, "OldUID");
-			propParentUID.Text = (string)ThingManager.Get(uid, "ParentUID");
-
-			propChildrenUIDs.Items.Clear();
-			propChildrenUIDs.Items.Add(SELECT_CHILDREN_TIP);
-			var childrenUIDs = (List<string>)ThingManager.Get(uid, "ChildrenUIDs");
-			propChildrenUIDs.Enabled = childrenUIDs.Count > 0;
-			if(childrenUIDs.Count > 0)
-			{
-				for(int i = 0; i < childrenUIDs.Count; i++)
-					propChildrenUIDs.Items.Add(childrenUIDs[i]);
-			}
-			propChildrenUIDs.SelectedIndex = 0;
-		}
-
-		private static float AngToGrid(float ang, float gridSz)
-		{
-			return new Vector2(ang).PointToGrid(new(gridSz)).X;
-		}
+		#endregion
+		#region Files
 		private void CopyMirrorFiles(string path)
 		{
 			var targetPath = GetMirrorAssetPath(path);
@@ -507,7 +649,7 @@ namespace SMPLSceneEditor
 				targetPath = targetPath.Replace(finalGameDir + "\\", "");
 			return targetPath;
 		}
-
+		#endregion
 		#region Scene
 		private void OnKeyDownObjectSearch(object sender, System.Windows.Forms.KeyEventArgs e)
 		{
@@ -544,7 +686,7 @@ namespace SMPLSceneEditor
 			searchScene.Text = "";
 			selectedUIDs.Clear();
 			selectedUIDs.Add(bestGuess);
-			UpdateEditSelectionPanel();
+			UpdateThingPanel();
 			SetViewPosition((Vector2)ThingManager.Get(bestGuess, "Position"));
 		}
 		private void OnSaveClick(object sender, EventArgs e)
@@ -619,6 +761,8 @@ namespace SMPLSceneEditor
 				ThingManager.Set(uid, "Scale", MathF.Max(sc + delta, 0.01f));
 				TryTransformHitbox(uid);
 			}
+
+			UpdateThingPanel();
 		}
 		private void OnMouseLeaveScene(object sender, EventArgs e)
 		{
@@ -685,6 +829,8 @@ namespace SMPLSceneEditor
 		}
 		private void OnMouseUpScene(object sender, MouseEventArgs e)
 		{
+			UpdateThingPanel();
+
 			if(e.Button == MouseButtons.Right)
 				rightClickPos = GetMousePosition();
 
@@ -692,10 +838,8 @@ namespace SMPLSceneEditor
 				return;
 
 			isDragSelecting = false;
-			UpdateEditSelectionPanel();
 		}
 		#endregion
-
 		#region SceneRightClick
 		private void OnSceneRightClickMenuResetView(object sender, EventArgs e)
 		{
@@ -718,29 +862,57 @@ namespace SMPLSceneEditor
 		}
 		#endregion
 		#region EditThingPanel
-		private void OnSelectChild(object sender, EventArgs e)
+		private void OnListSelectThing(object? sender, EventArgs e)
 		{
-			var uid = (string)propChildrenUIDs.SelectedItem;
-			if(uid == SELECT_CHILDREN_TIP)
+			if(sender == null)
 				return;
 
-			SetViewPosition((Vector2)ThingManager.Get(uid, "Position"));
-			selectedUIDs.Clear();
-			selectedUIDs.Add(uid);
-			UpdateEditSelectionPanel();
+			var list = (ComboBox)sender;
+			var uid = (string)list.SelectedItem;
+			listBoxPlaceholderTexts.TryGetValue(list.Name, out var placeholder);
+
+			if(list.Name == "Children UIDs" && uid != placeholder && ThingManager.Exists(uid))
+			{
+				SetViewPosition((Vector2)ThingManager.Get(uid, "Position"));
+				selectedUIDs.Clear();
+				selectedUIDs.Add(uid);
+				UpdateThingPanel();
+			}
 		}
-		private void OnChildrenDropDown(object sender, EventArgs e)
+		private void OnListThingDropDown(object? sender, EventArgs e)
 		{
-			propChildrenUIDs.Items.Remove(SELECT_CHILDREN_TIP);
-			propChildrenUIDs.SelectedIndex = -1;
-		}
-		private void OnChildrenDropDownClose(object sender, EventArgs e)
-		{
-			if(propChildrenUIDs.SelectedIndex != -1)
+			if(sender == null)
 				return;
 
-			propChildrenUIDs.Items.Add(SELECT_CHILDREN_TIP);
-			propChildrenUIDs.SelectedItem = SELECT_CHILDREN_TIP;
+			var list = (ComboBox)sender;
+
+			if(listBoxPlaceholderTexts.ContainsKey(list.Name))
+				list.Items.Remove(listBoxPlaceholderTexts[list.Name]);
+
+			list.SelectedIndex = -1;
+		}
+		private void OnListThingDropDownClose(object? sender, EventArgs e)
+		{
+			if(sender == null)
+				return;
+
+			var list = (ComboBox)sender;
+			var hasPlaceholder = listBoxPlaceholderTexts.ContainsKey(list.Name);
+			if(list.SelectedIndex != -1 && hasPlaceholder)
+				return;
+
+			if(hasPlaceholder)
+			{
+				var placeholder = listBoxPlaceholderTexts[list.Name];
+				list.Items.Add(placeholder);
+				list.SelectedItem = placeholder;
+			}
+
+			if(list.Name == "Types")
+			{
+				var types = (List<string>)ThingManager.Get(selectedUIDs[0], "Types");
+				list.SelectedItem = types[0];
+			}
 		}
 		#endregion
 		#region Assets
@@ -758,6 +930,42 @@ namespace SMPLSceneEditor
 		{
 			DeleteMirrorFiles(e.FullPath);
 			MainScene.UnloadAsset(GetMirrorAssetPath(e.FullPath));
+		}
+		#endregion
+
+		#region Utility
+		private Vector2 Drag(Vector2 point, bool reverse = false, bool snapToGrid = false)
+		{
+			var view = window.GetView();
+			var prev = snapToGrid ? prevFormsMousePosGrid : prevFormsMousePos;
+			var pos = GetFormsMousePos();
+			var gridSp = new Vector2((float)snap.Value);
+
+			if(snapToGrid)
+				pos = pos.PointToGrid(gridSp) + gridSp * 0.5f;
+
+			var dist = prev.DistanceBetweenPoints(pos);
+			var ang = prev.AngleBetweenPoints(pos);
+
+			if(reverse)
+				dist *= -1;
+
+			return dist == 0 ? point : point.PointMoveAtAngle(view.Rotation + ang, dist, false);
+		}
+		private float DragAngle(Vector2 point, float angle, bool reverse = false)
+		{
+			var snapValue = (float)snap.Value;
+			var curAng = point.AngleBetweenPoints(GetMousePosition());
+			var prevAng = point.AngleBetweenPoints(prevMousePos);
+			curAng = AngToGrid(curAng, snapValue);
+			prevAng = AngToGrid(prevAng, snapValue);
+			var delta = curAng - prevAng;
+			return angle + (reverse ? -delta : delta);
+		}
+
+		private static float AngToGrid(float ang, float gridSz)
+		{
+			return new Vector2(ang).PointToGrid(new(gridSz)).X;
 		}
 		#endregion
 	}

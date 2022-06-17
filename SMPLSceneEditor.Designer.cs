@@ -49,15 +49,8 @@
 			this.sceneRightClickMenuCreateSprite = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.sceneRightClickMenuResetView = new System.Windows.Forms.ToolStripMenuItem();
+			this.selectThingTip = new System.Windows.Forms.Label();
 			this.editThingTable = new System.Windows.Forms.TableLayoutPanel();
-			this.childrenUIDsLabel = new System.Windows.Forms.Label();
-			this.propChildrenUIDs = new System.Windows.Forms.ComboBox();
-			this.propOldUID = new System.Windows.Forms.TextBox();
-			this.propUID = new System.Windows.Forms.TextBox();
-			this.uidLabel = new System.Windows.Forms.Label();
-			this.labelParentUID = new System.Windows.Forms.Label();
-			this.propParentUID = new System.Windows.Forms.TextBox();
-			this.labelOldUID = new System.Windows.Forms.Label();
 			this.gameDir = new System.Windows.Forms.FolderBrowserDialog();
 			this.load = new System.Windows.Forms.OpenFileDialog();
 			this.save = new System.Windows.Forms.SaveFileDialog();
@@ -74,11 +67,11 @@
 			((System.ComponentModel.ISupportInitialize)(this.gridThickness)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.windowPicture)).BeginInit();
 			this.sceneRightClickMenu.SuspendLayout();
-			this.editThingTable.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// windowSplit
 			// 
+			this.windowSplit.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
 			this.windowSplit.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.windowSplit.Location = new System.Drawing.Point(0, 0);
 			this.windowSplit.Name = "windowSplit";
@@ -92,6 +85,7 @@
 			// 
 			// windowSplit.Panel2
 			// 
+			this.windowSplit.Panel2.Controls.Add(this.selectThingTip);
 			this.windowSplit.Panel2.Controls.Add(this.editThingTable);
 			this.windowSplit.Size = new System.Drawing.Size(1564, 761);
 			this.windowSplit.SplitterDistance = 1295;
@@ -133,7 +127,7 @@
 			this.sceneStatusPanel.Dock = System.Windows.Forms.DockStyle.Top;
 			this.sceneStatusPanel.Location = new System.Drawing.Point(0, 0);
 			this.sceneStatusPanel.Name = "sceneStatusPanel";
-			this.sceneStatusPanel.Size = new System.Drawing.Size(1295, 58);
+			this.sceneStatusPanel.Size = new System.Drawing.Size(1291, 58);
 			this.sceneStatusPanel.TabIndex = 2;
 			// 
 			// searchBox
@@ -166,7 +160,7 @@
 			this.loadButton.Dock = System.Windows.Forms.DockStyle.Right;
 			this.loadButton.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.loadButton.ForeColor = System.Drawing.Color.White;
-			this.loadButton.Location = new System.Drawing.Point(1137, 0);
+			this.loadButton.Location = new System.Drawing.Point(1133, 0);
 			this.loadButton.Name = "loadButton";
 			this.loadButton.Size = new System.Drawing.Size(77, 54);
 			this.loadButton.TabIndex = 7;
@@ -231,7 +225,7 @@
 			this.saveButton.Dock = System.Windows.Forms.DockStyle.Right;
 			this.saveButton.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.saveButton.ForeColor = System.Drawing.Color.White;
-			this.saveButton.Location = new System.Drawing.Point(1214, 0);
+			this.saveButton.Location = new System.Drawing.Point(1210, 0);
 			this.saveButton.Name = "saveButton";
 			this.saveButton.Size = new System.Drawing.Size(77, 54);
 			this.saveButton.TabIndex = 8;
@@ -304,7 +298,7 @@
 			this.windowPicture.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.windowPicture.Location = new System.Drawing.Point(0, 0);
 			this.windowPicture.Name = "windowPicture";
-			this.windowPicture.Size = new System.Drawing.Size(1295, 761);
+			this.windowPicture.Size = new System.Drawing.Size(1291, 757);
 			this.windowPicture.TabIndex = 5;
 			this.windowPicture.TabStop = false;
 			this.windowPicture.MouseDown += new System.Windows.Forms.MouseEventHandler(this.OnMouseDownScene);
@@ -349,156 +343,55 @@
 			this.sceneRightClickMenuResetView.Text = "Reset View";
 			this.sceneRightClickMenuResetView.Click += new System.EventHandler(this.OnSceneRightClickMenuResetView);
 			// 
+			// selectThingTip
+			// 
+			this.selectThingTip.BackColor = System.Drawing.Color.Black;
+			this.selectThingTip.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.selectThingTip.Font = new System.Drawing.Font("Segoe UI", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.selectThingTip.ForeColor = System.Drawing.Color.White;
+			this.selectThingTip.Location = new System.Drawing.Point(0, 0);
+			this.selectThingTip.Name = "selectThingTip";
+			this.selectThingTip.Size = new System.Drawing.Size(261, 757);
+			this.selectThingTip.TabIndex = 6;
+			this.selectThingTip.Text = "Select a {Thing} to Edit";
+			this.selectThingTip.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+			// 
 			// editThingTable
 			// 
 			this.editThingTable.ColumnCount = 2;
 			this.editThingTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
 			this.editThingTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-			this.editThingTable.Controls.Add(this.childrenUIDsLabel, 1, 3);
-			this.editThingTable.Controls.Add(this.propChildrenUIDs, 0, 3);
-			this.editThingTable.Controls.Add(this.propOldUID, 0, 1);
-			this.editThingTable.Controls.Add(this.propUID, 0, 0);
-			this.editThingTable.Controls.Add(this.uidLabel, 1, 0);
-			this.editThingTable.Controls.Add(this.labelParentUID, 1, 2);
-			this.editThingTable.Controls.Add(this.propParentUID, 0, 2);
-			this.editThingTable.Controls.Add(this.labelOldUID, 1, 1);
 			this.editThingTable.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.editThingTable.Location = new System.Drawing.Point(0, 0);
 			this.editThingTable.Name = "editThingTable";
-			this.editThingTable.RowCount = 30;
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.333333F));
-			this.editThingTable.Size = new System.Drawing.Size(265, 761);
+			this.editThingTable.RowCount = 25;
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
+			this.editThingTable.Size = new System.Drawing.Size(261, 757);
 			this.editThingTable.TabIndex = 0;
-			// 
-			// childrenUIDsLabel
-			// 
-			this.childrenUIDsLabel.AutoSize = true;
-			this.childrenUIDsLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.childrenUIDsLabel.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.childrenUIDsLabel.ForeColor = System.Drawing.Color.White;
-			this.childrenUIDsLabel.Location = new System.Drawing.Point(135, 75);
-			this.childrenUIDsLabel.Name = "childrenUIDsLabel";
-			this.childrenUIDsLabel.Size = new System.Drawing.Size(127, 25);
-			this.childrenUIDsLabel.TabIndex = 7;
-			this.childrenUIDsLabel.Text = "Children UIDs";
-			// 
-			// propChildrenUIDs
-			// 
-			this.propChildrenUIDs.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.propChildrenUIDs.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-			this.propChildrenUIDs.FormattingEnabled = true;
-			this.propChildrenUIDs.Location = new System.Drawing.Point(3, 78);
-			this.propChildrenUIDs.MaxDropDownItems = 5;
-			this.propChildrenUIDs.Name = "propChildrenUIDs";
-			this.propChildrenUIDs.Size = new System.Drawing.Size(126, 23);
-			this.propChildrenUIDs.TabIndex = 6;
-			this.propChildrenUIDs.TabStop = false;
-			this.propChildrenUIDs.DropDown += new System.EventHandler(this.OnChildrenDropDown);
-			this.propChildrenUIDs.SelectedIndexChanged += new System.EventHandler(this.OnSelectChild);
-			this.propChildrenUIDs.DropDownClosed += new System.EventHandler(this.OnChildrenDropDownClose);
-			// 
-			// propOldUID
-			// 
-			this.propOldUID.BackColor = System.Drawing.Color.Black;
-			this.propOldUID.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.propOldUID.Enabled = false;
-			this.propOldUID.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.propOldUID.ForeColor = System.Drawing.Color.White;
-			this.propOldUID.Location = new System.Drawing.Point(3, 28);
-			this.propOldUID.Name = "propOldUID";
-			this.propOldUID.ReadOnly = true;
-			this.propOldUID.Size = new System.Drawing.Size(126, 29);
-			this.propOldUID.TabIndex = 5;
-			this.propOldUID.TabStop = false;
-			// 
-			// propUID
-			// 
-			this.propUID.BackColor = System.Drawing.Color.Black;
-			this.propUID.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.propUID.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.propUID.ForeColor = System.Drawing.Color.White;
-			this.propUID.Location = new System.Drawing.Point(3, 3);
-			this.propUID.Name = "propUID";
-			this.propUID.Size = new System.Drawing.Size(126, 29);
-			this.propUID.TabIndex = 0;
-			this.propUID.TabStop = false;
-			// 
-			// uidLabel
-			// 
-			this.uidLabel.AutoSize = true;
-			this.uidLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.uidLabel.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.uidLabel.ForeColor = System.Drawing.Color.White;
-			this.uidLabel.Location = new System.Drawing.Point(135, 0);
-			this.uidLabel.Name = "uidLabel";
-			this.uidLabel.Size = new System.Drawing.Size(127, 25);
-			this.uidLabel.TabIndex = 1;
-			this.uidLabel.Text = "UID";
-			// 
-			// labelParentUID
-			// 
-			this.labelParentUID.AutoSize = true;
-			this.labelParentUID.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.labelParentUID.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.labelParentUID.ForeColor = System.Drawing.Color.White;
-			this.labelParentUID.Location = new System.Drawing.Point(135, 50);
-			this.labelParentUID.Name = "labelParentUID";
-			this.labelParentUID.Size = new System.Drawing.Size(127, 25);
-			this.labelParentUID.TabIndex = 2;
-			this.labelParentUID.Text = "Parent UID";
-			// 
-			// propParentUID
-			// 
-			this.propParentUID.BackColor = System.Drawing.Color.Black;
-			this.propParentUID.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.propParentUID.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.propParentUID.ForeColor = System.Drawing.Color.White;
-			this.propParentUID.Location = new System.Drawing.Point(3, 53);
-			this.propParentUID.Name = "propParentUID";
-			this.propParentUID.Size = new System.Drawing.Size(126, 29);
-			this.propParentUID.TabIndex = 3;
-			this.propParentUID.TabStop = false;
-			// 
-			// labelOldUID
-			// 
-			this.labelOldUID.AutoSize = true;
-			this.labelOldUID.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.labelOldUID.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.labelOldUID.ForeColor = System.Drawing.Color.White;
-			this.labelOldUID.Location = new System.Drawing.Point(135, 25);
-			this.labelOldUID.Name = "labelOldUID";
-			this.labelOldUID.Size = new System.Drawing.Size(127, 25);
-			this.labelOldUID.TabIndex = 4;
-			this.labelOldUID.Text = "Old UID";
 			// 
 			// gameDir
 			// 
@@ -547,8 +440,6 @@
 			((System.ComponentModel.ISupportInitialize)(this.gridThickness)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.windowPicture)).EndInit();
 			this.sceneRightClickMenu.ResumeLayout(false);
-			this.editThingTable.ResumeLayout(false);
-			this.editThingTable.PerformLayout();
 			this.ResumeLayout(false);
 
 		}
@@ -579,13 +470,6 @@
 		private SaveFileDialog save;
 		private GroupBox searchBox;
 		private TableLayoutPanel editThingTable;
-		private TextBox propUID;
-		private Label uidLabel;
-		private Label labelParentUID;
-		private TextBox propParentUID;
-		private Label labelOldUID;
-		private TextBox propOldUID;
-		private ComboBox propChildrenUIDs;
-		private Label childrenUIDsLabel;
+		private Label selectThingTip;
 	}
 }
