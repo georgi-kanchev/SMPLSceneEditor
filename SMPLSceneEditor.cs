@@ -208,6 +208,9 @@ namespace SMPLSceneEditor
 			if(editThingTable.Visible == false)
 				return;
 
+
+			var uidStr = selectedUIDs[0];
+
 			var types = (ComboBox)Controls.Find("Types", true)[0];
 			var uid = (TextBox)Controls.Find("UID", true)[0];
 			var propOldUID = (TextBox)Controls.Find("Old UID", true)[0];
@@ -223,7 +226,8 @@ namespace SMPLSceneEditor
 			var localDirX = (NumericUpDown)propLocalDir.Controls[0];
 			var localDirY = (NumericUpDown)propLocalDir.Controls[1];
 
-			var uidStr = selectedUIDs[0];
+			var localPos = (Vector2)ThingManager.Get(uidStr, "LocalPosition");
+			var localDir = (Vector2)ThingManager.Get(uidStr, "LocalDirection");
 
 			SetText(uid, uidStr);
 			SetText(propOldUID, (string)ThingManager.Get(uidStr, "OldUID"), readOnly: true);
@@ -232,10 +236,8 @@ namespace SMPLSceneEditor
 			SetNumber(propLocalAng, ((float)ThingManager.Get(uidStr, "LocalAngle")).AngleTo360());
 			SetNumber(propLocalSc, (float)ThingManager.Get(uidStr, "LocalScale"));
 
-			var localPos = (Vector2)ThingManager.Get(uidStr, "LocalPosition");
 			SetNumber(localX, localPos.X);
 			SetNumber(localY, localPos.Y);
-			var localDir = (Vector2)ThingManager.Get(uidStr, "LocalDirection");
 			SetNumber(localDirX, localDir.X);
 			SetNumber(localDirY, localDir.Y);
 
@@ -521,7 +523,7 @@ namespace SMPLSceneEditor
 		}
 		private static void TryTransformHitbox(string uid)
 		{
-			if(ThingManager.HasGet(uid, "Hitbox") == false)
+			if(ThingManager.HasGetter(uid, "Hitbox") == false)
 				return;
 
 			var children = (List<string>)ThingManager.Get(uid, "ChildrenUIDs");
@@ -560,7 +562,7 @@ namespace SMPLSceneEditor
 		#region Get
 		private static Hitbox? GetHitbox(string uid)
 		{
-			return ThingManager.HasGet(uid, "Hitbox") == false ? default : (Hitbox)ThingManager.Get(uid, "Hitbox");
+			return ThingManager.HasGetter(uid, "Hitbox") == false ? default : (Hitbox)ThingManager.Get(uid, "Hitbox");
 		}
 		private float GetGridSpacing()
 		{
@@ -849,13 +851,13 @@ namespace SMPLSceneEditor
 		{
 			var uid = ThingManager.CreateSprite("sprite");
 			ThingManager.Set(uid, "Position", rightClickPos);
-			ThingManager.Do(uid, "ApplyDefaultHitbox");
+			ThingManager.CallVoid(uid, "ApplyDefaultHitbox");
 			ThingManager.Set(uid, "TexturePath", "Assets\\explosive.jpg");
 			TryTransformHitbox(uid);
 
 			var uid2 = ThingManager.CreateSprite("sprite");
 			ThingManager.Set(uid2, "Position", rightClickPos);
-			ThingManager.Do(uid2, "ApplyDefaultHitbox");
+			ThingManager.CallVoid(uid2, "ApplyDefaultHitbox");
 			ThingManager.Set(uid2, "TexturePath", "Assets\\explosive.jpg");
 			ThingManager.Set(uid2, "ParentUID", uid);
 			TryTransformHitbox(uid2);
