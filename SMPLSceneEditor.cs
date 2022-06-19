@@ -14,7 +14,8 @@ namespace SMPLSceneEditor
 		#region Fields
 		private Dictionary<string, string> listBoxPlaceholderTexts = new()
 		{
-			{ "Children UIDs", "(select to focus)                                     " },
+			{ "PropChildrenUIDs", "(select to focus)                                     " },
+			{ "PropTypes", "(select to edit)                                     " },
 		};
 
 		private readonly System.Windows.Forms.Timer loop;
@@ -27,6 +28,7 @@ namespace SMPLSceneEditor
 		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
 		private readonly FileSystemWatcher assetsWatcher;
 		private string? finalGameDir;
+		private readonly Dictionary<string, TableLayoutPanel> editThingTableTypes = new();
 		#endregion
 
 		#region Init
@@ -52,37 +54,104 @@ namespace SMPLSceneEditor
 
 			assetsWatcher = new(AppContext.BaseDirectory) { EnableRaisingEvents = true };
 
-			AddThingProperty("Types", typeof(List<string>));
-			AddThingProperty("Thing", null, rightLabel: true);
-			AddThingProperty("Properties", null);
-			AddThingProperty("UID", typeof(string));
-			AddThingProperty("Old UID", typeof(string), readOnly: true);
-			AddThingProperty("Parent UID", typeof(string));
-			AddThingProperty("Children UIDs", typeof(List<string>));
-			AddThingProperty("Update Order", typeof(int));
-			AddThingProperty("", null); AddThingProperty("", null);
-			AddThingProperty("Local Position", typeof(Vector2));
-			AddThingProperty("Local Angle", typeof(float));
-			AddThingProperty("Local Direction", typeof(Vector2), readOnly: true, smallNumericStep: true);
-			AddThingProperty("Local Scale", typeof(float), smallNumericStep: true);
-
-			AddThingProperty("Reset", typeof(Button), last: true); AddThingProperty("Apply", typeof(Button), last: true);
+			InitTables();
 		}
-		private void AddThingProperty(string name, Type? valueType, bool readOnly = false, bool rightLabel = false, bool smallNumericStep = false,
-			bool last = false)
+		private void InitTables()
+		{
+			var thing = CreateDefaultTable("tableThing");
+			var sprite = CreateDefaultTable("tableSprite");
+			var visual = CreateDefaultTable("tableVisual");
+			var types = thingTypesTable;
+			var buttons = thingButtonsTable;
+
+			AddThingProperty(types, "Types", "PropTypes", typeof(List<string>));
+
+			AddThingProperty(buttons, "Apply", valueType: typeof(Button));
+			AddThingProperty(buttons, "Reset", valueType: typeof(Button));
+
+			AddPropsThing();
+			AddPropsSprite();
+			AddPropsVisual();
+
+			rightTable.Controls.Add(thing, 0, 1);
+
+			editThingTableTypes[thing.Name] = thing;
+			editThingTableTypes[sprite.Name] = sprite;
+			editThingTableTypes[visual.Name] = visual;
+
+			TableLayoutPanel CreateDefaultTable(string name)
+			{
+				var result = new TableLayoutPanel
+				{
+					ColumnCount = 2,
+					RowCount = 24,
+					Dock = DockStyle.Fill,
+					Name = name
+				};
+				for(int i = 0; i < 2; i++)
+					result.ColumnStyles.Add(new(SizeType.Percent, 50));
+				for(int i = 0; i < 24; i++)
+					result.RowStyles.Add(new(SizeType.Percent, 100 / 24f));
+
+				return result;
+			}
+			void AddPropsThing()
+			{
+				AddThingProperty(thing, "Self", rightLabel: true); AddThingProperty(thing, "Properties", null);
+				AddThingProperty(thing, "UID", "PropUID", typeof(string));
+				AddThingProperty(thing, "Old UID", "PropOldUID", typeof(string), readOnly: true);
+				AddThingProperty(thing, "Update Order", "PropUpdateOrder", typeof(int));
+				AddThingProperty(thing, "Position", "PropPosition", typeof(Vector2));
+				AddThingProperty(thing, "Angle", "PropAngle", typeof(float));
+				AddThingProperty(thing, "Direction", "PropDirection", typeof(Vector2), readOnly: true, smallNumericStep: true);
+				AddThingProperty(thing, "Scale", "PropScale", typeof(float), smallNumericStep: true);
+				AddThingProperty(thing, ""); AddThingProperty(thing, "");
+				AddThingProperty(thing, "Parent", rightLabel: true); AddThingProperty(thing, "Properties");
+				AddThingProperty(thing, "Parent UID", "PropParentUID", typeof(string));
+				AddThingProperty(thing, "Parent Old UID", "PropParentOldUID", typeof(string), readOnly: true);
+				AddThingProperty(thing, "Children UIDs", "PropChildrenUIDs", typeof(List<string>));
+				AddThingProperty(thing, "Local Position", "PropLocalPosition", typeof(Vector2));
+				AddThingProperty(thing, "Local Angle", "PropLocalAngle", typeof(float));
+				AddThingProperty(thing, "Local Direction", "PropLocalDirection", typeof(Vector2), readOnly: true, smallNumericStep: true);
+				AddThingProperty(thing, "Local Scale", "PropLocalScale", typeof(float), smallNumericStep: true);
+
+			}
+			void AddPropsSprite()
+			{
+				AddThingProperty(sprite, "Texture Coordinates Unit A", "PropTexCoordsUnitA", typeof(Vector2), labelSizeOffset: -3);
+				AddThingProperty(sprite, "Texture Coordinates Unit B", "PropTexCoordsUnitB", typeof(Vector2), labelSizeOffset: -3);
+				AddThingProperty(sprite, ""); AddThingProperty(sprite, "");
+				AddThingProperty(sprite, "Local Size", "PropLocalSize", typeof(Vector2));
+				AddThingProperty(sprite, "Size", "PropSize", typeof(Vector2));
+				AddThingProperty(sprite, ""); AddThingProperty(sprite, "");
+				AddThingProperty(sprite, "Origin Unit", "PropOriginUnit", typeof(Vector2));
+				AddThingProperty(sprite, "Origin", "PropOrigin", typeof(Vector2));
+			}
+			void AddPropsVisual()
+			{
+				AddThingProperty(visual, "Tint", "PropTint", typeof(Color));
+				AddThingProperty(visual, "Texture Path", "PropTexturePath", typeof(string));
+				AddThingProperty(visual, "Shader Path", "PropShaderPath", typeof(string));
+				AddThingProperty(visual, "Camera UID", "PropCameraUID", typeof(string));
+				AddThingProperty(visual, "Depth", "PropDepth", typeof(int));
+			}
+		}
+		private void AddThingProperty(TableLayoutPanel table, string label, string? propName = null, Type? valueType = null, bool readOnly = false,
+			bool rightLabel = false, bool smallNumericStep = false, bool last = false, float labelSizeOffset = 3)
 		{
 			const string FONT = "Segoe UI";
 			const float FONT_SIZE = 12f;
 
 			var prop = default(Control);
-			var label = new Label() { Text = name };
-			SetDefault(label, FONT_SIZE + 3, reverseColors: true);
-			label.Enabled = true;
+			var lab = new Label() { Text = label };
+			SetDefault(lab, FONT_SIZE + labelSizeOffset, reverseColors: true);
+			lab.Enabled = true;
+			lab.TextAlign = ContentAlignment.MiddleLeft;
 
 			if(valueType == null)
 			{
-				label.TextAlign = rightLabel ? ContentAlignment.TopRight : ContentAlignment.TopLeft;
-				editThingTable.Controls.Add(label);
+				lab.TextAlign = rightLabel ? ContentAlignment.MiddleRight : ContentAlignment.MiddleLeft;
+				table.Controls.Add(lab);
 				return;
 			}
 
@@ -111,42 +180,25 @@ namespace SMPLSceneEditor
 				list.DropDownClosed += new EventHandler(OnListThingDropDownClose);
 			}
 			else if(valueType == typeof(Button))
-				prop = new Button() { Text = name };
+				prop = new Button() { Text = label };
 			else if(valueType == typeof(Vector2))
-			{
-				prop = new TableLayoutPanel();
-				var table = (TableLayoutPanel)prop;
-				SetDefault(table);
-				table.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
-				for(int i = 0; i < 2; i++)
-					table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-				table.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-				table.ColumnCount = 2;
-				table.RowCount = 1;
-				var x = new NumericUpDown();
-				var y = new NumericUpDown();
-				x.BorderStyle = BorderStyle.None;
-				y.BorderStyle = BorderStyle.None;
-				SetDefault(x);
-				SetDefault(y);
-				SetDefaultNumeric(x, false);
-				SetDefaultNumeric(y, false);
-				table.Controls.Add(x);
-				table.Controls.Add(y);
-			}
+				prop = CreateMultipleValuesTable(2, false);
+			else if(valueType == typeof(Color))
+				prop = CreateMultipleValuesTable(4, true);
 
 			if(prop != null)
 			{
 				SetDefault(prop);
-				label.ForeColor = prop.Enabled ? System.Drawing.Color.White : System.Drawing.Color.Gray;
+				lab.ForeColor = prop.Enabled ? System.Drawing.Color.White : System.Drawing.Color.Gray;
 			}
 
 			if(last)
-				editThingTable.Controls.Add(prop, 0, 24);
+				table.Controls.Add(prop, 0, 24);
 			else
-				editThingTable.Controls.Add(prop);
+				table.Controls.Add(prop);
+
 			if(valueType != typeof(Button))
-				editThingTable.Controls.Add(label);
+				table.Controls.Add(lab);
 
 			void SetDefault(Control control, float fontSize = FONT_SIZE, bool reverseColors = false)
 			{
@@ -161,7 +213,7 @@ namespace SMPLSceneEditor
 				control.Font = new System.Drawing.Font(FONT, fontSize, FontStyle.Regular, GraphicsUnit.Point);
 				control.BackColor = reverseColors ? white : black;
 				control.ForeColor = reverseColors ? black : white;
-				control.Name = name;
+				control.Name = propName;
 				control.TabStop = false;
 				control.Dock = DockStyle.Fill;
 			}
@@ -171,6 +223,26 @@ namespace SMPLSceneEditor
 				numeric.DecimalPlaces = isInt ? 0 : (smallNumericStep ? 3 : 1);
 				numeric.Minimum = int.MinValue;
 				numeric.Maximum = int.MaxValue;
+			}
+			TableLayoutPanel CreateMultipleValuesTable(int columns, bool isInt)
+			{
+				var vecTable = new TableLayoutPanel();
+				SetDefault(vecTable);
+				vecTable.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
+				for(int i = 0; i < columns; i++)
+					vecTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+				vecTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+				vecTable.ColumnCount = columns;
+				vecTable.RowCount = 1;
+				for(int i = 0; i < columns; i++)
+				{
+					var col = new NumericUpDown { BorderStyle = BorderStyle.None };
+					SetDefault(col);
+					SetDefaultNumeric(col, isInt);
+					vecTable.Controls.Add(col);
+				}
+
+				return vecTable;
 			}
 		}
 		#endregion
@@ -202,53 +274,61 @@ namespace SMPLSceneEditor
 		}
 		private void UpdateThingPanel()
 		{
-			editThingTable.Visible = selectedUIDs.Count == 1;
+			rightTable.Visible = selectedUIDs.Count == 1;
 			selectThingTip.Visible = selectedUIDs.Count != 1;
 
-			if(editThingTable.Visible == false)
+			if(rightTable.Visible == false)
 				return;
 
+			var uid = selectedUIDs[0];
+			var props = ThingManager.GetPropertiesInfo(uid);
 
-			var uidStr = selectedUIDs[0];
+			for(int i = 0; i < props.Count; i++)
+			{
+				var propName = props[i].Name;
+				var controlName = $"Prop{propName}";
+				var type = props[i].Type;
 
-			var types = (ComboBox)Controls.Find("Types", true)[0];
-			var uid = (TextBox)Controls.Find("UID", true)[0];
-			var propOldUID = (TextBox)Controls.Find("Old UID", true)[0];
-			var propParentUID = (TextBox)Controls.Find("Parent UID", true)[0];
-			var propChildrenUIDs = (ComboBox)Controls.Find("Children UIDs", true)[0];
-			var propUpdateOrder = (NumericUpDown)Controls.Find("Update Order", true)[0];
-			var propLocalPos = (TableLayoutPanel)Controls.Find("Local Position", true)[0];
-			var localX = (NumericUpDown)propLocalPos.Controls[0];
-			var localY = (NumericUpDown)propLocalPos.Controls[1];
-			var propLocalAng = (NumericUpDown)Controls.Find("Local Angle", true)[0];
-			var propLocalSc = (NumericUpDown)Controls.Find("Local Scale", true)[0];
-			var propLocalDir = (TableLayoutPanel)Controls.Find("Local Direction", true)[0];
-			var localDirX = (NumericUpDown)propLocalDir.Controls[0];
-			var localDirY = (NumericUpDown)propLocalDir.Controls[1];
+				var c = Controls.Find(controlName, true);
+				if(c == null || c.Length == 0)
+					continue;
 
-			var localPos = (Vector2)ThingManager.Get(uidStr, "LocalPosition");
-			var localDir = (Vector2)ThingManager.Get(uidStr, "LocalDirection");
+				var control = c[0];
+				var readOnly = props[i].IsSetter == false;
 
-			SetText(uid, uidStr);
-			SetText(propOldUID, (string)ThingManager.Get(uidStr, "OldUID"), readOnly: true);
-			SetText(propParentUID, (string)ThingManager.Get(uidStr, "ParentUID"));
-			SetNumber(propUpdateOrder, (int)ThingManager.Get(uidStr, "UpdateOrder"));
-			SetNumber(propLocalAng, ((float)ThingManager.Get(uidStr, "LocalAngle")).AngleTo360());
-			SetNumber(propLocalSc, (float)ThingManager.Get(uidStr, "LocalScale"));
+				if(type == "String")
+					SetText((TextBox)control, (string)Get(), readOnly);
+				else if(type == "Int32")
+					SetNumber((NumericUpDown)control, (int)Get(), readOnly);
+				else if(type == "Single")
+					SetNumber((NumericUpDown)control, (float)Get(), readOnly);
+				else if(type == "List<String>")
+					ProcessThingList((ComboBox)control, propName);
+				else if(type == "Vector2")
+				{
+					var table = (TableLayoutPanel)control;
+					var vec = (Vector2)Get();
+					SetNumber((NumericUpDown)table.Controls[0], vec.X);
+					SetNumber((NumericUpDown)table.Controls[1], vec.Y);
+				}
+				else if(type == "Color")
+				{
+					var table = (TableLayoutPanel)control;
+					var vec = (Color)Get();
+					SetNumber((NumericUpDown)table.Controls[0], vec.R);
+					SetNumber((NumericUpDown)table.Controls[1], vec.G);
+					SetNumber((NumericUpDown)table.Controls[2], vec.B);
+					SetNumber((NumericUpDown)table.Controls[3], vec.A);
+				}
 
-			SetNumber(localX, localPos.X);
-			SetNumber(localY, localPos.Y);
-			SetNumber(localDirX, localDir.X);
-			SetNumber(localDirY, localDir.Y);
-
-			ProcessThingList(types, "Types");
-			ProcessThingList(propChildrenUIDs, "ChildrenUIDs");
+				object Get() => ThingManager.Get(uid, propName);
+			}
 
 			void ProcessThingList(ComboBox list, string propName)
 			{
 				list.Items.Clear();
 
-				var propList = (List<string>)ThingManager.Get(uidStr, propName);
+				var propList = (List<string>)ThingManager.Get(uid, propName);
 				list.Enabled = propList.Count > 0;
 
 				if(list.Enabled && listBoxPlaceholderTexts.ContainsKey(list.Name))
@@ -870,14 +950,30 @@ namespace SMPLSceneEditor
 				return;
 
 			var list = (ComboBox)sender;
-			var uid = (string)list.SelectedItem;
+			var selectedItem = (string)list.SelectedItem;
 			listBoxPlaceholderTexts.TryGetValue(list.Name, out var placeholder);
 
-			if(list.Name == "Children UIDs" && uid != placeholder && ThingManager.Exists(uid))
+			if(selectedItem == placeholder)
+				return;
+
+			if(list.Name == "PropChildrenUIDs" && ThingManager.Exists(selectedItem))
 			{
-				SetViewPosition((Vector2)ThingManager.Get(uid, "Position"));
+				SetViewPosition((Vector2)ThingManager.Get(selectedItem, "Position"));
 				selectedUIDs.Clear();
-				selectedUIDs.Add(uid);
+				selectedUIDs.Add(selectedItem);
+				UpdateThingPanel();
+			}
+			else if(list.Name == "PropTypes")
+			{
+				var table = editThingTableTypes[$"table{list.SelectedItem}"];
+
+				list.Items.Add(placeholder);
+				list.SelectedItem = placeholder;
+
+				rightTable.Controls.Clear();
+				rightTable.Controls.Add(thingTypesTable);
+				rightTable.Controls.Add(table);
+				rightTable.Controls.Add(thingButtonsTable);
 				UpdateThingPanel();
 			}
 		}
@@ -908,12 +1004,6 @@ namespace SMPLSceneEditor
 				var placeholder = listBoxPlaceholderTexts[list.Name];
 				list.Items.Add(placeholder);
 				list.SelectedItem = placeholder;
-			}
-
-			if(list.Name == "Types")
-			{
-				var types = (List<string>)ThingManager.Get(selectedUIDs[0], "Types");
-				list.SelectedItem = types[0];
 			}
 		}
 		#endregion

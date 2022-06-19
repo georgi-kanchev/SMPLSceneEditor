@@ -50,7 +50,9 @@
 			this.sceneRightClickMenuSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.sceneRightClickMenuResetView = new System.Windows.Forms.ToolStripMenuItem();
 			this.selectThingTip = new System.Windows.Forms.Label();
-			this.editThingTable = new System.Windows.Forms.TableLayoutPanel();
+			this.rightTable = new System.Windows.Forms.TableLayoutPanel();
+			this.thingTypesTable = new System.Windows.Forms.TableLayoutPanel();
+			this.thingButtonsTable = new System.Windows.Forms.TableLayoutPanel();
 			this.gameDir = new System.Windows.Forms.FolderBrowserDialog();
 			this.load = new System.Windows.Forms.OpenFileDialog();
 			this.save = new System.Windows.Forms.SaveFileDialog();
@@ -67,6 +69,7 @@
 			((System.ComponentModel.ISupportInitialize)(this.gridThickness)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.windowPicture)).BeginInit();
 			this.sceneRightClickMenu.SuspendLayout();
+			this.rightTable.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// windowSplit
@@ -86,9 +89,9 @@
 			// windowSplit.Panel2
 			// 
 			this.windowSplit.Panel2.Controls.Add(this.selectThingTip);
-			this.windowSplit.Panel2.Controls.Add(this.editThingTable);
+			this.windowSplit.Panel2.Controls.Add(this.rightTable);
 			this.windowSplit.Size = new System.Drawing.Size(1564, 761);
-			this.windowSplit.SplitterDistance = 1295;
+			this.windowSplit.SplitterDistance = 1205;
 			this.windowSplit.TabIndex = 0;
 			this.windowSplit.TabStop = false;
 			// 
@@ -127,7 +130,7 @@
 			this.sceneStatusPanel.Dock = System.Windows.Forms.DockStyle.Top;
 			this.sceneStatusPanel.Location = new System.Drawing.Point(0, 0);
 			this.sceneStatusPanel.Name = "sceneStatusPanel";
-			this.sceneStatusPanel.Size = new System.Drawing.Size(1291, 58);
+			this.sceneStatusPanel.Size = new System.Drawing.Size(1201, 58);
 			this.sceneStatusPanel.TabIndex = 2;
 			// 
 			// searchBox
@@ -160,7 +163,7 @@
 			this.loadButton.Dock = System.Windows.Forms.DockStyle.Right;
 			this.loadButton.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.loadButton.ForeColor = System.Drawing.Color.White;
-			this.loadButton.Location = new System.Drawing.Point(1133, 0);
+			this.loadButton.Location = new System.Drawing.Point(1043, 0);
 			this.loadButton.Name = "loadButton";
 			this.loadButton.Size = new System.Drawing.Size(77, 54);
 			this.loadButton.TabIndex = 7;
@@ -225,7 +228,7 @@
 			this.saveButton.Dock = System.Windows.Forms.DockStyle.Right;
 			this.saveButton.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.saveButton.ForeColor = System.Drawing.Color.White;
-			this.saveButton.Location = new System.Drawing.Point(1210, 0);
+			this.saveButton.Location = new System.Drawing.Point(1120, 0);
 			this.saveButton.Name = "saveButton";
 			this.saveButton.Size = new System.Drawing.Size(77, 54);
 			this.saveButton.TabIndex = 8;
@@ -298,7 +301,7 @@
 			this.windowPicture.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.windowPicture.Location = new System.Drawing.Point(0, 0);
 			this.windowPicture.Name = "windowPicture";
-			this.windowPicture.Size = new System.Drawing.Size(1291, 757);
+			this.windowPicture.Size = new System.Drawing.Size(1201, 757);
 			this.windowPicture.TabIndex = 5;
 			this.windowPicture.TabStop = false;
 			this.windowPicture.MouseDown += new System.Windows.Forms.MouseEventHandler(this.OnMouseDownScene);
@@ -351,47 +354,55 @@
 			this.selectThingTip.ForeColor = System.Drawing.Color.White;
 			this.selectThingTip.Location = new System.Drawing.Point(0, 0);
 			this.selectThingTip.Name = "selectThingTip";
-			this.selectThingTip.Size = new System.Drawing.Size(261, 757);
+			this.selectThingTip.Size = new System.Drawing.Size(351, 757);
 			this.selectThingTip.TabIndex = 6;
 			this.selectThingTip.Text = "Select a {Thing} to Edit";
 			this.selectThingTip.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
 			// 
-			// editThingTable
+			// rightTable
 			// 
-			this.editThingTable.ColumnCount = 2;
-			this.editThingTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-			this.editThingTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-			this.editThingTable.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.editThingTable.Location = new System.Drawing.Point(0, 0);
-			this.editThingTable.Name = "editThingTable";
-			this.editThingTable.RowCount = 25;
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4F));
-			this.editThingTable.Size = new System.Drawing.Size(261, 757);
-			this.editThingTable.TabIndex = 0;
+			this.rightTable.CellBorderStyle = System.Windows.Forms.TableLayoutPanelCellBorderStyle.InsetDouble;
+			this.rightTable.ColumnCount = 1;
+			this.rightTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+			this.rightTable.Controls.Add(this.thingTypesTable, 0, 0);
+			this.rightTable.Controls.Add(this.thingButtonsTable, 0, 2);
+			this.rightTable.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.rightTable.Location = new System.Drawing.Point(0, 0);
+			this.rightTable.Name = "rightTable";
+			this.rightTable.RowCount = 3;
+			this.rightTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.921569F));
+			this.rightTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 91.17647F));
+			this.rightTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4.901961F));
+			this.rightTable.Size = new System.Drawing.Size(351, 757);
+			this.rightTable.TabIndex = 1;
+			// 
+			// thingTypesTable
+			// 
+			this.thingTypesTable.ColumnCount = 2;
+			this.thingTypesTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+			this.thingTypesTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+			this.thingTypesTable.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.thingTypesTable.Location = new System.Drawing.Point(6, 6);
+			this.thingTypesTable.Name = "thingTypesTable";
+			this.thingTypesTable.RowCount = 1;
+			this.thingTypesTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+			this.thingTypesTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+			this.thingTypesTable.Size = new System.Drawing.Size(339, 23);
+			this.thingTypesTable.TabIndex = 1;
+			// 
+			// thingButtonsTable
+			// 
+			this.thingButtonsTable.ColumnCount = 2;
+			this.thingButtonsTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+			this.thingButtonsTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+			this.thingButtonsTable.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.thingButtonsTable.Location = new System.Drawing.Point(6, 720);
+			this.thingButtonsTable.Name = "thingButtonsTable";
+			this.thingButtonsTable.RowCount = 1;
+			this.thingButtonsTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+			this.thingButtonsTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+			this.thingButtonsTable.Size = new System.Drawing.Size(339, 31);
+			this.thingButtonsTable.TabIndex = 2;
 			// 
 			// gameDir
 			// 
@@ -440,6 +451,7 @@
 			((System.ComponentModel.ISupportInitialize)(this.gridThickness)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.windowPicture)).EndInit();
 			this.sceneRightClickMenu.ResumeLayout(false);
+			this.rightTable.ResumeLayout(false);
 			this.ResumeLayout(false);
 
 		}
@@ -469,7 +481,9 @@
 		private OpenFileDialog load;
 		private SaveFileDialog save;
 		private GroupBox searchBox;
-		private TableLayoutPanel editThingTable;
 		private Label selectThingTip;
+		private TableLayoutPanel rightTable;
+		private TableLayoutPanel thingTypesTable;
+		private TableLayoutPanel thingButtonsTable;
 	}
 }
