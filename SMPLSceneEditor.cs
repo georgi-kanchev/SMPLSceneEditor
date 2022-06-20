@@ -62,12 +62,8 @@ namespace SMPLSceneEditor
 			var sprite = CreateDefaultTable("tableSprite");
 			var visual = CreateDefaultTable("tableVisual");
 			var types = thingTypesTable;
-			var buttons = thingButtonsTable;
 
 			AddThingProperty(types, "Types", "PropTypes", typeof(List<string>));
-
-			AddThingProperty(buttons, "Apply", valueType: typeof(Button));
-			AddThingProperty(buttons, "Reset", valueType: typeof(Button));
 
 			AddPropsThing();
 			AddPropsSprite();
@@ -118,22 +114,27 @@ namespace SMPLSceneEditor
 			}
 			void AddPropsSprite()
 			{
-				AddThingProperty(sprite, "Texture Coordinates Unit A", "PropTexCoordsUnitA", typeof(Vector2), labelSizeOffset: -3);
-				AddThingProperty(sprite, "Texture Coordinates Unit B", "PropTexCoordsUnitB", typeof(Vector2), labelSizeOffset: -3);
-				AddThingProperty(sprite, ""); AddThingProperty(sprite, "");
 				AddThingProperty(sprite, "Local Size", "PropLocalSize", typeof(Vector2));
 				AddThingProperty(sprite, "Size", "PropSize", typeof(Vector2));
 				AddThingProperty(sprite, ""); AddThingProperty(sprite, "");
-				AddThingProperty(sprite, "Origin Unit", "PropOriginUnit", typeof(Vector2));
+				AddThingProperty(sprite, "Origin Unit", "PropOriginUnit", typeof(Vector2), smallNumericStep: true);
 				AddThingProperty(sprite, "Origin", "PropOrigin", typeof(Vector2));
+				AddThingProperty(sprite, ""); AddThingProperty(sprite, "");
+				AddThingProperty(sprite, "Texture Coordinates Unit A", "PropTexCoordsUnitA", typeof(Vector2), labelSizeOffset: -3, smallNumericStep: true);
+				AddThingProperty(sprite, "Texture Coordinates Unit B", "PropTexCoordsUnitB", typeof(Vector2), labelSizeOffset: -3, smallNumericStep: true);
 			}
 			void AddPropsVisual()
 			{
+				AddThingProperty(visual, "Is Hidden", "PropIsHidden", typeof(bool));
+				AddThingProperty(visual, ""); AddThingProperty(visual, "");
+				AddThingProperty(visual, "Depth", "PropDepth", typeof(int));
 				AddThingProperty(visual, "Tint", "PropTint", typeof(Color));
+				AddThingProperty(visual, "Blend Mode", "PropBlendMode", typeof(ThingManager.BlendModes));
+				AddThingProperty(visual, ""); AddThingProperty(visual, "");
 				AddThingProperty(visual, "Texture Path", "PropTexturePath", typeof(string));
 				AddThingProperty(visual, "Shader Path", "PropShaderPath", typeof(string));
+				AddThingProperty(visual, ""); AddThingProperty(visual, "");
 				AddThingProperty(visual, "Camera UID", "PropCameraUID", typeof(string));
-				AddThingProperty(visual, "Depth", "PropDepth", typeof(int));
 			}
 		}
 		private void AddThingProperty(TableLayoutPanel table, string label, string? propName = null, Type? valueType = null, bool readOnly = false,
@@ -156,7 +157,15 @@ namespace SMPLSceneEditor
 			}
 
 			if(valueType == typeof(string))
+			{
 				prop = new TextBox();
+				prop.TextChanged += OnTextBoxChange;
+			}
+			else if(valueType == typeof(bool))
+			{
+				prop = new CheckBox();
+				((CheckBox)prop).CheckedChanged += OnCheckBoxChange;
+			}
 			else if(valueType == typeof(int))
 			{
 				prop = new NumericUpDown();
@@ -168,23 +177,15 @@ namespace SMPLSceneEditor
 				SetDefaultNumeric((NumericUpDown)prop, false);
 			}
 			else if(valueType == typeof(List<string>))
-			{
-				prop = new ComboBox
-				{
-					DropDownStyle = ComboBoxStyle.DropDownList,
-					FormattingEnabled = true,
-				};
-				var list = (ComboBox)prop;
-				list.DropDown += new EventHandler(OnListThingDropDown);
-				list.SelectedIndexChanged += new EventHandler(OnListSelectThing);
-				list.DropDownClosed += new EventHandler(OnListThingDropDownClose);
-			}
+				prop = CreateList();
 			else if(valueType == typeof(Button))
 				prop = new Button() { Text = label };
 			else if(valueType == typeof(Vector2))
 				prop = CreateMultipleValuesTable(2, false);
 			else if(valueType == typeof(Color))
 				prop = CreateMultipleValuesTable(4, true);
+			else if(valueType.IsEnum)
+				prop = CreateList();
 
 			if(prop != null)
 			{
@@ -204,9 +205,8 @@ namespace SMPLSceneEditor
 			{
 				var black = System.Drawing.Color.Black;
 				var white = System.Drawing.Color.White;
-				var isLabel = control is Label;
 
-				if(isLabel)
+				if(control is Label)
 					reverseColors = !reverseColors;
 
 				control.Enabled = readOnly == false;
@@ -216,6 +216,9 @@ namespace SMPLSceneEditor
 				control.Name = propName;
 				control.TabStop = false;
 				control.Dock = DockStyle.Fill;
+
+				if(control is CheckBox c)
+					c.CheckAlign = ContentAlignment.MiddleRight;
 			}
 			void SetDefaultNumeric(NumericUpDown numeric, bool isInt)
 			{
@@ -223,6 +226,7 @@ namespace SMPLSceneEditor
 				numeric.DecimalPlaces = isInt ? 0 : (smallNumericStep ? 3 : 1);
 				numeric.Minimum = int.MinValue;
 				numeric.Maximum = int.MaxValue;
+				numeric.ValueChanged += OnNumericChange;
 			}
 			TableLayoutPanel CreateMultipleValuesTable(int columns, bool isInt)
 			{
@@ -239,10 +243,19 @@ namespace SMPLSceneEditor
 					var col = new NumericUpDown { BorderStyle = BorderStyle.None };
 					SetDefault(col);
 					SetDefaultNumeric(col, isInt);
+					col.Name += i.ToString();
 					vecTable.Controls.Add(col);
 				}
 
 				return vecTable;
+			}
+			ComboBox CreateList()
+			{
+				var list = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
+				list.DropDown += new EventHandler(OnListThingDropDown);
+				list.SelectedIndexChanged += new EventHandler(OnListSelectThing);
+				list.DropDownClosed += new EventHandler(OnListThingDropDownClose);
+				return list;
 			}
 		}
 		#endregion
@@ -294,12 +307,14 @@ namespace SMPLSceneEditor
 					continue;
 
 				var control = c[0];
-				var readOnly = props[i].IsSetter == false;
+				var readOnly = props[i].HasSetter == false;
 
 				if(type == "String")
 					SetText((TextBox)control, (string)Get(), readOnly);
 				else if(type == "Int32")
 					SetNumber((NumericUpDown)control, (int)Get(), readOnly);
+				else if(type == "Boolean")
+					SetTick((CheckBox)control, (bool)Get(), readOnly);
 				else if(type == "Single")
 					SetNumber((NumericUpDown)control, (float)Get(), readOnly);
 				else if(type == "List<String>")
@@ -314,12 +329,15 @@ namespace SMPLSceneEditor
 				else if(type == "Color")
 				{
 					var table = (TableLayoutPanel)control;
-					var vec = (Color)Get();
-					SetNumber((NumericUpDown)table.Controls[0], vec.R);
-					SetNumber((NumericUpDown)table.Controls[1], vec.G);
-					SetNumber((NumericUpDown)table.Controls[2], vec.B);
-					SetNumber((NumericUpDown)table.Controls[3], vec.A);
+					var col = (Color)Get();
+					SetNumber((NumericUpDown)table.Controls[0], col.R);
+					SetNumber((NumericUpDown)table.Controls[1], col.G);
+					SetNumber((NumericUpDown)table.Controls[2], col.B);
+					SetNumber((NumericUpDown)table.Controls[3], col.A);
+					control.BackColor = System.Drawing.Color.FromArgb(col.A, col.R, col.G, col.B);
 				}
+				else if(type == "BlendModes")
+					ProcessEnumList((ComboBox)control, typeof(ThingManager.BlendModes), propName);
 
 				object Get() => ThingManager.Get(uid, propName);
 			}
@@ -344,6 +362,18 @@ namespace SMPLSceneEditor
 
 				list.SelectedIndex = 0;
 			}
+			void ProcessEnumList(ComboBox list, Type enumType, string propName)
+			{
+				if(enumType.IsEnum == false)
+					return;
+
+				var names = Enum.GetNames(enumType);
+				list.Items.Clear();
+				for(int i = 0; i < names.Length; i++)
+					list.Items.Add(names[i]);
+
+				list.SelectedIndex = (int)ThingManager.Get(uid, propName);
+			}
 			void SetText(TextBox text, string value, bool readOnly = false)
 			{
 				text.Enabled = readOnly == false;
@@ -353,6 +383,12 @@ namespace SMPLSceneEditor
 			{
 				number.Enabled = readOnly == false;
 				number.Value = (decimal)value.Limit((float)number.Minimum, (float)number.Maximum);
+			}
+			void SetTick(CheckBox tick, bool value, bool readOnly = false)
+			{
+				tick.Enabled = readOnly == false;
+				tick.Checked = value;
+				tick.BackColor = tick.Checked ? System.Drawing.Color.Green : System.Drawing.Color.Red;
 			}
 		}
 
@@ -608,6 +644,7 @@ namespace SMPLSceneEditor
 
 			var children = (List<string>)ThingManager.Get(uid, "ChildrenUIDs");
 			var hitbox = (Hitbox)ThingManager.Get(uid, "Hitbox");
+			ThingManager.CallVoid(uid, "ApplyDefaultHitbox");
 			hitbox.TransformLocalLines(uid);
 
 			for(int i = 0; i < children.Count; i++)
@@ -932,15 +969,7 @@ namespace SMPLSceneEditor
 			var uid = ThingManager.CreateSprite("sprite");
 			ThingManager.Set(uid, "Position", rightClickPos);
 			ThingManager.CallVoid(uid, "ApplyDefaultHitbox");
-			ThingManager.Set(uid, "TexturePath", "Assets\\explosive.jpg");
 			TryTransformHitbox(uid);
-
-			var uid2 = ThingManager.CreateSprite("sprite");
-			ThingManager.Set(uid2, "Position", rightClickPos);
-			ThingManager.CallVoid(uid2, "ApplyDefaultHitbox");
-			ThingManager.Set(uid2, "TexturePath", "Assets\\explosive.jpg");
-			ThingManager.Set(uid2, "ParentUID", uid);
-			TryTransformHitbox(uid2);
 		}
 		#endregion
 		#region EditThingPanel
@@ -973,8 +1002,12 @@ namespace SMPLSceneEditor
 				rightTable.Controls.Clear();
 				rightTable.Controls.Add(thingTypesTable);
 				rightTable.Controls.Add(table);
-				rightTable.Controls.Add(thingButtonsTable);
 				UpdateThingPanel();
+			}
+			else if(list.Name == "PropBlendMode")
+			{
+				var index = list.SelectedIndex;
+				ThingManager.Set(selectedUIDs[0], "BlendMode", (ThingManager.BlendModes)index);
 			}
 		}
 		private void OnListThingDropDown(object? sender, EventArgs e)
@@ -985,9 +1018,10 @@ namespace SMPLSceneEditor
 			var list = (ComboBox)sender;
 
 			if(listBoxPlaceholderTexts.ContainsKey(list.Name))
+			{
 				list.Items.Remove(listBoxPlaceholderTexts[list.Name]);
-
-			list.SelectedIndex = -1;
+				list.SelectedIndex = -1;
+			}
 		}
 		private void OnListThingDropDownClose(object? sender, EventArgs e)
 		{
@@ -1005,6 +1039,86 @@ namespace SMPLSceneEditor
 				list.Items.Add(placeholder);
 				list.SelectedItem = placeholder;
 			}
+		}
+
+		private void OnTextBoxChange(object? sender, EventArgs e)
+		{
+			if(sender == null)
+				return;
+			var textBox = (TextBox)sender;
+			var propName = textBox.Name["Prop".Length..];
+			var uid = selectedUIDs[0];
+
+			var prop = ThingManager.GetPropertyInfo(uid, propName);
+			if(prop.HasSetter)
+				ThingManager.Set(uid, propName, textBox.Text);
+
+			// if the uid was changed, update the selection and hitbox uid
+			if(propName == "UID" && string.IsNullOrWhiteSpace(textBox.Text) == false)
+			{
+				uid = textBox.Text;
+				selectedUIDs[0] = uid;
+			}
+
+			TryTransformHitbox(uid);
+			UpdateThingPanel();
+
+
+		}
+		private void OnCheckBoxChange(object? sender, EventArgs e)
+		{
+			if(sender == null)
+				return;
+			var checkBox = (CheckBox)sender;
+			var propName = checkBox.Name["Prop".Length..];
+			var uid = selectedUIDs[0];
+			ThingManager.Set(uid, propName, checkBox.Checked);
+			TryTransformHitbox(uid);
+			UpdateThingPanel();
+		}
+		private void OnNumericChange(object? sender, EventArgs e)
+		{
+			if(sender == null)
+				return;
+
+			var numeric = (NumericUpDown)sender;
+			var propName = numeric.Name["Prop".Length..];
+			var vecColIndex = 0;
+			if(numeric.Parent.Name.StartsWith("Prop")) // is vector or color
+			{
+				vecColIndex = (int)propName[^1].ToString().ToNumber();
+				propName = propName[..^1];
+			}
+
+			var uid = selectedUIDs[0];
+			var propType = ThingManager.GetPropertyInfo(uid, propName).Type;
+			var valueFloat = (float)numeric.Value;
+			var valueInt = (int)numeric.Value;
+
+			if(propType == "Vector2")
+			{
+				var vec = (Vector2)ThingManager.Get(uid, propName);
+				if(vecColIndex == 0) vec.X = valueFloat;
+				else if(vecColIndex == 1) vec.Y = valueFloat;
+				ThingManager.Set(uid, propName, vec);
+			}
+			else if(propType == "Color")
+			{
+				var col = (Color)ThingManager.Get(uid, propName);
+				var val = (byte)valueInt;
+				if(vecColIndex == 0) col.R = val;
+				else if(vecColIndex == 1) col.G = val;
+				else if(vecColIndex == 2) col.B = val;
+				else if(vecColIndex == 3) col.A = val;
+				ThingManager.Set(uid, propName, col);
+			}
+			else if(propType == "Int32")
+				ThingManager.Set(uid, propName, valueInt);
+			else if(propType == "Single")
+				ThingManager.Set(uid, propName, valueFloat);
+
+			TryTransformHitbox(uid);
+			UpdateThingPanel();
 		}
 		#endregion
 		#region Assets

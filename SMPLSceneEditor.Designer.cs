@@ -52,7 +52,6 @@
 			this.selectThingTip = new System.Windows.Forms.Label();
 			this.rightTable = new System.Windows.Forms.TableLayoutPanel();
 			this.thingTypesTable = new System.Windows.Forms.TableLayoutPanel();
-			this.thingButtonsTable = new System.Windows.Forms.TableLayoutPanel();
 			this.gameDir = new System.Windows.Forms.FolderBrowserDialog();
 			this.load = new System.Windows.Forms.OpenFileDialog();
 			this.save = new System.Windows.Forms.SaveFileDialog();
@@ -365,14 +364,12 @@
 			this.rightTable.ColumnCount = 1;
 			this.rightTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
 			this.rightTable.Controls.Add(this.thingTypesTable, 0, 0);
-			this.rightTable.Controls.Add(this.thingButtonsTable, 0, 2);
 			this.rightTable.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.rightTable.Location = new System.Drawing.Point(0, 0);
 			this.rightTable.Name = "rightTable";
-			this.rightTable.RowCount = 3;
-			this.rightTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.921569F));
-			this.rightTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 91.17647F));
-			this.rightTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4.901961F));
+			this.rightTable.RowCount = 2;
+			this.rightTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4.123713F));
+			this.rightTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 95.87629F));
 			this.rightTable.Size = new System.Drawing.Size(351, 757);
 			this.rightTable.TabIndex = 1;
 			// 
@@ -387,22 +384,8 @@
 			this.thingTypesTable.RowCount = 1;
 			this.thingTypesTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
 			this.thingTypesTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-			this.thingTypesTable.Size = new System.Drawing.Size(339, 23);
+			this.thingTypesTable.Size = new System.Drawing.Size(339, 24);
 			this.thingTypesTable.TabIndex = 1;
-			// 
-			// thingButtonsTable
-			// 
-			this.thingButtonsTable.ColumnCount = 2;
-			this.thingButtonsTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-			this.thingButtonsTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-			this.thingButtonsTable.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.thingButtonsTable.Location = new System.Drawing.Point(6, 720);
-			this.thingButtonsTable.Name = "thingButtonsTable";
-			this.thingButtonsTable.RowCount = 1;
-			this.thingButtonsTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-			this.thingButtonsTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-			this.thingButtonsTable.Size = new System.Drawing.Size(339, 31);
-			this.thingButtonsTable.TabIndex = 2;
 			// 
 			// gameDir
 			// 
@@ -484,6 +467,5 @@
 		private Label selectThingTip;
 		private TableLayoutPanel rightTable;
 		private TableLayoutPanel thingTypesTable;
-		private TableLayoutPanel thingButtonsTable;
 	}
 }
