@@ -22,7 +22,7 @@ namespace SMPLSceneEditor
 		private readonly RenderWindow window;
 		private float sceneSc = 1;
 		private int selectDepthIndex;
-		private bool isDragSelecting, isHoveringScene, confirmDeleteChildrenMsgShown, selectGameDirShown;
+		private bool isDragSelecting, isHoveringScene, confirmDeleteChildrenMsgShown, selectGameDirShown, saveSceneShown;
 		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos;
 		private readonly List<string> selectedUIDs = new();
 		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
@@ -135,6 +135,8 @@ namespace SMPLSceneEditor
 				AddThingProperty(visual, "Shader Path", "PropShaderPath", typeof(string));
 				AddThingProperty(visual, ""); AddThingProperty(visual, "");
 				AddThingProperty(visual, "Camera UID", "PropCameraUID", typeof(string));
+				AddThingProperty(visual, ""); AddThingProperty(visual, "");
+				AddThingProperty(visual, "Hitbox", "PropHitbox", typeof(Hitbox));
 			}
 		}
 		private void AddThingProperty(TableLayoutPanel table, string label, string? propName = null, Type? valueType = null, bool readOnly = false,
@@ -161,7 +163,7 @@ namespace SMPLSceneEditor
 				prop = new TextBox();
 				prop.TextChanged += OnTextBoxChange;
 			}
-			else if(valueType == typeof(bool))
+			else if(valueType == typeof(bool) || valueType == typeof(Hitbox))
 			{
 				prop = new CheckBox();
 				((CheckBox)prop).CheckedChanged += OnCheckBoxChange;
@@ -191,6 +193,12 @@ namespace SMPLSceneEditor
 			{
 				SetDefault(prop);
 				lab.ForeColor = prop.Enabled ? System.Drawing.Color.White : System.Drawing.Color.Gray;
+
+				if(valueType == typeof(Hitbox))
+				{
+					prop.BackColor = System.Drawing.Color.DarkGreen;
+					prop.Text = "Edit";
+				}
 			}
 
 			if(last)
@@ -285,6 +293,8 @@ namespace SMPLSceneEditor
 			TryDrawSelection();
 
 			window.Display();
+
+			TryCtrlS();
 		}
 		private void UpdateThingPanel()
 		{
@@ -460,6 +470,18 @@ namespace SMPLSceneEditor
 			}
 		}
 
+		private void TryCtrlS()
+		{
+			if(saveSceneShown == false && Keyboard.IsKeyPressed(Keyboard.Key.LControl) && Keyboard.IsKeyPressed(Keyboard.Key.S).Once("ctrl-s-save-scene"))
+				TrySaveScene();
+		}
+		private void TrySaveScene()
+		{
+			saveSceneShown = true;
+			if(string.IsNullOrWhiteSpace(sceneName.Text) || MainScene.SaveScene(Path.Join(finalGameDir, sceneName.Text + ".scene")) == false)
+				MessageBox.Show(this, "Enter a valid Scene name before saving.", "Failed to Save!");
+			saveSceneShown = false;
+		}
 		private void TryShowMousePos()
 		{
 			if(sceneMousePos.Visible == false)
@@ -531,11 +553,9 @@ namespace SMPLSceneEditor
 				for(int i = 0; i < uids.Count; i++)
 				{
 					var uid = uids[i];
-					var hitbox = GetHitbox(uid);
+					var hitbox = GetBoundingBox(uid);
 					if(hitbox == null)
 						continue;
-
-					TryTransformHitbox(uid);
 
 					// don't count an object in a multi unselect cycle if it is not selected
 					var unselectSpecialCase = alt && selectedUIDs.Contains(uid) == false;
@@ -557,11 +577,9 @@ namespace SMPLSceneEditor
 				for(int i = 0; i < uids.Count; i++)
 				{
 					var uid = uids[i];
-					var hitbox = GetHitbox(uid);
+					var hitbox = GetBoundingBox(uid);
 					if(hitbox == null)
 						continue;
-
-					TryTransformHitbox(uid);
 
 					if(dragSelHitbox != null && dragSelHitbox.ConvexContains(hitbox))
 						SelectObject(uid);
@@ -582,7 +600,7 @@ namespace SMPLSceneEditor
 		private void TryDrawSelection()
 		{
 			for(int i = 0; i < selectedUIDs.Count; i++)
-				Draw((Hitbox)ThingManager.Get(selectedUIDs[i], "Hitbox"));
+				Draw((Hitbox)ThingManager.Get(selectedUIDs[i], "BoundingBox"));
 
 			if(isDragSelecting)
 				Draw(GetDragSelectionHitbox(), Keyboard.IsKeyPressed(Keyboard.Key.LAlt));
@@ -644,19 +662,6 @@ namespace SMPLSceneEditor
 				UpdateThingPanel();
 			}
 		}
-		private static void TryTransformHitbox(string uid)
-		{
-			if(ThingManager.HasGetter(uid, "Hitbox") == false)
-				return;
-
-			var children = (List<string>)ThingManager.Get(uid, "ChildrenUIDs");
-			var hitbox = (Hitbox)ThingManager.Get(uid, "Hitbox");
-			ThingManager.CallVoid(uid, "ApplyDefaultHitbox");
-			hitbox.TransformLocalLines(uid);
-
-			for(int i = 0; i < children.Count; i++)
-				TryTransformHitbox(children[i]);
-		}
 		#endregion
 
 		#region View
@@ -690,9 +695,9 @@ namespace SMPLSceneEditor
 		}
 		#endregion
 		#region Get
-		private static Hitbox? GetHitbox(string uid)
+		private static Hitbox? GetBoundingBox(string uid)
 		{
-			return ThingManager.HasGetter(uid, "Hitbox") == false ? default : (Hitbox)ThingManager.Get(uid, "Hitbox");
+			return ThingManager.HasGetter(uid, "BoundingBox") == false ? default : (Hitbox)ThingManager.Get(uid, "BoundingBox");
 		}
 		private float GetGridSpacing()
 		{
@@ -823,8 +828,7 @@ namespace SMPLSceneEditor
 		}
 		private void OnSaveClick(object sender, EventArgs e)
 		{
-			if(MainScene.SaveScene(Path.Join(finalGameDir, sceneName.Text + ".scene")) == false)
-				MessageBox.Show(this, "Enter a valid Scene name before saving.", "Failed to Save!");
+			TrySaveScene();
 		}
 		private void OnLoadClick(object sender, EventArgs e)
 		{
@@ -870,7 +874,6 @@ namespace SMPLSceneEditor
 				var sc = (float)ThingManager.Get(uid, "Scale");
 
 				ThingManager.Set(uid, "Scale", MathF.Max(sc + delta, 0.01f));
-				TryTransformHitbox(uid);
 			}
 
 			UpdateThingPanel();
@@ -914,8 +917,6 @@ namespace SMPLSceneEditor
 							ThingManager.Set(uid, "Position", Drag(pos, false, true));
 						else if(editIndex == 1)
 							ThingManager.Set(uid, "Angle", DragAngle(pos, ang));
-
-						TryTransformHitbox(uid);
 					}
 				}
 
@@ -960,8 +961,6 @@ namespace SMPLSceneEditor
 		{
 			var uid = ThingManager.CreateSprite("sprite");
 			ThingManager.Set(uid, "Position", rightClickPos);
-			ThingManager.CallVoid(uid, "ApplyDefaultHitbox");
-			TryTransformHitbox(uid);
 		}
 		#endregion
 		#region EditThingPanel
@@ -1052,20 +1051,23 @@ namespace SMPLSceneEditor
 				selectedUIDs[0] = uid;
 			}
 
-			TryTransformHitbox(uid);
 			UpdateThingPanel();
-
-
 		}
 		private void OnCheckBoxChange(object? sender, EventArgs e)
 		{
 			if(sender == null || ((Control)sender).Focused == false) // ignore if it isn't the user changing the value
 				return;
+
 			var checkBox = (CheckBox)sender;
 			var propName = checkBox.Name["Prop".Length..];
 			var uid = selectedUIDs[0];
-			ThingManager.Set(uid, propName, checkBox.Checked);
-			TryTransformHitbox(uid);
+
+			if(propName == "Hitbox")
+			{
+
+			}
+			else
+				ThingManager.Set(uid, propName, checkBox.Checked);
 			UpdateThingPanel();
 		}
 		private void OnNumericChange(object? sender, EventArgs e)
@@ -1109,7 +1111,6 @@ namespace SMPLSceneEditor
 			else if(propType == "Single")
 				ThingManager.Set(uid, propName, valueFloat);
 
-			TryTransformHitbox(uid);
 			UpdateThingPanel();
 		}
 		#endregion
