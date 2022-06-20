@@ -216,6 +216,7 @@ namespace SMPLSceneEditor
 				control.Name = propName;
 				control.TabStop = false;
 				control.Dock = DockStyle.Fill;
+				control.TabStop = true;
 
 				if(control is CheckBox c)
 					c.CheckAlign = ContentAlignment.MiddleRight;
@@ -549,7 +550,7 @@ namespace SMPLSceneEditor
 				}
 				selectDepthIndex = clickedUIDs.Count == 0 ? -1 : (selectDepthIndex + 1).Limit(0, sum, Extensions.Limitation.Overflow);
 			}
-			else if(left && dist > 1)
+			else if(left && dist > 5)
 			{
 				if(ctrl == false && alt == false)
 					selectedUIDs.Clear();
@@ -609,6 +610,12 @@ namespace SMPLSceneEditor
 				new Line(topR, botR).Draw(window, outCol, sceneSc * 4);
 				new Line(botR, botL).Draw(window, outCol, sceneSc * 4);
 				new Line(botL, topL).Draw(window, outCol, sceneSc * 4);
+
+				for(int i = 0; i < selectedUIDs.Count; i++)
+				{
+					var pos = (Vector2)ThingManager.Get(selectedUIDs[i], "Position");
+					pos.DrawPoint(window, Color.Red, sceneSc * 4);
+				}
 
 				window.Draw(fill, PrimitiveType.Quads);
 			}
@@ -674,6 +681,12 @@ namespace SMPLSceneEditor
 		private void SetViewScale(float scale)
 		{
 			sceneSc = scale.Limit(0.1f, 10f);
+		}
+
+		private void FocusThing(string uid)
+		{
+			SetViewPosition((Vector2)ThingManager.Get(uid, "Position"));
+			SetViewScale((float)ThingManager.Get(uid, "Scale"));
 		}
 		#endregion
 		#region Get
@@ -806,40 +819,12 @@ namespace SMPLSceneEditor
 			selectedUIDs.Clear();
 			selectedUIDs.Add(bestGuess);
 			UpdateThingPanel();
-			SetViewPosition((Vector2)ThingManager.Get(bestGuess, "Position"));
+			FocusThing(bestGuess);
 		}
 		private void OnSaveClick(object sender, EventArgs e)
 		{
-			save.InitialDirectory = finalGameDir;
-			if(save.ShowDialog(this) != DialogResult.OK)
-				return;
-
-			MainScene.SaveScene(save.FileName);
-
-			static void CopyDirectory(string sourceDir, string destinationDir)
-			{
-				if(Directory.Exists(sourceDir) == false || Directory.Exists(destinationDir) == false)
-					return;
-
-				var dir = new DirectoryInfo(sourceDir);
-				var dirs = dir.GetDirectories();
-
-				Directory.CreateDirectory(destinationDir);
-
-				foreach(var file in dir.GetFiles())
-				{
-					var targetFilePath = Path.Combine(destinationDir, file.Name);
-					if(File.Exists(targetFilePath))
-						File.Delete(targetFilePath);
-					file.CopyTo(targetFilePath);
-				}
-
-				foreach(var subDir in dirs)
-				{
-					var newDestinationDir = Path.Combine(destinationDir, subDir.Name);
-					CopyDirectory(subDir.FullName, newDestinationDir);
-				}
-			}
+			if(MainScene.SaveScene(Path.Join(finalGameDir, sceneName.Text + ".scene")) == false)
+				MessageBox.Show(this, "Enter a valid Scene name before saving.", "Failed to Save!");
 		}
 		private void OnLoadClick(object sender, EventArgs e)
 		{
@@ -851,13 +836,20 @@ namespace SMPLSceneEditor
 
 			ThingManager.DestroyAll();
 
-			Scene.CurrentScene = Scene.Load<MainScene>(load.FileName);
+			var scene = Scene.Load<MainScene>(load.FileName);
+			if(scene == null)
+			{
+				MessageBox.Show("Could not load the selected Scene. The file may be altered/corrupt.", "Failed to Load");
+				return;
+			}
+
+			sceneName.Text = Path.GetFileNameWithoutExtension(load.FileName);
+			Scene.CurrentScene = scene;
 			MainScene.LoadAsset("Assets");
 		}
 		private void OnSceneScroll(object? sender, MouseEventArgs e)
 		{
-			var delta = e.Delta < 0 ? 0.1f : -0.1f;
-
+			var delta = e.Delta / 1200f * -1f;
 			var pos = window.GetView().Center.ToSystem();
 			var mousePos = GetMousePosition();
 			var dist = pos.DistanceBetweenPoints(mousePos);
@@ -987,7 +979,7 @@ namespace SMPLSceneEditor
 
 			if(list.Name == "PropChildrenUIDs" && ThingManager.Exists(selectedItem))
 			{
-				SetViewPosition((Vector2)ThingManager.Get(selectedItem, "Position"));
+				FocusThing(selectedItem);
 				selectedUIDs.Clear();
 				selectedUIDs.Add(selectedItem);
 				UpdateThingPanel();
@@ -1043,7 +1035,7 @@ namespace SMPLSceneEditor
 
 		private void OnTextBoxChange(object? sender, EventArgs e)
 		{
-			if(sender == null)
+			if(sender == null || ((Control)sender).Focused == false) // ignore if it isn't the user changing the value
 				return;
 			var textBox = (TextBox)sender;
 			var propName = textBox.Name["Prop".Length..];
@@ -1067,7 +1059,7 @@ namespace SMPLSceneEditor
 		}
 		private void OnCheckBoxChange(object? sender, EventArgs e)
 		{
-			if(sender == null)
+			if(sender == null || ((Control)sender).Focused == false) // ignore if it isn't the user changing the value
 				return;
 			var checkBox = (CheckBox)sender;
 			var propName = checkBox.Name["Prop".Length..];
@@ -1078,7 +1070,7 @@ namespace SMPLSceneEditor
 		}
 		private void OnNumericChange(object? sender, EventArgs e)
 		{
-			if(sender == null)
+			if(sender == null || ((Control)sender).Focused == false) // ignore if it isn't the user changing the value
 				return;
 
 			var numeric = (NumericUpDown)sender;

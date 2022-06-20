@@ -33,13 +33,15 @@
 			this.fps = new System.Windows.Forms.Label();
 			this.sceneMousePos = new System.Windows.Forms.Label();
 			this.sceneStatusPanel = new System.Windows.Forms.Panel();
-			this.searchBox = new System.Windows.Forms.GroupBox();
-			this.searchScene = new System.Windows.Forms.MaskedTextBox();
+			this.sceneGroup = new System.Windows.Forms.GroupBox();
+			this.sceneName = new System.Windows.Forms.TextBox();
+			this.saveButton = new System.Windows.Forms.Button();
 			this.loadButton = new System.Windows.Forms.Button();
+			this.searchBox = new System.Windows.Forms.GroupBox();
+			this.searchScene = new System.Windows.Forms.TextBox();
 			this.editSelectionGroup = new System.Windows.Forms.GroupBox();
 			this.editSelectionOptions = new System.Windows.Forms.ListBox();
 			this.snap = new System.Windows.Forms.NumericUpDown();
-			this.saveButton = new System.Windows.Forms.Button();
 			this.gridGroup = new System.Windows.Forms.GroupBox();
 			this.gridSpacing = new System.Windows.Forms.NumericUpDown();
 			this.gridThickness = new System.Windows.Forms.TrackBar();
@@ -54,12 +56,12 @@
 			this.thingTypesTable = new System.Windows.Forms.TableLayoutPanel();
 			this.gameDir = new System.Windows.Forms.FolderBrowserDialog();
 			this.load = new System.Windows.Forms.OpenFileDialog();
-			this.save = new System.Windows.Forms.SaveFileDialog();
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).BeginInit();
 			this.windowSplit.Panel1.SuspendLayout();
 			this.windowSplit.Panel2.SuspendLayout();
 			this.windowSplit.SuspendLayout();
 			this.sceneStatusPanel.SuspendLayout();
+			this.sceneGroup.SuspendLayout();
 			this.searchBox.SuspendLayout();
 			this.editSelectionGroup.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize)(this.snap)).BeginInit();
@@ -121,16 +123,72 @@
 			// sceneStatusPanel
 			// 
 			this.sceneStatusPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+			this.sceneStatusPanel.Controls.Add(this.sceneGroup);
 			this.sceneStatusPanel.Controls.Add(this.searchBox);
-			this.sceneStatusPanel.Controls.Add(this.loadButton);
 			this.sceneStatusPanel.Controls.Add(this.editSelectionGroup);
-			this.sceneStatusPanel.Controls.Add(this.saveButton);
 			this.sceneStatusPanel.Controls.Add(this.gridGroup);
 			this.sceneStatusPanel.Dock = System.Windows.Forms.DockStyle.Top;
 			this.sceneStatusPanel.Location = new System.Drawing.Point(0, 0);
 			this.sceneStatusPanel.Name = "sceneStatusPanel";
 			this.sceneStatusPanel.Size = new System.Drawing.Size(1201, 58);
 			this.sceneStatusPanel.TabIndex = 2;
+			// 
+			// sceneGroup
+			// 
+			this.sceneGroup.Controls.Add(this.sceneName);
+			this.sceneGroup.Controls.Add(this.saveButton);
+			this.sceneGroup.Controls.Add(this.loadButton);
+			this.sceneGroup.Dock = System.Windows.Forms.DockStyle.Right;
+			this.sceneGroup.ForeColor = System.Drawing.Color.White;
+			this.sceneGroup.Location = new System.Drawing.Point(906, 0);
+			this.sceneGroup.Name = "sceneGroup";
+			this.sceneGroup.Size = new System.Drawing.Size(291, 54);
+			this.sceneGroup.TabIndex = 10;
+			this.sceneGroup.TabStop = false;
+			this.sceneGroup.Text = "Scene Control";
+			// 
+			// sceneName
+			// 
+			this.sceneName.BackColor = System.Drawing.Color.Black;
+			this.sceneName.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.sceneName.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.sceneName.ForeColor = System.Drawing.Color.White;
+			this.sceneName.Location = new System.Drawing.Point(3, 19);
+			this.sceneName.Name = "sceneName";
+			this.sceneName.PlaceholderText = "Name";
+			this.sceneName.Size = new System.Drawing.Size(131, 29);
+			this.sceneName.TabIndex = 9;
+			this.sceneName.TabStop = false;
+			// 
+			// saveButton
+			// 
+			this.saveButton.BackColor = System.Drawing.Color.Black;
+			this.saveButton.Dock = System.Windows.Forms.DockStyle.Right;
+			this.saveButton.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.saveButton.ForeColor = System.Drawing.Color.White;
+			this.saveButton.Location = new System.Drawing.Point(134, 19);
+			this.saveButton.Name = "saveButton";
+			this.saveButton.Size = new System.Drawing.Size(77, 32);
+			this.saveButton.TabIndex = 8;
+			this.saveButton.TabStop = false;
+			this.saveButton.Text = "Save";
+			this.saveButton.UseVisualStyleBackColor = false;
+			this.saveButton.Click += new System.EventHandler(this.OnSaveClick);
+			// 
+			// loadButton
+			// 
+			this.loadButton.BackColor = System.Drawing.Color.Black;
+			this.loadButton.Dock = System.Windows.Forms.DockStyle.Right;
+			this.loadButton.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.loadButton.ForeColor = System.Drawing.Color.White;
+			this.loadButton.Location = new System.Drawing.Point(211, 19);
+			this.loadButton.Name = "loadButton";
+			this.loadButton.Size = new System.Drawing.Size(77, 32);
+			this.loadButton.TabIndex = 7;
+			this.loadButton.TabStop = false;
+			this.loadButton.Text = "Load";
+			this.loadButton.UseVisualStyleBackColor = false;
+			this.loadButton.Click += new System.EventHandler(this.OnLoadClick);
 			// 
 			// searchBox
 			// 
@@ -141,35 +199,19 @@
 			this.searchBox.Size = new System.Drawing.Size(142, 53);
 			this.searchBox.TabIndex = 9;
 			this.searchBox.TabStop = false;
-			this.searchBox.Text = "Search Thing";
+			this.searchBox.Text = "Search {Thing}";
 			// 
 			// searchScene
 			// 
 			this.searchScene.BackColor = System.Drawing.Color.Black;
 			this.searchScene.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.searchScene.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.searchScene.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.searchScene.ForeColor = System.Drawing.Color.White;
 			this.searchScene.Location = new System.Drawing.Point(3, 19);
 			this.searchScene.Name = "searchScene";
-			this.searchScene.Size = new System.Drawing.Size(136, 26);
-			this.searchScene.TabIndex = 2;
-			this.searchScene.TabStop = false;
-			this.searchScene.KeyDown += new System.Windows.Forms.KeyEventHandler(this.OnKeyDownObjectSearch);
-			// 
-			// loadButton
-			// 
-			this.loadButton.BackColor = System.Drawing.Color.Black;
-			this.loadButton.Dock = System.Windows.Forms.DockStyle.Right;
-			this.loadButton.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.loadButton.ForeColor = System.Drawing.Color.White;
-			this.loadButton.Location = new System.Drawing.Point(1043, 0);
-			this.loadButton.Name = "loadButton";
-			this.loadButton.Size = new System.Drawing.Size(77, 54);
-			this.loadButton.TabIndex = 7;
-			this.loadButton.TabStop = false;
-			this.loadButton.Text = "Load";
-			this.loadButton.UseVisualStyleBackColor = false;
-			this.loadButton.Click += new System.EventHandler(this.OnLoadClick);
+			this.searchScene.PlaceholderText = "UID";
+			this.searchScene.Size = new System.Drawing.Size(136, 29);
+			this.searchScene.TabIndex = 6;
 			// 
 			// editSelectionGroup
 			// 
@@ -181,7 +223,7 @@
 			this.editSelectionGroup.Size = new System.Drawing.Size(186, 54);
 			this.editSelectionGroup.TabIndex = 6;
 			this.editSelectionGroup.TabStop = false;
-			this.editSelectionGroup.Text = "Edit Selection";
+			this.editSelectionGroup.Text = "Edit Selected {Things}";
 			// 
 			// editSelectionOptions
 			// 
@@ -191,8 +233,8 @@
 			this.editSelectionOptions.ForeColor = System.Drawing.Color.White;
 			this.editSelectionOptions.FormattingEnabled = true;
 			this.editSelectionOptions.Items.AddRange(new object[] {
-            "    Reposition",
-            "       Rotate"});
+            "         Move",
+            "          Spin"});
 			this.editSelectionOptions.Location = new System.Drawing.Point(3, 19);
 			this.editSelectionOptions.Name = "editSelectionOptions";
 			this.editSelectionOptions.Size = new System.Drawing.Size(91, 32);
@@ -220,21 +262,6 @@
 			this.snap.Size = new System.Drawing.Size(82, 27);
 			this.snap.TabIndex = 5;
 			this.snap.TabStop = false;
-			// 
-			// saveButton
-			// 
-			this.saveButton.BackColor = System.Drawing.Color.Black;
-			this.saveButton.Dock = System.Windows.Forms.DockStyle.Right;
-			this.saveButton.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.saveButton.ForeColor = System.Drawing.Color.White;
-			this.saveButton.Location = new System.Drawing.Point(1120, 0);
-			this.saveButton.Name = "saveButton";
-			this.saveButton.Size = new System.Drawing.Size(77, 54);
-			this.saveButton.TabIndex = 8;
-			this.saveButton.TabStop = false;
-			this.saveButton.Text = "Save";
-			this.saveButton.UseVisualStyleBackColor = false;
-			this.saveButton.Click += new System.EventHandler(this.OnSaveClick);
 			// 
 			// gridGroup
 			// 
@@ -397,13 +424,6 @@
 			this.load.Filter = "Scene|*.scene";
 			this.load.Title = "Load Scene";
 			// 
-			// save
-			// 
-			this.save.DefaultExt = "scene";
-			this.save.FileName = "myScene";
-			this.save.Filter = "Scene|*.scene";
-			this.save.Title = "Save Scene";
-			// 
 			// FormWindow
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -424,6 +444,8 @@
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).EndInit();
 			this.windowSplit.ResumeLayout(false);
 			this.sceneStatusPanel.ResumeLayout(false);
+			this.sceneGroup.ResumeLayout(false);
+			this.sceneGroup.PerformLayout();
 			this.searchBox.ResumeLayout(false);
 			this.searchBox.PerformLayout();
 			this.editSelectionGroup.ResumeLayout(false);
@@ -451,7 +473,6 @@
 		private ToolStripSeparator sceneRightClickMenuSeparator1;
 		private ToolStripMenuItem sceneRightClickMenuResetView;
 		private ToolStripMenuItem sceneRightClickMenuCreateSprite;
-		private MaskedTextBox searchScene;
 		private Button saveButton;
 		private Label fps;
 		private ListBox editSelectionOptions;
@@ -462,10 +483,12 @@
 		private Button loadButton;
 		private FolderBrowserDialog gameDir;
 		private OpenFileDialog load;
-		private SaveFileDialog save;
 		private GroupBox searchBox;
 		private Label selectThingTip;
 		private TableLayoutPanel rightTable;
 		private TableLayoutPanel thingTypesTable;
+		private GroupBox sceneGroup;
+		private TextBox sceneName;
+		private TextBox searchScene;
 	}
 }

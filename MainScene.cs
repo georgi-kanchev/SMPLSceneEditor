@@ -10,9 +10,9 @@
 		{
 			((MainScene)CurrentScene).UnloadAssets(path);
 		}
-		public static void SaveScene(string path)
+		public static bool SaveScene(string path)
 		{
-			((MainScene)CurrentScene).Save(path);
+			return ((MainScene)CurrentScene).Save(path);
 		}
 	}
 }
