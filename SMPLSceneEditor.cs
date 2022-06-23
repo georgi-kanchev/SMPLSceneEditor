@@ -12,15 +12,9 @@ namespace SMPLSceneEditor
 	public partial class FormWindow : Form
 	{
 		#region Fields
-		private Dictionary<string, string> listBoxPlaceholderTexts = new()
-		{
-			{ "PropChildrenUIDs", "(select to focus)                                     " },
-			{ "PropTypes", "(select to edit)                                     " },
-		};
-
 		private readonly System.Windows.Forms.Timer loop;
 		private readonly RenderWindow window;
-		private float sceneSc = 1;
+		private float sceneSc = 1f;
 		private int selectDepthIndex;
 		private bool isDragSelecting, isHoveringScene, confirmDeleteChildrenMsgShown, selectGameDirShown, saveSceneShown;
 		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos;
@@ -29,6 +23,16 @@ namespace SMPLSceneEditor
 		private readonly FileSystemWatcher assetsWatcher;
 		private string? finalGameDir;
 		private readonly Dictionary<string, TableLayoutPanel> editThingTableTypes = new();
+		private readonly Dictionary<string, string> listBoxPlaceholderTexts = new()
+		{
+			{ "PropChildrenUIDs", "(select to focus)                                     " },
+			{ "PropTypes", "(select to edit)                                     " },
+		};
+		private readonly Dictionary<string, Color> nonVisualTypeColors = new()
+		{
+			{ "Camera", Color.Red },
+			{ "Light", Color.Yellow },
+		};
 		#endregion
 
 		#region Init
@@ -38,7 +42,6 @@ namespace SMPLSceneEditor
 			UpdateThingPanel();
 
 			WindowState = FormWindowState.Maximized;
-
 			window = new(windowPicture.Handle);
 			windowPicture.MouseWheel += OnSceneScroll;
 
@@ -46,21 +49,22 @@ namespace SMPLSceneEditor
 			loop.Tick += OnUpdate;
 			loop.Start();
 
+			editSelectionOptions.SelectedIndex = 0;
+			Scene.CurrentScene = new MainScene();
+			assetsWatcher = new(AppContext.BaseDirectory) { EnableRaisingEvents = true };
+			InitTables();
 			SetView();
 
-			editSelectionOptions.SelectedIndex = 0;
-
-			Scene.CurrentScene = new MainScene();
-
-			assetsWatcher = new(AppContext.BaseDirectory) { EnableRaisingEvents = true };
-
-			InitTables();
+			var desktopRes = Screen.PrimaryScreen.Bounds.Size;
+			ThingManager.CreateCamera(Scene.MAIN_CAMERA_UID, new(desktopRes.Width, desktopRes.Height));
 		}
 		private void InitTables()
 		{
 			var thing = CreateDefaultTable("tableThing");
 			var sprite = CreateDefaultTable("tableSprite");
 			var visual = CreateDefaultTable("tableVisual");
+			var light = CreateDefaultTable("tableLight");
+			var camera = CreateDefaultTable("tableCamera");
 			var types = thingTypesTable;
 
 			AddThingProperty(types, "Types", "PropTypes", typeof(List<string>));
@@ -68,12 +72,16 @@ namespace SMPLSceneEditor
 			AddPropsThing();
 			AddPropsSprite();
 			AddPropsVisual();
+			AddPropsLight();
+			AddPropsCamera();
 
 			rightTable.Controls.Add(thing, 0, 1);
 
 			editThingTableTypes[thing.Name] = thing;
 			editThingTableTypes[sprite.Name] = sprite;
 			editThingTableTypes[visual.Name] = visual;
+			editThingTableTypes[light.Name] = light;
+			editThingTableTypes[camera.Name] = camera;
 
 			TableLayoutPanel CreateDefaultTable(string name)
 			{
@@ -96,6 +104,7 @@ namespace SMPLSceneEditor
 				AddThingProperty(thing, "Self", rightLabel: true); AddThingProperty(thing, "Properties", null);
 				AddThingProperty(thing, "UID", "PropUID", typeof(string));
 				AddThingProperty(thing, "Old UID", "PropOldUID", typeof(string), readOnly: true);
+				AddThingProperty(thing, "Age", "PropAgeTimer", typeof(string), readOnly: true);
 				AddThingProperty(thing, "Update Order", "PropUpdateOrder", typeof(int));
 				AddThingProperty(thing, "Position", "PropPosition", typeof(Vector2));
 				AddThingProperty(thing, "Angle", "PropAngle", typeof(float));
@@ -132,11 +141,20 @@ namespace SMPLSceneEditor
 				AddThingProperty(visual, "Blend Mode", "PropBlendMode", typeof(ThingManager.BlendModes));
 				AddThingProperty(visual, ""); AddThingProperty(visual, "");
 				AddThingProperty(visual, "Texture Path", "PropTexturePath", typeof(string));
-				AddThingProperty(visual, "Shader Path", "PropShaderPath", typeof(string));
+				AddThingProperty(visual, "Effect", "PropEffect", typeof(ThingManager.Effects));
 				AddThingProperty(visual, ""); AddThingProperty(visual, "");
 				AddThingProperty(visual, "Camera UID", "PropCameraUID", typeof(string));
 				AddThingProperty(visual, ""); AddThingProperty(visual, "");
 				AddThingProperty(visual, "Hitbox", "PropHitbox", typeof(Hitbox));
+			}
+			void AddPropsLight()
+			{
+				AddThingProperty(light, "Color", "PropColor", typeof(Color));
+			}
+			void AddPropsCamera()
+			{
+				AddThingProperty(camera, "Resolution", "PropResolution", typeof(Vector2), readOnly: true);
+				AddThingProperty(camera, "Is Smooth", "PropIsSmooth", typeof(bool));
 			}
 		}
 		private void AddThingProperty(TableLayoutPanel table, string label, string? propName = null, Type? valueType = null, bool readOnly = false,
@@ -289,6 +307,7 @@ namespace SMPLSceneEditor
 
 			ThingManager.UpdateAllThings();
 			ThingManager.DrawAllVisuals(window);
+			DrawAllNonVisuals();
 
 			TryDrawSelection();
 
@@ -349,6 +368,8 @@ namespace SMPLSceneEditor
 				}
 				else if(type == "BlendModes")
 					ProcessEnumList((ComboBox)control, typeof(ThingManager.BlendModes), propName);
+				else if(type == "Effects")
+					ProcessEnumList((ComboBox)control, typeof(ThingManager.Effects), propName);
 
 				object Get() => ThingManager.Get(uid, propName);
 			}
@@ -401,6 +422,30 @@ namespace SMPLSceneEditor
 				tick.Checked = value;
 				tick.BackColor = tick.Checked ? System.Drawing.Color.Green : System.Drawing.Color.Red;
 			}
+		}
+		private void DrawAllNonVisuals()
+		{
+			var uids = ThingManager.GetUIDs();
+			for(int i = 0; i < uids.Count; i++)
+			{
+				var uid = uids[i];
+				var type = ((List<string>)ThingManager.Get(uid, "Types"))[0];
+
+				if(nonVisualTypeColors.ContainsKey(type) == false)
+					continue;
+
+				var boundingBox = (Hitbox)ThingManager.Get(uid, "BoundingBox");
+				boundingBox.Draw(window, nonVisualTypeColors[type], sceneSc * 4);
+			}
+		}
+
+		private void ResetThingPanel()
+		{
+			if(rightTable.Controls.ContainsKey("tableThing"))
+				return;
+			rightTable.Controls.Clear();
+			rightTable.Controls.Add(thingTypesTable);
+			rightTable.Controls.Add(editThingTableTypes["tableThing"]);
 		}
 
 		private void UpdateFPS()
@@ -472,7 +517,8 @@ namespace SMPLSceneEditor
 
 		private void TryCtrlS()
 		{
-			if(saveSceneShown == false && Keyboard.IsKeyPressed(Keyboard.Key.LControl) && Keyboard.IsKeyPressed(Keyboard.Key.S).Once("ctrl-s-save-scene"))
+			if(saveSceneShown == false && Form.ActiveForm == this &&
+				Keyboard.IsKeyPressed(Keyboard.Key.LControl) && Keyboard.IsKeyPressed(Keyboard.Key.S).Once("ctrl-s-save-scene"))
 				TrySaveScene();
 		}
 		private void TrySaveScene()
@@ -665,7 +711,7 @@ namespace SMPLSceneEditor
 		#endregion
 
 		#region View
-		private void SetView(Vector2 pos = default, float angle = 0, float scale = 1)
+		private void SetView(Vector2 pos = default, float angle = 0, float scale = 1.5f)
 		{
 			SetViewPosition(pos);
 			SetViewAngle(angle);
@@ -691,7 +737,7 @@ namespace SMPLSceneEditor
 		private void FocusThing(string uid)
 		{
 			SetViewPosition((Vector2)ThingManager.Get(uid, "Position"));
-			SetViewScale((float)ThingManager.Get(uid, "Scale"));
+			SetViewScale((float)ThingManager.Get(uid, "Scale") + 0.5f);
 		}
 		#endregion
 		#region Get
@@ -803,12 +849,7 @@ namespace SMPLSceneEditor
 				var uid = uids[i];
 
 				for(int j = 0; j < uid.Length; j++)
-				{
-					if(searchScene.Text.Length <= j || uid[j] != searchScene.Text[j])
-						break;
-
 					curMatchingSymbols++;
-				}
 
 				if(curMatchingSymbols > bestGuessSymbolsMatch)
 				{
@@ -941,6 +982,9 @@ namespace SMPLSceneEditor
 		}
 		private void OnMouseUpScene(object sender, MouseEventArgs e)
 		{
+			if(e.Button == MouseButtons.Left)
+				ResetThingPanel();
+
 			UpdateThingPanel();
 
 			if(e.Button == MouseButtons.Right)
@@ -953,14 +997,77 @@ namespace SMPLSceneEditor
 		}
 		#endregion
 		#region SceneRightClick
+		private void OnSceneRightClickMenuCreateSprite(object sender, EventArgs e)
+		{
+			var uid = ThingManager.CreateSprite("Sprite");
+			ThingManager.Set(uid, "Position", rightClickPos);
+		}
+		private void OnSceneRightClickMenuCreateLight(object sender, EventArgs e)
+		{
+			var uid = ThingManager.CreateLight("Light");
+			ThingManager.Set(uid, "Position", rightClickPos);
+		}
+		private void OnSceneRightclickMenuCreateCamera(object sender, EventArgs e)
+		{
+			var res = new Vector2();
+			var minRes = new Vector2(1, 1);
+			var maxRes = new Vector2(7680, 4320);
+			var input = GetInput();
+
+			while(InputIsInvalid(input, out res))
+				input = GetInput();
+
+			if(input == "")
+				return;
+
+			if(res.X.IsBetween(minRes.X, maxRes.X) == false ||
+				res.Y.IsBetween(minRes.Y, maxRes.Y) == false)
+			{
+				Error();
+				return;
+			}
+
+			var uid = ThingManager.CreateCamera("Camera", res);
+			ThingManager.Set(uid, "Position", rightClickPos);
+
+			string GetInput()
+			{
+				return FormWindow.GetInput(
+					"Camera Resolution",
+					"Provide the desired Camera resolution.\nExample: '1920 1080', '600 600'",
+					"1000 1000");
+			}
+			bool InputIsInvalid(string input, out Vector2 resolution)
+			{
+				resolution = new();
+				if(string.IsNullOrWhiteSpace(input))
+					return false;
+
+				var split = input.Split(' ');
+				if(split.Length != 2 || split[0].IsNumber() == false || split[1].IsNumber() == false)
+				{
+					Error();
+					return true;
+				}
+
+				resolution = new(split[0].ToNumber(), split[1].ToNumber());
+				return false;
+			}
+			void Error()
+			{
+				MessageBox.Show($"The provided Camera resolution is invalid.\n" +
+					$"A valid resolution is between [{minRes.X} {minRes.Y}] and [{maxRes.X} {maxRes.Y}].");
+			}
+		}
+
 		private void OnSceneRightClickMenuResetView(object sender, EventArgs e)
 		{
 			SetView();
 		}
-		private void OnSceneRightClickMenuCreateSprite(object sender, EventArgs e)
+		private void OnSceneRightClickMenuDeselect(object sender, EventArgs e)
 		{
-			var uid = ThingManager.CreateSprite("sprite");
-			ThingManager.Set(uid, "Position", rightClickPos);
+			selectedUIDs.Clear();
+			ResetThingPanel();
 		}
 		#endregion
 		#region EditThingPanel
@@ -999,6 +1106,11 @@ namespace SMPLSceneEditor
 			{
 				var index = list.SelectedIndex;
 				ThingManager.Set(selectedUIDs[0], "BlendMode", (ThingManager.BlendModes)index);
+			}
+			else if(list.Name == "PropEffect")
+			{
+				var index = list.SelectedIndex;
+				ThingManager.Set(selectedUIDs[0], "Effect", (ThingManager.Effects)index);
 			}
 		}
 		private void OnListThingDropDown(object? sender, EventArgs e)
@@ -1165,6 +1277,54 @@ namespace SMPLSceneEditor
 		private static float AngToGrid(float ang, float gridSz)
 		{
 			return new Vector2(ang).PointToGrid(new(gridSz)).X;
+		}
+		private static string GetInput(string title, string text, string defaultInput = "")
+		{
+			var split = text.Split('\n');
+			var spacing = new Vector2i(50, 20);
+			var btnSz = new Vector2i(70, 25);
+			var textBoxSz = new Vector2i(80, 25);
+			var sz = new Vector2i(400, spacing.Y * 5 + btnSz.Y + split.Length * 15);
+			var prompt = new Form()
+			{
+				Width = sz.X,
+				Height = sz.Y,
+				FormBorderStyle = FormBorderStyle.FixedToolWindow,
+				Text = title,
+				StartPosition = FormStartPosition.CenterScreen
+			};
+			var textLabel = new Label()
+			{
+				Left = spacing.X,
+				Top = spacing.Y,
+				Text = text,
+				Width = sz.X - spacing.X * 2,
+				Height = sz.Y - btnSz.Y - spacing.Y * 4
+			};
+			var textBox = new TextBox()
+			{
+				Left = spacing.X,
+				Top = spacing.Y + textLabel.Height,
+				Width = sz.X - btnSz.X - spacing.X * 3,
+				Height = textBoxSz.Y,
+				Text = defaultInput
+			};
+			var button = new Button()
+			{
+				Text = "OK",
+				Left = sz.X - btnSz.X - spacing.X,
+				Width = btnSz.X,
+				Height = btnSz.Y,
+				Top = spacing.Y + textLabel.Height,
+				DialogResult = DialogResult.OK
+			};
+			button.Click += (sender, e) => { prompt.Close(); };
+			prompt.Controls.Add(textBox);
+			prompt.Controls.Add(button);
+			prompt.Controls.Add(textLabel);
+			prompt.AcceptButton = button;
+
+			return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
 		}
 		#endregion
 	}

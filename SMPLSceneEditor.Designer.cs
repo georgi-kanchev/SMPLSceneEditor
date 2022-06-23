@@ -49,8 +49,11 @@
 			this.sceneRightClickMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
 			this.sceneRightClickMenuCreate = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateSprite = new System.Windows.Forms.ToolStripMenuItem();
+			this.lightToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.cameraToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.sceneRightClickMenuResetView = new System.Windows.Forms.ToolStripMenuItem();
+			this.unselectAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.selectThingTip = new System.Windows.Forms.Label();
 			this.rightTable = new System.Windows.Forms.TableLayoutPanel();
 			this.thingTypesTable = new System.Windows.Forms.TableLayoutPanel();
@@ -212,6 +215,7 @@
 			this.searchScene.PlaceholderText = "UID";
 			this.searchScene.Size = new System.Drawing.Size(136, 29);
 			this.searchScene.TabIndex = 6;
+			this.searchScene.KeyDown += new System.Windows.Forms.KeyEventHandler(this.OnKeyDownObjectSearch);
 			// 
 			// editSelectionGroup
 			// 
@@ -341,36 +345,60 @@
 			this.sceneRightClickMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.sceneRightClickMenuCreate,
             this.sceneRightClickMenuSeparator1,
-            this.sceneRightClickMenuResetView});
+            this.sceneRightClickMenuResetView,
+            this.unselectAllToolStripMenuItem});
 			this.sceneRightClickMenu.Name = "sceneRightClickMenu";
-			this.sceneRightClickMenu.Size = new System.Drawing.Size(131, 54);
+			this.sceneRightClickMenu.Size = new System.Drawing.Size(136, 76);
 			// 
 			// sceneRightClickMenuCreate
 			// 
 			this.sceneRightClickMenuCreate.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.sceneRightClickMenuCreateSprite});
+            this.sceneRightClickMenuCreateSprite,
+            this.lightToolStripMenuItem,
+            this.cameraToolStripMenuItem});
 			this.sceneRightClickMenuCreate.Name = "sceneRightClickMenuCreate";
-			this.sceneRightClickMenuCreate.Size = new System.Drawing.Size(130, 22);
+			this.sceneRightClickMenuCreate.Size = new System.Drawing.Size(135, 22);
 			this.sceneRightClickMenuCreate.Text = "Create";
 			// 
 			// sceneRightClickMenuCreateSprite
 			// 
 			this.sceneRightClickMenuCreateSprite.Name = "sceneRightClickMenuCreateSprite";
-			this.sceneRightClickMenuCreateSprite.Size = new System.Drawing.Size(104, 22);
+			this.sceneRightClickMenuCreateSprite.Size = new System.Drawing.Size(115, 22);
 			this.sceneRightClickMenuCreateSprite.Text = "Sprite";
 			this.sceneRightClickMenuCreateSprite.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateSprite);
+			// 
+			// lightToolStripMenuItem
+			// 
+			this.lightToolStripMenuItem.Name = "lightToolStripMenuItem";
+			this.lightToolStripMenuItem.Size = new System.Drawing.Size(115, 22);
+			this.lightToolStripMenuItem.Text = "Light";
+			this.lightToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateLight);
+			// 
+			// cameraToolStripMenuItem
+			// 
+			this.cameraToolStripMenuItem.Name = "cameraToolStripMenuItem";
+			this.cameraToolStripMenuItem.Size = new System.Drawing.Size(115, 22);
+			this.cameraToolStripMenuItem.Text = "Camera";
+			this.cameraToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateCamera);
 			// 
 			// sceneRightClickMenuSeparator1
 			// 
 			this.sceneRightClickMenuSeparator1.Name = "sceneRightClickMenuSeparator1";
-			this.sceneRightClickMenuSeparator1.Size = new System.Drawing.Size(127, 6);
+			this.sceneRightClickMenuSeparator1.Size = new System.Drawing.Size(132, 6);
 			// 
 			// sceneRightClickMenuResetView
 			// 
 			this.sceneRightClickMenuResetView.Name = "sceneRightClickMenuResetView";
-			this.sceneRightClickMenuResetView.Size = new System.Drawing.Size(130, 22);
+			this.sceneRightClickMenuResetView.Size = new System.Drawing.Size(135, 22);
 			this.sceneRightClickMenuResetView.Text = "Reset View";
 			this.sceneRightClickMenuResetView.Click += new System.EventHandler(this.OnSceneRightClickMenuResetView);
+			// 
+			// unselectAllToolStripMenuItem
+			// 
+			this.unselectAllToolStripMenuItem.Name = "unselectAllToolStripMenuItem";
+			this.unselectAllToolStripMenuItem.Size = new System.Drawing.Size(135, 22);
+			this.unselectAllToolStripMenuItem.Text = "Deselect All";
+			this.unselectAllToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuDeselect);
 			// 
 			// selectThingTip
 			// 
@@ -490,5 +518,8 @@
 		private GroupBox sceneGroup;
 		private TextBox sceneName;
 		private TextBox searchScene;
+		private ToolStripMenuItem lightToolStripMenuItem;
+		private ToolStripMenuItem unselectAllToolStripMenuItem;
+		private ToolStripMenuItem cameraToolStripMenuItem;
 	}
 }
