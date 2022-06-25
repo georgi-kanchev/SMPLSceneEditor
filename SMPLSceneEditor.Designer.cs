@@ -30,8 +30,7 @@
 		{
 			this.components = new System.ComponentModel.Container();
 			this.windowSplit = new System.Windows.Forms.SplitContainer();
-			this.fps = new System.Windows.Forms.Label();
-			this.sceneMousePos = new System.Windows.Forms.Label();
+			this.sceneValues = new System.Windows.Forms.Label();
 			this.sceneStatusPanel = new System.Windows.Forms.Panel();
 			this.sceneGroup = new System.Windows.Forms.GroupBox();
 			this.sceneName = new System.Windows.Forms.TextBox();
@@ -59,6 +58,9 @@
 			this.thingTypesTable = new System.Windows.Forms.TableLayoutPanel();
 			this.gameDir = new System.Windows.Forms.FolderBrowserDialog();
 			this.load = new System.Windows.Forms.OpenFileDialog();
+			this.pickColor = new System.Windows.Forms.ColorDialog();
+			this.pickAsset = new System.Windows.Forms.OpenFileDialog();
+			this.thingsList = new System.Windows.Forms.ContextMenuStrip(this.components);
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).BeginInit();
 			this.windowSplit.Panel1.SuspendLayout();
 			this.windowSplit.Panel2.SuspendLayout();
@@ -85,8 +87,7 @@
 			// 
 			// windowSplit.Panel1
 			// 
-			this.windowSplit.Panel1.Controls.Add(this.fps);
-			this.windowSplit.Panel1.Controls.Add(this.sceneMousePos);
+			this.windowSplit.Panel1.Controls.Add(this.sceneValues);
 			this.windowSplit.Panel1.Controls.Add(this.sceneStatusPanel);
 			this.windowSplit.Panel1.Controls.Add(this.windowPicture);
 			// 
@@ -99,29 +100,16 @@
 			this.windowSplit.TabIndex = 0;
 			this.windowSplit.TabStop = false;
 			// 
-			// fps
+			// sceneValues
 			// 
-			this.fps.AutoSize = true;
-			this.fps.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
-			this.fps.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.fps.ForeColor = System.Drawing.Color.White;
-			this.fps.Location = new System.Drawing.Point(0, 61);
-			this.fps.Name = "fps";
-			this.fps.Size = new System.Drawing.Size(31, 21);
-			this.fps.TabIndex = 4;
-			this.fps.Text = "fps";
-			// 
-			// sceneMousePos
-			// 
-			this.sceneMousePos.AutoSize = true;
-			this.sceneMousePos.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
-			this.sceneMousePos.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.sceneMousePos.ForeColor = System.Drawing.Color.White;
-			this.sceneMousePos.Location = new System.Drawing.Point(0, 82);
-			this.sceneMousePos.Name = "sceneMousePos";
-			this.sceneMousePos.Size = new System.Drawing.Size(81, 21);
-			this.sceneMousePos.TabIndex = 3;
-			this.sceneMousePos.Text = "mousePos";
+			this.sceneValues.AutoSize = true;
+			this.sceneValues.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+			this.sceneValues.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.sceneValues.ForeColor = System.Drawing.Color.White;
+			this.sceneValues.Location = new System.Drawing.Point(0, 61);
+			this.sceneValues.Name = "sceneValues";
+			this.sceneValues.Size = new System.Drawing.Size(0, 21);
+			this.sceneValues.TabIndex = 4;
 			// 
 			// sceneStatusPanel
 			// 
@@ -148,7 +136,7 @@
 			this.sceneGroup.Size = new System.Drawing.Size(291, 54);
 			this.sceneGroup.TabIndex = 10;
 			this.sceneGroup.TabStop = false;
-			this.sceneGroup.Text = "Scene Control";
+			this.sceneGroup.Text = "Scene";
 			// 
 			// sceneName
 			// 
@@ -196,10 +184,11 @@
 			// searchBox
 			// 
 			this.searchBox.Controls.Add(this.searchScene);
+			this.searchBox.Dock = System.Windows.Forms.DockStyle.Left;
 			this.searchBox.ForeColor = System.Drawing.Color.White;
-			this.searchBox.Location = new System.Drawing.Point(365, 1);
+			this.searchBox.Location = new System.Drawing.Point(354, 0);
 			this.searchBox.Name = "searchBox";
-			this.searchBox.Size = new System.Drawing.Size(142, 53);
+			this.searchBox.Size = new System.Drawing.Size(142, 54);
 			this.searchBox.TabIndex = 9;
 			this.searchBox.TabStop = false;
 			this.searchBox.Text = "Search {Thing}";
@@ -221,8 +210,9 @@
 			// 
 			this.editSelectionGroup.Controls.Add(this.editSelectionOptions);
 			this.editSelectionGroup.Controls.Add(this.snap);
+			this.editSelectionGroup.Dock = System.Windows.Forms.DockStyle.Left;
 			this.editSelectionGroup.ForeColor = System.Drawing.Color.White;
-			this.editSelectionGroup.Location = new System.Drawing.Point(174, 0);
+			this.editSelectionGroup.Location = new System.Drawing.Point(168, 0);
 			this.editSelectionGroup.Name = "editSelectionGroup";
 			this.editSelectionGroup.Size = new System.Drawing.Size(186, 54);
 			this.editSelectionGroup.TabIndex = 6;
@@ -342,6 +332,7 @@
 			// 
 			// sceneRightClickMenu
 			// 
+			this.sceneRightClickMenu.BackColor = System.Drawing.Color.White;
 			this.sceneRightClickMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.sceneRightClickMenuCreate,
             this.sceneRightClickMenuSeparator1,
@@ -452,6 +443,22 @@
 			this.load.Filter = "Scene|*.scene";
 			this.load.Title = "Load Scene";
 			// 
+			// pickColor
+			// 
+			this.pickColor.Color = System.Drawing.Color.White;
+			this.pickColor.FullOpen = true;
+			// 
+			// pickAsset
+			// 
+			this.pickAsset.Title = "Pick Asset";
+			// 
+			// thingsList
+			// 
+			this.thingsList.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.HorizontalStackWithOverflow;
+			this.thingsList.Name = "contextMenuStrip1";
+			this.thingsList.Size = new System.Drawing.Size(61, 4);
+			this.thingsList.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.OnThingListPick);
+			// 
 			// FormWindow
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -495,14 +502,13 @@
 		private Panel sceneStatusPanel;
 		private GroupBox gridGroup;
 		private TrackBar gridThickness;
-		private Label sceneMousePos;
 		private ContextMenuStrip sceneRightClickMenu;
 		private ToolStripMenuItem sceneRightClickMenuCreate;
 		private ToolStripSeparator sceneRightClickMenuSeparator1;
 		private ToolStripMenuItem sceneRightClickMenuResetView;
 		private ToolStripMenuItem sceneRightClickMenuCreateSprite;
 		private Button saveButton;
-		private Label fps;
+		private Label sceneValues;
 		private ListBox editSelectionOptions;
 		private NumericUpDown snap;
 		private NumericUpDown gridSpacing;
@@ -521,5 +527,8 @@
 		private ToolStripMenuItem lightToolStripMenuItem;
 		private ToolStripMenuItem unselectAllToolStripMenuItem;
 		private ToolStripMenuItem cameraToolStripMenuItem;
+		private ColorDialog pickColor;
+		private OpenFileDialog pickAsset;
+		private ContextMenuStrip thingsList;
 	}
 }

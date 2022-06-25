@@ -16,12 +16,12 @@ namespace SMPLSceneEditor
 		private readonly RenderWindow window;
 		private float sceneSc = 1f;
 		private int selectDepthIndex;
-		private bool isDragSelecting, isHoveringScene, confirmDeleteChildrenMsgShown, selectGameDirShown, saveSceneShown;
+		private bool isDragSelecting, isHoveringScene, confirmDeleteChildrenMsgShown, selectGameDirShown, saveSceneShown, quitting;
 		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos;
 		private readonly List<string> selectedUIDs = new();
 		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
-		private readonly FileSystemWatcher assetsWatcher;
-		private string? finalGameDir;
+		private readonly FileSystemWatcher assetsWatcher, assetsFolderWatcher;
+		private string prevAssetsMirrorPath = "Assets", assetsPath = "Assets", finalGameDir = "", pickThingProperty = "";
 		private readonly Dictionary<string, TableLayoutPanel> editThingTableTypes = new();
 		private readonly Dictionary<string, string> listBoxPlaceholderTexts = new()
 		{
@@ -41,6 +41,8 @@ namespace SMPLSceneEditor
 			InitializeComponent();
 			UpdateThingPanel();
 
+			DeleteCache();
+
 			WindowState = FormWindowState.Maximized;
 			window = new(windowPicture.Handle);
 			windowPicture.MouseWheel += OnSceneScroll;
@@ -49,15 +51,26 @@ namespace SMPLSceneEditor
 			loop.Tick += OnUpdate;
 			loop.Start();
 
+			FormClosing += OnAppQuitting;
+
 			editSelectionOptions.SelectedIndex = 0;
 			Scene.CurrentScene = new MainScene();
-			assetsWatcher = new(AppContext.BaseDirectory) { EnableRaisingEvents = true };
+
+			// these directories are changed upon updating the game dir
+			assetsWatcher = new("C:\\") { EnableRaisingEvents = true };
+			assetsFolderWatcher = new("C:\\") { EnableRaisingEvents = true };
+			assetsFolderWatcher.Renamed += OnAssetFolderRename;
+			assetsWatcher.Deleted += OnAssetDelete;
+			assetsWatcher.Created += OnAssetCreate;
+			assetsWatcher.Renamed += OnAssetRename;
+
 			InitTables();
 			SetView();
 
 			var desktopRes = Screen.PrimaryScreen.Bounds.Size;
 			ThingManager.CreateCamera(Scene.MAIN_CAMERA_UID, new(desktopRes.Width, desktopRes.Height));
 		}
+
 		private void InitTables()
 		{
 			var thing = CreateDefaultTable("tableThing");
@@ -139,9 +152,11 @@ namespace SMPLSceneEditor
 				AddThingProperty(visual, "Depth", "PropDepth", typeof(int));
 				AddThingProperty(visual, "Tint", "PropTint", typeof(Color));
 				AddThingProperty(visual, "Blend Mode", "PropBlendMode", typeof(ThingManager.BlendModes));
+				AddThingProperty(visual, "Effect", "PropEffect", typeof(ThingManager.Effects));
 				AddThingProperty(visual, ""); AddThingProperty(visual, "");
 				AddThingProperty(visual, "Texture Path", "PropTexturePath", typeof(string));
-				AddThingProperty(visual, "Effect", "PropEffect", typeof(ThingManager.Effects));
+				AddThingProperty(visual, "Has Smooth Texture", "PropHasSmoothTexture", typeof(bool));
+				AddThingProperty(visual, "Has Repeated Texture", "PropHasRepeatedTexture", typeof(bool));
 				AddThingProperty(visual, ""); AddThingProperty(visual, "");
 				AddThingProperty(visual, "Camera UID", "PropCameraUID", typeof(string));
 				AddThingProperty(visual, ""); AddThingProperty(visual, "");
@@ -227,6 +242,76 @@ namespace SMPLSceneEditor
 			if(valueType != typeof(Button))
 				table.Controls.Add(lab);
 
+			if(propName != null)
+			{
+				if(propName.Contains("Path"))
+				{
+					var btn = new Button() { Text = "Assets", Dock = DockStyle.Right };
+					btn.Click += PickAsset;
+					lab.Controls.Add(btn);
+				}
+				else if(readOnly == false && valueType == typeof(string) && propName != "PropUID" && propName.Contains("UID"))
+				{
+					var btn = new Button() { Text = "Things", Dock = DockStyle.Right, Width = 80 };
+					btn.Click += PickThing;
+					lab.Controls.Add(btn);
+				}
+				else if(valueType == typeof(Color))
+				{
+					var btn = new Button() { Text = "Colors", Dock = DockStyle.Right, Width = 80 };
+					btn.Click += PickColor;
+					lab.Controls.Add(btn);
+				}
+			}
+
+			void PickThing(object? sender, EventArgs e)
+			{
+				var uids = ThingManager.GetUIDs();
+
+				thingsList.MaximumSize = new(thingsList.MaximumSize.Width, 300);
+				thingsList.Items.Clear();
+				for(int i = 0; i < uids.Count; i++)
+					thingsList.Items.Add(uids[i]);
+
+				if(sender == null)
+					return;
+				var control = (Control)sender;
+
+				pickThingProperty = propName.Replace("Prop", "");
+				// show twice cuz first time has wrong position
+				Show();
+				Show();
+
+				var t = thingsList;
+
+				void Show() => thingsList.Show(this, control.PointToScreen(new(-thingsList.Width, -control.Height / 2)));
+			}
+			void PickColor(object? sender, EventArgs e)
+			{
+				if(pickColor.ShowDialog() != DialogResult.OK)
+					return;
+
+				var c = pickColor.Color;
+				var property = propName.Replace("Prop", "");
+				var uid = selectedUIDs[0];
+				var col = (Color)ThingManager.Get(uid, property);
+
+				ThingManager.Set(uid, property, new Color(c.R, c.G, c.B, col.A));
+				UpdateThingPanel();
+			}
+			void PickAsset(object? sender, EventArgs e)
+			{
+				pickAsset.InitialDirectory = assetsPath;
+				if(pickAsset.ShowDialog() != DialogResult.OK)
+					return;
+
+				var asset = pickAsset.FileName;
+				var property = propName.Replace("Prop", "");
+				var uid = selectedUIDs[0];
+
+				ThingManager.Set(uid, property, GetMirrorAssetPath(asset));
+				UpdateThingPanel();
+			}
 			void SetDefault(Control control, float fontSize = FONT_SIZE, bool reverseColors = false)
 			{
 				var black = System.Drawing.Color.Black;
@@ -289,6 +374,7 @@ namespace SMPLSceneEditor
 		#region Update
 		private void OnUpdate(object? sender, EventArgs e)
 		{
+			SMPL.Tools.Time.Update();
 			TryUpdateGameDir();
 
 			window.Size = new((uint)windowPicture.Width, (uint)windowPicture.Height);
@@ -299,11 +385,9 @@ namespace SMPLSceneEditor
 
 			window.Clear();
 			DrawGrid();
-			TryShowMousePos();
-			UpdateFPS();
+			UpdateSceneValues();
 
 			TrySelect();
-			TryDestroy();
 
 			ThingManager.UpdateAllThings();
 			ThingManager.DrawAllVisuals(window);
@@ -313,6 +397,7 @@ namespace SMPLSceneEditor
 
 			window.Display();
 
+			TryDestroy();
 			TryCtrlS();
 		}
 		private void UpdateThingPanel()
@@ -364,12 +449,18 @@ namespace SMPLSceneEditor
 					SetNumber((NumericUpDown)table.Controls[1], col.G);
 					SetNumber((NumericUpDown)table.Controls[2], col.B);
 					SetNumber((NumericUpDown)table.Controls[3], col.A);
-					control.BackColor = System.Drawing.Color.FromArgb(col.A, col.R, col.G, col.B);
+					control.BackColor = System.Drawing.Color.FromArgb(255, col.R, col.G, col.B);
 				}
 				else if(type == "BlendModes")
 					ProcessEnumList((ComboBox)control, typeof(ThingManager.BlendModes), propName);
 				else if(type == "Effects")
 					ProcessEnumList((ComboBox)control, typeof(ThingManager.Effects), propName);
+				else if(type == "Hitbox")
+				{
+					var tick = (CheckBox)control;
+					tick.BackColor = System.Drawing.Color.YellowGreen;
+					tick.ForeColor = System.Drawing.Color.Black;
+				}
 
 				object Get() => ThingManager.Get(uid, propName);
 			}
@@ -448,10 +539,15 @@ namespace SMPLSceneEditor
 			rightTable.Controls.Add(editThingTableTypes["tableThing"]);
 		}
 
-		private void UpdateFPS()
+		private void UpdateSceneValues()
 		{
-			SMPL.Tools.Time.Update();
-			fps.Text = $"FPS [{SMPL.Tools.Time.FPS:F0}]";
+			var gridSpacing = GetGridSpacing();
+			var mousePos = GetMousePosition();
+			var inGrid = mousePos.PointToGrid(new(gridSpacing)) + new Vector2(gridSpacing) * 0.5f;
+			sceneValues.Text =
+				$"FPS [{SMPL.Tools.Time.FPS:F0}]\n" +
+				$"Cursor [{(int)mousePos.X} {(int)mousePos.Y}]\n" +
+				$"Grid [{(int)inGrid.X} {(int)inGrid.Y}]";
 		}
 		private void DrawGrid()
 		{
@@ -517,7 +613,7 @@ namespace SMPLSceneEditor
 
 		private void TryCtrlS()
 		{
-			if(saveSceneShown == false && Form.ActiveForm == this &&
+			if(saveSceneShown == false && ActiveForm == this &&
 				Keyboard.IsKeyPressed(Keyboard.Key.LControl) && Keyboard.IsKeyPressed(Keyboard.Key.S).Once("ctrl-s-save-scene"))
 				TrySaveScene();
 		}
@@ -525,20 +621,36 @@ namespace SMPLSceneEditor
 		{
 			saveSceneShown = true;
 			if(string.IsNullOrWhiteSpace(sceneName.Text) || MainScene.SaveScene(Path.Join(finalGameDir, sceneName.Text + ".scene")) == false)
-				MessageBox.Show(this, "Enter a valid Scene name before saving.", "Failed to Save!");
-			saveSceneShown = false;
-		}
-		private void TryShowMousePos()
-		{
-			if(sceneMousePos.Visible == false)
-				return;
+			{
+				if(quitting)
+					return;
 
-			var gridSpacing = GetGridSpacing();
-			var mousePos = GetMousePosition();
-			var inGrid = mousePos.PointToGrid(new(gridSpacing)) + new Vector2(gridSpacing) * 0.5f;
-			sceneMousePos.Text =
-				$"Cursor [{(int)mousePos.X} {(int)mousePos.Y}]\n" +
-				$"Grid [{(int)inGrid.X} {(int)inGrid.Y}]";
+				MessageBox.Show(this, "Enter a valid Scene name before saving.", "Failed to Save!");
+				saveSceneShown = false;
+				return;
+			}
+			saveSceneShown = false;
+
+			var prevSceneName = prevAssetsMirrorPath.Replace(" Assets", "");
+			var prevScenePath = finalGameDir + "\\" + prevSceneName + ".scene";
+			if(sceneName.Text != prevSceneName && File.Exists(prevScenePath))
+				File.Delete(prevScenePath);
+
+			var path = sceneName.Text + " Assets";
+			assetsPath = finalGameDir + "\\" + path;
+			if(Directory.Exists(prevAssetsMirrorPath) && prevAssetsMirrorPath != path)
+			{
+				Directory.Move(prevAssetsMirrorPath, path);
+
+				if(Directory.Exists(assetsPath) == false)
+					Directory.Move(finalGameDir + "\\" + prevAssetsMirrorPath, assetsPath);
+			}
+			else
+				Directory.CreateDirectory(assetsPath);
+			prevAssetsMirrorPath = path;
+			assetsFolderWatcher.Path = finalGameDir;
+			assetsFolderWatcher.Filter = path;
+			assetsWatcher.Path = assetsPath;
 		}
 		private void TryUpdateGameDir()
 		{
@@ -547,24 +659,25 @@ namespace SMPLSceneEditor
 
 			selectGameDirShown = true;
 
-			if(finalGameDir != null)
+			if(string.IsNullOrWhiteSpace(finalGameDir) == false)
 				MessageBox.Show("Find the game directory or select a new one.", "Game directory has changed!");
 
-			if(gameDir.ShowDialog(this) != DialogResult.OK)
-			{
-				Application.Exit();
-				return;
-			}
+			while(gameDir.ShowDialog(this) != DialogResult.OK) { }
+
 			selectGameDirShown = false;
 			finalGameDir = gameDir.SelectedPath;
 
-			var assetsPath = finalGameDir + "\\Assets";
+			var name = sceneName.Text;
+			name += string.IsNullOrWhiteSpace(name) ? "" : " ";
+			var assetsPath = finalGameDir + "\\" + name + "Assets";
+			if(string.IsNullOrWhiteSpace(name))
+				return;
+
 			Directory.CreateDirectory(assetsPath);
 
+			assetsFolderWatcher.Path = finalGameDir;
+			assetsFolderWatcher.Filter = name + "Assets";
 			assetsWatcher.Path = assetsPath;
-			assetsWatcher.Deleted += OnAssetDelete;
-			assetsWatcher.Created += OnAssetCreate;
-			assetsWatcher.Renamed += OnAssetRename;
 
 			var mirrorPath = GetMirrorAssetPath(assetsPath);
 			if(Directory.Exists(mirrorPath))
@@ -573,6 +686,7 @@ namespace SMPLSceneEditor
 			CopyMirrorFiles(assetsPath);
 			MainScene.LoadAsset(mirrorPath);
 		}
+
 		private void TrySelect()
 		{
 			var left = Mouse.IsButtonPressed(Mouse.Button.Left);
@@ -688,7 +802,7 @@ namespace SMPLSceneEditor
 		{
 			var delClick = Keyboard.IsKeyPressed(Keyboard.Key.Delete).Once("delete-selected-objects");
 
-			if(confirmDeleteChildrenMsgShown == false && selectedUIDs.Count > 0 && delClick)
+			if(ActiveForm == this && confirmDeleteChildrenMsgShown == false && selectedUIDs.Count > 0 && delClick)
 			{
 				confirmDeleteChildrenMsgShown = true;
 				var result = MessageBox.Show($"Also delete the children of the selected {{Things}}?", "Delete Selection", MessageBoxButtons.YesNoCancel);
@@ -737,7 +851,12 @@ namespace SMPLSceneEditor
 		private void FocusThing(string uid)
 		{
 			SetViewPosition((Vector2)ThingManager.Get(uid, "Position"));
-			SetViewScale((float)ThingManager.Get(uid, "Scale") + 0.5f);
+
+			var bb = (Hitbox)ThingManager.Get(uid, "BoundingBox");
+			var dist1 = bb.Lines[0].A.DistanceBetweenPoints(bb.Lines[0].B);
+			var dist2 = bb.Lines[1].A.DistanceBetweenPoints(bb.Lines[1].B);
+			var scale = (dist1 > dist2 ? dist1 : dist2) / window.Size.X * 2f;
+			SetViewScale(scale + 0.5f);
 		}
 		#endregion
 		#region Get
@@ -787,7 +906,11 @@ namespace SMPLSceneEditor
 
 			if(Path.HasExtension(path))
 			{
-				File.Copy(path, targetPath);
+				if(File.Exists(targetPath) && IsFileLocked(targetPath) == false)
+					File.Delete(targetPath);
+
+				if(File.Exists(path))
+					File.Copy(path, targetPath);
 				return;
 			}
 
@@ -803,15 +926,24 @@ namespace SMPLSceneEditor
 		}
 		private void DeleteMirrorFiles(string path)
 		{
+			path = path.Replace(AppContext.BaseDirectory, "");
+
+			if(Directory.Exists(Path.GetDirectoryName(path)) == false)
+				return;
+
 			var targetPath = GetMirrorAssetPath(path);
 			var targetDir = Path.GetDirectoryName(targetPath);
 
 			if(string.IsNullOrWhiteSpace(targetDir) == false)
 				Directory.CreateDirectory(targetDir);
 
+			DeleteFiles(targetPath);
+		}
+		private void DeleteFiles(string path)
+		{
 			if(Path.HasExtension(path))
 			{
-				File.Delete(targetPath);
+				File.Delete(path);
 				return;
 			}
 
@@ -819,11 +951,11 @@ namespace SMPLSceneEditor
 			var files = Directory.GetFiles(path);
 
 			for(int i = 0; i < dirs?.Length; i++)
-				DeleteMirrorFiles(dirs[i]);
+				DeleteFiles(dirs[i]);
 			for(int i = 0; i < files?.Length; i++)
-				DeleteMirrorFiles(files[i]);
+				DeleteFiles(files[i]);
 
-			Directory.Delete(targetPath);
+			Directory.Delete(path);
 		}
 		private string GetMirrorAssetPath(string path)
 		{
@@ -832,6 +964,13 @@ namespace SMPLSceneEditor
 				targetPath = targetPath.Replace(finalGameDir + "\\", "");
 			return targetPath;
 		}
+		private void DeleteCache()
+		{
+			var dirs = Directory.GetDirectories(AppContext.BaseDirectory);
+			for(int i = 0; i < dirs.Length; i++)
+				if(Path.GetFileName(dirs[i]) != "runtimes")
+					DeleteFiles(dirs[i]);
+		}
 		#endregion
 		#region Scene
 		private void OnKeyDownObjectSearch(object sender, System.Windows.Forms.KeyEventArgs e)
@@ -839,21 +978,37 @@ namespace SMPLSceneEditor
 			if(e.KeyCode != Keys.Return || string.IsNullOrWhiteSpace(searchScene.Text))
 				return;
 
-			var bestGuessSymbolsMatch = 0;
+			var prio = 0;
 			var bestGuess = default(string);
 			var uids = ThingManager.GetUIDs();
 
 			for(int i = 0; i < uids.Count; i++)
 			{
-				var curMatchingSymbols = 0;
 				var uid = uids[i];
 
-				for(int j = 0; j < uid.Length; j++)
-					curMatchingSymbols++;
-
-				if(curMatchingSymbols > bestGuessSymbolsMatch)
+				if(searchScene.Text == uid)
 				{
-					bestGuessSymbolsMatch = curMatchingSymbols;
+					bestGuess = uid;
+					break;
+				}
+
+				var contains = uid.Contains(searchScene.Text);
+				var lowerContains = uid.ToLower().Contains(searchScene.Text.ToLower());
+				var sameLength = uid.Length == searchScene.Text.Length;
+
+				if(contains && sameLength)
+				{
+					prio = 2;
+					bestGuess = uid;
+				}
+				else if(prio < 2 && lowerContains && sameLength)
+				{
+					prio = 1;
+					bestGuess = uid;
+				}
+				else if(prio < 1 && (lowerContains || sameLength))
+				{
+					prio = 1;
 					bestGuess = uid;
 				}
 			}
@@ -884,13 +1039,25 @@ namespace SMPLSceneEditor
 			var scene = Scene.Load<MainScene>(load.FileName);
 			if(scene == null)
 			{
-				MessageBox.Show("Could not load the selected Scene. The file may be altered/corrupt.", "Failed to Load");
+				MessageBox.Show("Could not load the selected Scene. The file may be altered or corrupt.", "Failed to Load");
 				return;
 			}
 
 			sceneName.Text = Path.GetFileNameWithoutExtension(load.FileName);
 			Scene.CurrentScene = scene;
-			MainScene.LoadAsset("Assets");
+			var name = sceneName.Text;
+			name += string.IsNullOrWhiteSpace(name) ? "" : " ";
+			var mirrorPath = name + "Assets";
+			var path = finalGameDir + "\\" + mirrorPath;
+			while(IsFileLocked(path)) { }
+			CopyMirrorFiles(path);
+			MainScene.LoadAsset(mirrorPath);
+			assetsPath = finalGameDir + "\\" + mirrorPath;
+			prevAssetsMirrorPath = mirrorPath;
+
+			assetsFolderWatcher.Filter = mirrorPath;
+			assetsFolderWatcher.Path = finalGameDir;
+			assetsWatcher.Path = assetsPath;
 		}
 		private void OnSceneScroll(object? sender, MouseEventArgs e)
 		{
@@ -914,7 +1081,7 @@ namespace SMPLSceneEditor
 				var uid = selectedUIDs[i];
 				var sc = (float)ThingManager.Get(uid, "Scale");
 
-				ThingManager.Set(uid, "Scale", MathF.Max(sc + delta, 0.01f));
+				ThingManager.Set(uid, "Scale", sc + delta);
 			}
 
 			UpdateThingPanel();
@@ -1225,15 +1392,27 @@ namespace SMPLSceneEditor
 
 			UpdateThingPanel();
 		}
+
+		private void OnThingListPick(object sender, ToolStripItemClickedEventArgs e)
+		{
+			ThingManager.Set(selectedUIDs[0], pickThingProperty, e.ClickedItem.Text);
+			UpdateThingPanel();
+		}
 		#endregion
 		#region Assets
 		private void OnAssetRename(object sender, RenamedEventArgs e)
 		{
-			MainScene.UnloadAsset(e.OldFullPath);
-			MainScene.LoadAsset(e.FullPath);
+			DeleteMirrorFiles(e.OldFullPath);
+			CopyMirrorFiles(e.FullPath);
+
+			MainScene.UnloadAsset(GetMirrorAssetPath(e.OldFullPath));
+			MainScene.LoadAsset(GetMirrorAssetPath(e.FullPath));
 		}
 		private void OnAssetCreate(object sender, FileSystemEventArgs e)
 		{
+			// bigger files need time to be created/copied/moved, this event triggers before the file is fully there, this prevents that
+			while(IsFileLocked(e.FullPath)) { }
+
 			CopyMirrorFiles(e.FullPath);
 			MainScene.LoadAsset(GetMirrorAssetPath(e.FullPath));
 		}
@@ -1241,6 +1420,27 @@ namespace SMPLSceneEditor
 		{
 			DeleteMirrorFiles(e.FullPath);
 			MainScene.UnloadAsset(GetMirrorAssetPath(e.FullPath));
+		}
+
+		private void OnAssetFolderRename(object sender, RenamedEventArgs e)
+		{
+			if(e.FullPath != assetsPath)
+				Directory.Move(e.FullPath, assetsPath);
+		}
+		private void OnAppQuitting(object? sender, FormClosingEventArgs e)
+		{
+			var result = MessageBox.Show("Save Scene before quitting?", "Quit", MessageBoxButtons.YesNoCancel);
+			if(result == DialogResult.Cancel)
+			{
+				e.Cancel = true;
+				return;
+			}
+			else if(result == DialogResult.Yes)
+			{
+				DeleteCache();
+				quitting = true;
+				TrySaveScene();
+			}
 		}
 		#endregion
 
@@ -1325,6 +1525,41 @@ namespace SMPLSceneEditor
 			prompt.AcceptButton = button;
 
 			return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
+		}
+		private static bool IsFileLocked(string file)
+		{
+			try
+			{
+				if(Path.HasExtension(file) == false)
+				{
+					var dirs = Directory.GetDirectories(file);
+					var files = Directory.GetFiles(file);
+
+					for(int i = 0; i < dirs.Length; i++)
+						if(IsFileLocked(dirs[i]))
+							return true;
+
+					for(int i = 0; i < files.Length; i++)
+						if(IsFileLocked(files[i]))
+							return true;
+
+					return false;
+				}
+
+				using var stream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.None);
+				stream.Close();
+			}
+			catch(IOException)
+			{
+				//the file is unavailable because it is:
+				//still being written to
+				//or being processed by another thread
+				//or does not exist (has already been processed)
+				return true;
+			}
+
+			//file is not locked
+			return false;
 		}
 		#endregion
 	}
