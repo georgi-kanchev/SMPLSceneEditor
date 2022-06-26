@@ -45,6 +45,7 @@ namespace SMPLSceneEditor
 
 			WindowState = FormWindowState.Maximized;
 			window = new(windowPicture.Handle);
+			window.SetVerticalSyncEnabled(false);
 			windowPicture.MouseWheel += OnSceneScroll;
 
 			loop = new() { Interval = 1 };
@@ -1089,12 +1090,10 @@ namespace SMPLSceneEditor
 		private void OnMouseLeaveScene(object sender, EventArgs e)
 		{
 			isHoveringScene = false;
-			//sceneMousePos.Hide();
 		}
 		private void OnMouseEnterScene(object sender, EventArgs e)
 		{
 			isHoveringScene = true;
-			//sceneMousePos.Show();
 		}
 		private void OnMouseMoveScene(object sender, MouseEventArgs e)
 		{
