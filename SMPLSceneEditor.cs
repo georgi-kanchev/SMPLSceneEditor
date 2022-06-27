@@ -159,7 +159,7 @@ namespace SMPLSceneEditor
 				AddThingProperty(visual, "Has Smooth Texture", "PropHasSmoothTexture", typeof(bool));
 				AddThingProperty(visual, "Has Repeated Texture", "PropHasRepeatedTexture", typeof(bool));
 				AddThingProperty(visual, ""); AddThingProperty(visual, "");
-				AddThingProperty(visual, "Camera UID", "PropCameraUID", typeof(string));
+				AddThingProperty(visual, "Camera UIDs", "PropCameraUIDs", typeof(List<string>));
 				AddThingProperty(visual, ""); AddThingProperty(visual, "");
 				AddThingProperty(visual, "Hitbox", "PropHitbox", typeof(Hitbox));
 			}
@@ -1167,6 +1167,8 @@ namespace SMPLSceneEditor
 		{
 			var uid = ThingManager.CreateSprite("Sprite");
 			ThingManager.Set(uid, "Position", rightClickPos);
+			var cams = (List<string>)ThingManager.Get(uid, "CameraUIDs");
+			cams.Add("camera");
 		}
 		private void OnSceneRightClickMenuCreateLight(object sender, EventArgs e)
 		{
