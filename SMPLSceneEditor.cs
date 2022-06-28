@@ -6,12 +6,14 @@ global using SMPL;
 global using SMPL.Tools;
 global using Color = SFML.Graphics.Color;
 global using Cursor = System.Windows.Forms.Cursor;
+using System.Collections.ObjectModel;
 
 namespace SMPLSceneEditor
 {
 	public partial class FormWindow : Form
 	{
 		#region Fields
+		private Control? waitingPickThingControl;
 		private readonly System.Windows.Forms.Timer loop;
 		private readonly RenderWindow window;
 		private float sceneSc = 1f;
@@ -27,6 +29,7 @@ namespace SMPLSceneEditor
 		{
 			{ "PropChildrenUIDs", "(select to focus)                                     " },
 			{ "PropTypes", "(select to edit)                                     " },
+			{ "PropCameraUIDs", "(select to focus)                                     " },
 		};
 		private readonly Dictionary<string, Color> nonVisualTypeColors = new()
 		{
@@ -81,7 +84,7 @@ namespace SMPLSceneEditor
 			var camera = CreateDefaultTable("tableCamera");
 			var types = thingTypesTable;
 
-			AddThingProperty(types, "Types", "PropTypes", typeof(List<string>));
+			AddThingProperty(types, "Types", "PropTypes", typeof(ReadOnlyCollection<string>));
 
 			AddPropsThing();
 			AddPropsSprite();
@@ -128,7 +131,7 @@ namespace SMPLSceneEditor
 				AddThingProperty(thing, "Parent", rightLabel: true); AddThingProperty(thing, "Properties");
 				AddThingProperty(thing, "Parent UID", "PropParentUID", typeof(string));
 				AddThingProperty(thing, "Parent Old UID", "PropParentOldUID", typeof(string), readOnly: true);
-				AddThingProperty(thing, "Children UIDs", "PropChildrenUIDs", typeof(List<string>));
+				AddThingProperty(thing, "Children UIDs", "PropChildrenUIDs", typeof(ReadOnlyCollection<string>), thingList: true);
 				AddThingProperty(thing, "Local Position", "PropLocalPosition", typeof(Vector2));
 				AddThingProperty(thing, "Local Angle", "PropLocalAngle", typeof(float));
 				AddThingProperty(thing, "Local Direction", "PropLocalDirection", typeof(Vector2), readOnly: true, smallNumericStep: true);
@@ -159,9 +162,9 @@ namespace SMPLSceneEditor
 				AddThingProperty(visual, "Has Smooth Texture", "PropHasSmoothTexture", typeof(bool));
 				AddThingProperty(visual, "Has Repeated Texture", "PropHasRepeatedTexture", typeof(bool));
 				AddThingProperty(visual, ""); AddThingProperty(visual, "");
-				AddThingProperty(visual, "Camera UIDs", "PropCameraUIDs", typeof(List<string>));
+				AddThingProperty(visual, "Camera UIDs", "PropCameraUIDs", typeof(List<string>), thingList: true);
 				AddThingProperty(visual, ""); AddThingProperty(visual, "");
-				AddThingProperty(visual, "Hitbox", "PropHitbox", typeof(Hitbox));
+				AddThingProperty(visual, "Hitbox", "PropHitbox", typeof(string), readOnly: true);
 			}
 			void AddPropsLight()
 			{
@@ -174,7 +177,7 @@ namespace SMPLSceneEditor
 			}
 		}
 		private void AddThingProperty(TableLayoutPanel table, string label, string? propName = null, Type? valueType = null, bool readOnly = false,
-			bool rightLabel = false, bool smallNumericStep = false, bool last = false, float labelSizeOffset = 3)
+			bool rightLabel = false, bool smallNumericStep = false, bool last = false, float labelSizeOffset = 3, bool thingList = false, bool uniqueList = true)
 		{
 			const string FONT = "Segoe UI";
 			const float FONT_SIZE = 12f;
@@ -212,7 +215,7 @@ namespace SMPLSceneEditor
 				prop = new NumericUpDown();
 				SetDefaultNumeric((NumericUpDown)prop, false);
 			}
-			else if(valueType == typeof(List<string>))
+			else if(valueType == typeof(List<string>) || valueType.IsEnum || valueType == typeof(ReadOnlyCollection<string>))
 				prop = CreateList();
 			else if(valueType == typeof(Button))
 				prop = new Button() { Text = label };
@@ -220,19 +223,11 @@ namespace SMPLSceneEditor
 				prop = CreateMultipleValuesTable(2, false);
 			else if(valueType == typeof(Color))
 				prop = CreateMultipleValuesTable(4, true);
-			else if(valueType.IsEnum)
-				prop = CreateList();
 
 			if(prop != null)
 			{
 				SetDefault(prop);
 				lab.ForeColor = prop.Enabled ? System.Drawing.Color.White : System.Drawing.Color.Gray;
-
-				if(valueType == typeof(Hitbox))
-				{
-					prop.BackColor = System.Drawing.Color.DarkGreen;
-					prop.Text = "Edit";
-				}
 			}
 
 			if(last)
@@ -243,49 +238,54 @@ namespace SMPLSceneEditor
 			if(valueType != typeof(Button))
 				table.Controls.Add(lab);
 
-			if(propName != null)
+			if(propName == "PropHitbox")
 			{
-				if(propName.Contains("Path"))
-				{
-					var btn = new Button() { Text = "Assets", Dock = DockStyle.Right };
-					btn.Click += PickAsset;
-					lab.Controls.Add(btn);
-				}
-				else if(readOnly == false && valueType == typeof(string) && propName != "PropUID" && propName.Contains("UID"))
-				{
-					var btn = new Button() { Text = "Things", Dock = DockStyle.Right, Width = 80 };
-					btn.Click += PickThing;
-					lab.Controls.Add(btn);
-				}
-				else if(valueType == typeof(Color))
-				{
-					var btn = new Button() { Text = "Colors", Dock = DockStyle.Right, Width = 80 };
-					btn.Click += PickColor;
-					lab.Controls.Add(btn);
-				}
+				var btn = new CheckBox() { Text = "Edit", Dock = DockStyle.Left };
+				btn.Click += EditHitbox;
+				lab.TextAlign = ContentAlignment.MiddleRight;
+				lab.ForeColor = System.Drawing.Color.White;
+				lab.Controls.Add(btn);
 			}
 
-			void PickThing(object? sender, EventArgs e)
+			if(propName == null || readOnly)
+				return;
+
+			var property = propName.Replace("Prop", "");
+			if(propName.Contains("Path"))
 			{
-				var uids = ThingManager.GetUIDs();
+				var btn = new Button() { Text = "Assets", Dock = DockStyle.Left };
+				btn.Click += PickAsset;
+				lab.TextAlign = ContentAlignment.MiddleRight;
+				lab.Controls.Add(btn);
+			}
+			else if(valueType == typeof(string) && propName != "PropUID" && propName.Contains("UID"))
+			{
+				var btn = new Button() { Text = "Things", Dock = DockStyle.Left, Width = 80 };
+				btn.Click += PickThingList;
+				lab.TextAlign = ContentAlignment.MiddleRight;
+				lab.Controls.Add(btn);
+			}
+			else if(valueType == typeof(Color))
+			{
+				var btn = new Button() { Text = "Colors", Dock = DockStyle.Left, Width = 80 };
+				btn.Click += PickColor;
+				lab.TextAlign = ContentAlignment.MiddleRight;
+				lab.Controls.Add(btn);
+			}
+			else if(valueType == typeof(List<string>))
+			{
+				var btn = new Button() { Text = "Items", Dock = DockStyle.Left, Width = 70 };
+				btn.Click += EditTextList;
+				lab.TextAlign = ContentAlignment.MiddleRight;
+				lab.Controls.Add(btn);
+			}
 
-				thingsList.MaximumSize = new(thingsList.MaximumSize.Width, 300);
-				thingsList.Items.Clear();
-				for(int i = 0; i < uids.Count; i++)
-					thingsList.Items.Add(uids[i]);
-
+			void PickThingList(object? sender, EventArgs e)
+			{
 				if(sender == null)
 					return;
 				var control = (Control)sender;
-
-				pickThingProperty = propName.Replace("Prop", "");
-				// show twice cuz first time has wrong position
-				Show();
-				Show();
-
-				var t = thingsList;
-
-				void Show() => thingsList.Show(this, control.PointToScreen(new(-thingsList.Width, -control.Height / 2)));
+				PickThing(control, property);
 			}
 			void PickColor(object? sender, EventArgs e)
 			{
@@ -293,7 +293,6 @@ namespace SMPLSceneEditor
 					return;
 
 				var c = pickColor.Color;
-				var property = propName.Replace("Prop", "");
 				var uid = selectedUIDs[0];
 				var col = (Color)ThingManager.Get(uid, property);
 
@@ -307,11 +306,19 @@ namespace SMPLSceneEditor
 					return;
 
 				var asset = pickAsset.FileName;
-				var property = propName.Replace("Prop", "");
 				var uid = selectedUIDs[0];
 
 				ThingManager.Set(uid, property, GetMirrorAssetPath(asset));
 				UpdateThingPanel();
+			}
+			void EditTextList(object? sender, EventArgs e)
+			{
+				EditList("Edit List", (List<string>)ThingManager.Get(selectedUIDs[0], property), thingList, uniqueList);
+				UpdateThingPanel();
+			}
+			void EditHitbox(object? sender, EventArgs e)
+			{
+
 			}
 			void SetDefault(Control control, float fontSize = FONT_SIZE, bool reverseColors = false)
 			{
@@ -434,7 +441,9 @@ namespace SMPLSceneEditor
 				else if(type == "Single")
 					SetNumber((NumericUpDown)control, (float)Get(), readOnly);
 				else if(type == "List<String>")
-					ProcessThingList((ComboBox)control, propName);
+					ProcessList((ComboBox)control, (List<string>)ThingManager.Get(uid, propName));
+				else if(type == "ReadOnlyCollection<String>")
+					ProcessList((ComboBox)control, (ReadOnlyCollection<string>)ThingManager.Get(uid, propName));
 				else if(type == "Vector2")
 				{
 					var table = (TableLayoutPanel)control;
@@ -457,35 +466,11 @@ namespace SMPLSceneEditor
 				else if(type == "Effects")
 					ProcessEnumList((ComboBox)control, typeof(ThingManager.Effects), propName);
 				else if(type == "Hitbox")
-				{
-					var tick = (CheckBox)control;
-					tick.BackColor = System.Drawing.Color.YellowGreen;
-					tick.ForeColor = System.Drawing.Color.Black;
-				}
+					SetText((TextBox)control, $"{((Hitbox)ThingManager.Get(uid, "BoundingBox")).Lines.Count} Lines", readOnly);
 
 				object Get() => ThingManager.Get(uid, propName);
 			}
 
-			void ProcessThingList(ComboBox list, string propName)
-			{
-				list.Items.Clear();
-
-				var propList = (List<string>)ThingManager.Get(uid, propName);
-				list.Enabled = propList.Count > 0;
-
-				if(list.Enabled && listBoxPlaceholderTexts.ContainsKey(list.Name))
-					list.Items.Add(listBoxPlaceholderTexts[list.Name]);
-				else if(list.Enabled == false)
-					list.Items.Add("(none)");
-
-				if(propList.Count > 0)
-				{
-					for(int i = 0; i < propList.Count; i++)
-						list.Items.Add(propList[i]);
-				}
-
-				list.SelectedIndex = 0;
-			}
 			void ProcessEnumList(ComboBox list, Type enumType, string propName)
 			{
 				if(enumType.IsEnum == false)
@@ -512,7 +497,7 @@ namespace SMPLSceneEditor
 			{
 				tick.Enabled = readOnly == false;
 				tick.Checked = value;
-				tick.BackColor = tick.Checked ? System.Drawing.Color.Green : System.Drawing.Color.Red;
+				tick.BackColor = tick.Checked ? System.Drawing.Color.DarkGreen : System.Drawing.Color.DarkRed;
 			}
 		}
 		private void DrawAllNonVisuals()
@@ -521,7 +506,7 @@ namespace SMPLSceneEditor
 			for(int i = 0; i < uids.Count; i++)
 			{
 				var uid = uids[i];
-				var type = ((List<string>)ThingManager.Get(uid, "Types"))[0];
+				var type = ((ReadOnlyCollection<string>)ThingManager.Get(uid, "Types"))[0];
 
 				if(nonVisualTypeColors.ContainsKey(type) == false)
 					continue;
@@ -529,6 +514,26 @@ namespace SMPLSceneEditor
 				var boundingBox = (Hitbox)ThingManager.Get(uid, "BoundingBox");
 				boundingBox.Draw(window, nonVisualTypeColors[type], sceneSc * 4);
 			}
+		}
+		private void ProcessList<T>(ComboBox control, ICollection<T> list)
+		{
+			control.Items.Clear();
+			control.Enabled = list.Count > 0;
+
+			TryAddPlaceholderToList(control);
+
+			if(list.Count > 0)
+				foreach(var item in list)
+					control.Items.Add(item);
+
+			control.SelectedIndex = 0;
+		}
+		private void TryAddPlaceholderToList(ComboBox control)
+		{
+			if(control.Enabled && listBoxPlaceholderTexts.ContainsKey(control.Name))
+				control.Items.Add(listBoxPlaceholderTexts[control.Name]);
+			else if(control.Enabled == false)
+				control.Items.Add("(none)");
 		}
 
 		private void ResetThingPanel()
@@ -851,6 +856,9 @@ namespace SMPLSceneEditor
 
 		private void FocusThing(string uid)
 		{
+			if(ThingManager.Exists(uid) == false)
+				return;
+
 			SetViewPosition((Vector2)ThingManager.Get(uid, "Position"));
 
 			var bb = (Hitbox)ThingManager.Get(uid, "BoundingBox");
@@ -1059,6 +1067,9 @@ namespace SMPLSceneEditor
 			assetsFolderWatcher.Filter = mirrorPath;
 			assetsFolderWatcher.Path = finalGameDir;
 			assetsWatcher.Path = assetsPath;
+
+			selectedUIDs.Clear();
+			SetView();
 		}
 		private void OnSceneScroll(object? sender, MouseEventArgs e)
 		{
@@ -1167,8 +1178,6 @@ namespace SMPLSceneEditor
 		{
 			var uid = ThingManager.CreateSprite("Sprite");
 			ThingManager.Set(uid, "Position", rightClickPos);
-			var cams = (List<string>)ThingManager.Get(uid, "CameraUIDs");
-			cams.Add("camera");
 		}
 		private void OnSceneRightClickMenuCreateLight(object sender, EventArgs e)
 		{
@@ -1245,24 +1254,33 @@ namespace SMPLSceneEditor
 				return;
 
 			var list = (ComboBox)sender;
-			var selectedItem = (string)list.SelectedItem;
+			var selectedItem = list.SelectedItem == null ? "" : list.SelectedItem.ToString();
 			listBoxPlaceholderTexts.TryGetValue(list.Name, out var placeholder);
 
-			if(selectedItem == placeholder)
+			if(selectedItem == null || selectedItem == placeholder)
 				return;
 
-			if(list.Name == "PropChildrenUIDs" && ThingManager.Exists(selectedItem))
+			if(list.Name.Contains("UIDs"))
 			{
+				if(ThingManager.Exists(selectedItem) == false)
+				{
+					TryAddPlaceholderToList(list);
+					list.SelectedItem = placeholder;
+					return;
+				}
+
 				FocusThing(selectedItem);
 				selectedUIDs.Clear();
 				selectedUIDs.Add(selectedItem);
+
+				ResetThingPanel();
 				UpdateThingPanel();
 			}
 			else if(list.Name == "PropTypes")
 			{
 				var table = editThingTableTypes[$"table{list.SelectedItem}"];
 
-				list.Items.Add(placeholder);
+				TryAddPlaceholderToList(list);
 				list.SelectedItem = placeholder;
 
 				rightTable.Controls.Clear();
@@ -1301,13 +1319,14 @@ namespace SMPLSceneEditor
 
 			var list = (ComboBox)sender;
 			var hasPlaceholder = listBoxPlaceholderTexts.ContainsKey(list.Name);
-			if(list.SelectedIndex != -1 && hasPlaceholder)
+
+			if((list.SelectedIndex != -1 && hasPlaceholder))
 				return;
 
 			if(hasPlaceholder)
 			{
 				var placeholder = listBoxPlaceholderTexts[list.Name];
-				list.Items.Add(placeholder);
+				TryAddPlaceholderToList(list);
 				list.SelectedItem = placeholder;
 			}
 		}
@@ -1396,8 +1415,15 @@ namespace SMPLSceneEditor
 
 		private void OnThingListPick(object sender, ToolStripItemClickedEventArgs e)
 		{
-			ThingManager.Set(selectedUIDs[0], pickThingProperty, e.ClickedItem.Text);
-			UpdateThingPanel();
+			if(pickThingProperty != "")
+			{
+				ThingManager.Set(selectedUIDs[0], pickThingProperty, e.ClickedItem.Text);
+				UpdateThingPanel();
+				return;
+			}
+
+			if(waitingPickThingControl != null)
+				waitingPickThingControl.Text = e.ClickedItem.Text;
 		}
 		#endregion
 		#region Assets
@@ -1446,6 +1472,9 @@ namespace SMPLSceneEditor
 		#endregion
 
 		#region Utility
+		const int SPACING_X = 50, SPACING_Y = 20, BUTTON_W = 70, BUTTON_H = 25, TEXTBOX_H = 25,
+			W = 400, H = SPACING_Y * 5 + BUTTON_H;
+
 		private Vector2 Drag(Vector2 point, bool reverse = false, bool snapToGrid = false)
 		{
 			var view = window.GetView();
@@ -1481,51 +1510,154 @@ namespace SMPLSceneEditor
 		}
 		private static string GetInput(string title, string text, string defaultInput = "")
 		{
-			var split = text.Split('\n');
-			var spacing = new Vector2i(50, 20);
-			var btnSz = new Vector2i(70, 25);
-			var textBoxSz = new Vector2i(80, 25);
-			var sz = new Vector2i(400, spacing.Y * 5 + btnSz.Y + split.Length * 15);
-			var prompt = new Form()
+			var sz = new Vector2i(W, H + text.Split('\n').Length * 15);
+			var window = new Form()
 			{
 				Width = sz.X,
 				Height = sz.Y,
 				FormBorderStyle = FormBorderStyle.FixedToolWindow,
 				Text = title,
+				BackColor = System.Drawing.Color.Black,
+				ForeColor = System.Drawing.Color.White,
 				StartPosition = FormStartPosition.CenterScreen
 			};
 			var textLabel = new Label()
 			{
-				Left = spacing.X,
-				Top = spacing.Y,
+				Left = SPACING_X,
+				Top = SPACING_Y,
 				Text = text,
-				Width = sz.X - spacing.X * 2,
-				Height = sz.Y - btnSz.Y - spacing.Y * 4
+				Width = sz.X - SPACING_X * 2 - SPACING_X / 4,
+				Height = sz.Y - BUTTON_H - SPACING_Y * 4
 			};
 			var textBox = new TextBox()
 			{
-				Left = spacing.X,
-				Top = spacing.Y + textLabel.Height,
-				Width = sz.X - btnSz.X - spacing.X * 3,
-				Height = textBoxSz.Y,
-				Text = defaultInput
+				Left = SPACING_X,
+				Top = SPACING_Y + textLabel.Height,
+				Width = sz.X - BUTTON_W - SPACING_X * 3,
+				Height = TEXTBOX_H,
+				Text = defaultInput,
+				BackColor = System.Drawing.Color.Black,
+				ForeColor = System.Drawing.Color.White
 			};
 			var button = new Button()
 			{
 				Text = "OK",
-				Left = sz.X - btnSz.X - spacing.X,
-				Width = btnSz.X,
-				Height = btnSz.Y,
-				Top = spacing.Y + textLabel.Height,
+				Left = sz.X - BUTTON_W - SPACING_X - SPACING_X / 4,
+				Width = BUTTON_W,
+				Height = BUTTON_H,
+				Top = SPACING_Y + textLabel.Height,
 				DialogResult = DialogResult.OK
 			};
-			button.Click += (sender, e) => { prompt.Close(); };
-			prompt.Controls.Add(textBox);
-			prompt.Controls.Add(button);
-			prompt.Controls.Add(textLabel);
-			prompt.AcceptButton = button;
+			button.Click += (sender, e) => { window.Close(); };
+			window.Controls.Add(textBox);
+			window.Controls.Add(button);
+			window.Controls.Add(textLabel);
+			window.AcceptButton = button;
 
-			return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
+			return window.ShowDialog() == DialogResult.OK ? textBox.Text : "";
+		}
+		private void EditList(string title, List<string> list, bool thingList, bool unique)
+		{
+			var sz = new Vector2i(W + W / (thingList ? 2 : 4), H + 100);
+			var window = new Form()
+			{
+				Width = sz.X,
+				Height = sz.Y,
+				FormBorderStyle = FormBorderStyle.FixedToolWindow,
+				Text = title,
+				BackColor = System.Drawing.Color.Black,
+				ForeColor = System.Drawing.Color.White,
+				StartPosition = FormStartPosition.CenterScreen
+			};
+			var listBox = new ListBox()
+			{
+				Left = SPACING_X,
+				Top = SPACING_Y,
+				Width = sz.X - SPACING_X * 2 - SPACING_X / 4,
+				Height = sz.Y - BUTTON_H - SPACING_Y * 4,
+				BackColor = System.Drawing.Color.Black,
+				ForeColor = System.Drawing.Color.White
+			};
+			var textBox = new TextBox()
+			{
+				Left = SPACING_X + (thingList ? BUTTON_W : 0),
+				Top = SPACING_Y + listBox.Height + 5,
+				Width = sz.X - BUTTON_W * (thingList ? 4 : 3) - SPACING_X * 3,
+				Height = TEXTBOX_H,
+				BackColor = System.Drawing.Color.Black,
+				ForeColor = System.Drawing.Color.White
+			};
+			var buttonOk = new Button()
+			{
+				Top = SPACING_Y + listBox.Height + 5,
+				Left = sz.X - BUTTON_W - SPACING_X - SPACING_X / 4,
+				Width = BUTTON_W,
+				Height = BUTTON_H,
+				Text = "OK",
+				DialogResult = DialogResult.OK
+			};
+			var buttonAdd = new Button()
+			{
+				Top = SPACING_Y + listBox.Height + 5,
+				Left = sz.X - BUTTON_W * 3 - SPACING_X * 2,
+				Width = BUTTON_W,
+				Height = BUTTON_H,
+				Text = "Add",
+			};
+			var buttonRemove = new Button()
+			{
+				Top = SPACING_Y + listBox.Height + 5,
+				Left = sz.X - BUTTON_W * 2 - SPACING_X * 2,
+				Width = BUTTON_W,
+				Height = BUTTON_H,
+				Text = "Remove",
+			};
+			for(int i = 0; i < list.Count; i++)
+				listBox.Items.Add(list[i]);
+
+			buttonOk.Click += (sender, e) => { window.Close(); };
+			buttonAdd.Click += (sender, e) =>
+			{
+				if(string.IsNullOrWhiteSpace(textBox.Text) != false || (unique && listBox.Items.Contains(textBox.Text)))
+					return;
+
+				listBox.Items.Add(textBox.Text);
+				listBox.SelectedItem = textBox.Text;
+				textBox.Text = "";
+			};
+			buttonRemove.Click += (sender, e) => { listBox.Items.Remove(listBox.SelectedItem); };
+			listBox.SelectedIndex = listBox.Items.Count == 0 ? -1 : 0;
+			window.Controls.Add(textBox);
+			window.Controls.Add(buttonOk);
+			window.Controls.Add(buttonAdd);
+			window.Controls.Add(buttonRemove);
+			window.Controls.Add(listBox);
+			window.AcceptButton = buttonOk;
+
+			if(thingList)
+			{
+				var buttonThings = new Button()
+				{
+					Top = SPACING_Y + listBox.Height + 5,
+					Left = SPACING_X,
+					Width = BUTTON_W,
+					Height = BUTTON_H,
+					Text = "Things",
+				};
+				buttonThings.Click += (sender, e) =>
+				{
+					waitingPickThingControl = textBox;
+					PickThing(buttonThings);
+				};
+				window.Controls.Add(buttonThings);
+			}
+
+			if(window.ShowDialog() != DialogResult.OK)
+				return;
+
+			list.Clear();
+			foreach(string item in listBox.Items)
+				list.Add(item);
 		}
 		private static bool IsFileLocked(string file)
 		{
@@ -1561,6 +1693,22 @@ namespace SMPLSceneEditor
 
 			//file is not locked
 			return false;
+		}
+		private void PickThing(Control control, string property = "")
+		{
+			var uids = ThingManager.GetUIDs();
+
+			thingsList.MaximumSize = new(thingsList.MaximumSize.Width, 300);
+			thingsList.Items.Clear();
+			for(int i = 0; i < uids.Count; i++)
+				thingsList.Items.Add(uids[i]);
+
+			pickThingProperty = property;
+			// show twice cuz first time has wrong position
+			Show();
+			Show();
+
+			void Show() => thingsList.Show(this, control.PointToScreen(new(-thingsList.Width, -control.Height / 2)));
 		}
 		#endregion
 	}
