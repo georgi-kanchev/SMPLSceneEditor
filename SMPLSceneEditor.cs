@@ -13,6 +13,8 @@ namespace SMPLSceneEditor
 	public partial class FormWindow : Form
 	{
 		#region Fields
+		private const float HITBOX_POINT_EDIT_MAX_DIST = 20;
+		private CheckBox? editHitbox;
 		private Control? waitingPickThingControl;
 		private readonly System.Windows.Forms.Timer loop;
 		private readonly RenderWindow window;
@@ -21,6 +23,7 @@ namespace SMPLSceneEditor
 		private bool isDragSelecting, isHoveringScene, confirmDeleteChildrenMsgShown, selectGameDirShown, saveSceneShown, quitting;
 		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos;
 		private readonly List<string> selectedUIDs = new();
+		private readonly List<int> selectedHitboxPointIndexesA = new(), selectedHitboxPointIndexesB = new();
 		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
 		private readonly FileSystemWatcher assetsWatcher, assetsFolderWatcher;
 		private string prevAssetsMirrorPath = "Assets", assetsPath = "Assets", finalGameDir = "", pickThingProperty = "";
@@ -240,11 +243,10 @@ namespace SMPLSceneEditor
 
 			if(propName == "PropHitbox")
 			{
-				var btn = new CheckBox() { Text = "Edit", Dock = DockStyle.Left };
-				btn.Click += EditHitbox;
+				editHitbox = new CheckBox() { Text = "Edit", Dock = DockStyle.Left };
 				lab.TextAlign = ContentAlignment.MiddleRight;
 				lab.ForeColor = System.Drawing.Color.White;
-				lab.Controls.Add(btn);
+				lab.Controls.Add(editHitbox);
 			}
 
 			if(propName == null || readOnly)
@@ -316,10 +318,7 @@ namespace SMPLSceneEditor
 				EditList("Edit List", (List<string>)ThingManager.Get(selectedUIDs[0], property), thingList, uniqueList);
 				UpdateThingPanel();
 			}
-			void EditHitbox(object? sender, EventArgs e)
-			{
 
-			}
 			void SetDefault(Control control, float fontSize = FONT_SIZE, bool reverseColors = false)
 			{
 				var black = System.Drawing.Color.Black;
@@ -397,7 +396,6 @@ namespace SMPLSceneEditor
 
 			TrySelect();
 
-			ThingManager.UpdateAllThings();
 			ThingManager.DrawAllVisuals(window);
 			DrawAllNonVisuals();
 
@@ -466,7 +464,7 @@ namespace SMPLSceneEditor
 				else if(type == "Effects")
 					ProcessEnumList((ComboBox)control, typeof(ThingManager.Effects), propName);
 				else if(type == "Hitbox")
-					SetText((TextBox)control, $"{((Hitbox)ThingManager.Get(uid, "BoundingBox")).Lines.Count} Lines", readOnly);
+					SetText((TextBox)control, $"{((Hitbox)ThingManager.Get(uid, propName)).Lines.Count} Lines", readOnly);
 
 				object Get() => ThingManager.Get(uid, propName);
 			}
@@ -535,11 +533,21 @@ namespace SMPLSceneEditor
 			else if(control.Enabled == false)
 				control.Items.Add("(none)");
 		}
-
-		private void ResetThingPanel()
+		private void AddHitboxLine(string uid, List<Line> line)
 		{
-			if(rightTable.Controls.ContainsKey("tableThing"))
+			var hitbox = (Hitbox)ThingManager.Get(uid, "Hitbox");
+			for(int i = 0; i < line.Count; i++)
+				hitbox.LocalLines.Add(new Line(Local(line[i].A), Local(line[i].B)));
+			UpdateThingPanel();
+
+			Vector2 Local(Vector2 global) => (Vector2)ThingManager.CallGet(uid, "LocalPositionFromSelf", global);
+		}
+
+		private void TryResetThingPanel()
+		{
+			if(rightTable.Controls.ContainsKey("tableThing") || (editHitbox != null && editHitbox.Checked))
 				return;
+
 			rightTable.Controls.Clear();
 			rightTable.Controls.Add(thingTypesTable);
 			rightTable.Controls.Add(editThingTableTypes["tableThing"]);
@@ -709,6 +717,57 @@ namespace SMPLSceneEditor
 			var dist = selectStartPos.DistanceBetweenPoints(new(rawMousePos.X, rawMousePos.Y));
 			var ctrl = Keyboard.IsKeyPressed(Keyboard.Key.LControl);
 			var alt = Keyboard.IsKeyPressed(Keyboard.Key.LAlt);
+			var drag = left && dist > sceneSc * 5f;
+			var editingHitbox = editHitbox != null && editHitbox.Checked;
+
+			if(editingHitbox)
+			{
+				var hitbox = (Hitbox)ThingManager.Get(selectedUIDs[0], "Hitbox");
+				if(hitbox == null)
+					return;
+
+				if(click)
+				{
+					TryDeselect();
+
+					var pointSelectDist = sceneSc * HITBOX_POINT_EDIT_MAX_DIST * 0.75f;
+					for(int i = 0; i < hitbox.Lines.Count; i++)
+					{
+						if(mousePos.DistanceBetweenPoints(hitbox.Lines[i].A) < pointSelectDist)
+						{
+							SelectHitboxPointIndexA(i);
+							break; // prevents multi selection with click (the only way to separate overlapping points)
+						}
+						else if(mousePos.DistanceBetweenPoints(hitbox.Lines[i].B) < pointSelectDist)
+						{
+							SelectHitboxPointIndexB(i);
+							break; // prevents multi selection with click (the only way to separate overlapping points)
+						}
+					}
+				}
+				else if(drag && dragSelHitbox != null)
+				{
+					TryDeselect();
+
+					for(int i = 0; i < hitbox.Lines.Count; i++)
+					{
+						if(dragSelHitbox.ConvexContains(hitbox.Lines[i].A))
+							SelectHitboxPointIndexA(i);
+						if(dragSelHitbox.ConvexContains(hitbox.Lines[i].B))
+							SelectHitboxPointIndexB(i);
+					}
+				}
+				return;
+
+				void TryDeselect()
+				{
+					if(ctrl || alt)
+						return;
+
+					selectedHitboxPointIndexesA.Clear();
+					selectedHitboxPointIndexesB.Clear();
+				}
+			}
 
 			if(click)
 			{
@@ -736,10 +795,11 @@ namespace SMPLSceneEditor
 				}
 				selectDepthIndex = clickedUIDs.Count == 0 ? -1 : (selectDepthIndex + 1).Limit(0, sum, Extensions.Limitation.Overflow);
 			}
-			else if(left && dist > 5)
+			else if(drag)
 			{
 				if(ctrl == false && alt == false)
 					selectedUIDs.Clear();
+
 				for(int i = 0; i < uids.Count; i++)
 				{
 					var uid = uids[i];
@@ -762,26 +822,80 @@ namespace SMPLSceneEditor
 				if(Keyboard.IsKeyPressed(Keyboard.Key.LAlt))
 					selectedUIDs.Remove(uid);
 			}
+			void SelectHitboxPointIndexA(int index)
+			{
+				if(selectedHitboxPointIndexesA.Contains(index) == false)
+					selectedHitboxPointIndexesA.Add(index);
+				if(Keyboard.IsKeyPressed(Keyboard.Key.LAlt))
+					selectedHitboxPointIndexesA.Remove(index);
+			}
+			void SelectHitboxPointIndexB(int index)
+			{
+				if(selectedHitboxPointIndexesB.Contains(index) == false)
+					selectedHitboxPointIndexesB.Add(index);
+				if(Keyboard.IsKeyPressed(Keyboard.Key.LAlt))
+					selectedHitboxPointIndexesB.Remove(index);
+			}
 		}
 		private void TryDrawSelection()
 		{
-			for(int i = 0; i < selectedUIDs.Count; i++)
-				Draw((Hitbox)ThingManager.Get(selectedUIDs[i], "BoundingBox"));
+			var unselectedCol = new Color(0, 100, 0);
+			var selectCol = Color.Green;
 
 			if(isDragSelecting)
-				Draw(GetDragSelectionHitbox(), Keyboard.IsKeyPressed(Keyboard.Key.LAlt));
+				DrawBoundingBox(GetDragSelectionHitbox(), Keyboard.IsKeyPressed(Keyboard.Key.LAlt));
 
-			void Draw(Hitbox? hitbox, bool unselect = false)
+			if(selectedUIDs.Count == 0)
+				return;
+
+			for(int i = 0; i < selectedUIDs.Count; i++)
+				DrawBoundingBox((Hitbox)ThingManager.Get(selectedUIDs[i], "BoundingBox"));
+
+			var ptsA = selectedHitboxPointIndexesA;
+			var ptsB = selectedHitboxPointIndexesB;
+			for(int i = 0; i < selectedUIDs.Count; i++)
 			{
-				if(hitbox == null)
+				var hitbox = (Hitbox)ThingManager.Get(selectedUIDs[i], "Hitbox");
+				for(int j = 0; j < hitbox.Lines.Count; j++)
+				{
+					var col = ptsA.Contains(j) || ptsB.Contains(j) ? selectCol : unselectedCol;
+					hitbox.Lines[j].Draw(window, col, sceneSc * 4);
+				}
+			}
+
+			if(editHitbox == null || editHitbox.Checked == false)
+				return;
+
+			var lines = ((Hitbox)ThingManager.Get(selectedUIDs[0], "Hitbox")).Lines;
+			var sz = sceneSc * HITBOX_POINT_EDIT_MAX_DIST;
+
+			for(int j = 0; j < lines.Count; j++)
+			{
+				if(ptsA.Contains(j) == false)
+					lines[j].A.DrawPoint(window, unselectedCol, sz);
+				if(ptsB.Contains(j) == false)
+					lines[j].B.DrawPoint(window, unselectedCol, sz);
+			}
+			// always draw selected points on top
+			for(int j = 0; j < lines.Count; j++)
+			{
+				if(ptsA.Contains(j))
+					lines[j].A.DrawPoint(window, selectCol, sz);
+				if(ptsB.Contains(j))
+					lines[j].B.DrawPoint(window, selectCol, sz);
+			}
+
+			void DrawBoundingBox(Hitbox? boundingBox, bool unselect = false)
+			{
+				if(boundingBox == null)
 					return;
 
-				var topL = hitbox.Lines[0].A;
-				var topR = hitbox.Lines[0].B;
-				var botR = hitbox.Lines[1].B;
-				var botL = hitbox.Lines[2].B;
-				var fillCol = unselect ? new Color(255, 180, 0, 100) : new Color(0, 180, 255, 100);
+				var topL = boundingBox.Lines[0].A;
+				var topR = boundingBox.Lines[0].B;
+				var botR = boundingBox.Lines[1].B;
+				var botL = boundingBox.Lines[2].B;
 				var outCol = Color.White;
+				var fillCol = unselect ? new Color(255, 180, 0, 100) : new Color(0, 180, 255, 100);
 				var fill = new Vertex[]
 				{
 					new(topL.ToSFML(), fillCol),
@@ -790,10 +904,7 @@ namespace SMPLSceneEditor
 					new(botL.ToSFML(), fillCol),
 				};
 
-				new Line(topL, topR).Draw(window, outCol, sceneSc * 4);
-				new Line(topR, botR).Draw(window, outCol, sceneSc * 4);
-				new Line(botR, botL).Draw(window, outCol, sceneSc * 4);
-				new Line(botL, topL).Draw(window, outCol, sceneSc * 4);
+				boundingBox.Draw(window, outCol, sceneSc * 4);
 
 				for(int i = 0; i < selectedUIDs.Count; i++)
 				{
@@ -806,9 +917,41 @@ namespace SMPLSceneEditor
 		}
 		private void TryDestroy()
 		{
+			if(ActiveForm != this)
+				return;
+
 			var delClick = Keyboard.IsKeyPressed(Keyboard.Key.Delete).Once("delete-selected-objects");
 
-			if(ActiveForm == this && confirmDeleteChildrenMsgShown == false && selectedUIDs.Count > 0 && delClick)
+			if(delClick == false)
+				return;
+
+			if(editHitbox != null && editHitbox.Checked)
+			{
+				// work on copy lists since removing from the main list changes other indexes in the main list but not the selectedPts lists
+				var hitbox = (Hitbox)ThingManager.Get(selectedUIDs[0], "Hitbox");
+				var lines = new List<Line>(hitbox.LocalLines);
+				var ptsA = new List<int>(selectedHitboxPointIndexesA);
+				var ptsB = new List<int>(selectedHitboxPointIndexesB);
+
+				for(int i = 0; i < ptsA.Count; i++)
+					Remove(ptsA[i]);
+				for(int i = 0; i < ptsB.Count; i++)
+					Remove(ptsB[i]);
+
+				hitbox.LocalLines.Clear();
+				for(int i = 0; i < lines.Count; i++)
+					if(lines[i].A.IsNaN() == false && lines[i].B.IsNaN() == false)
+						hitbox.LocalLines.Add(lines[i]);
+
+				selectedHitboxPointIndexesA.Clear();
+				selectedHitboxPointIndexesB.Clear();
+				UpdateThingPanel();
+				return;
+
+				void Remove(int index) => lines[index] = new Line(new Vector2().NaN(), new Vector2().NaN());
+			}
+
+			if(confirmDeleteChildrenMsgShown == false && selectedUIDs.Count > 0)
 			{
 				confirmDeleteChildrenMsgShown = true;
 				var result = MessageBox.Show($"Also delete the children of the selected {{Things}}?", "Delete Selection", MessageBoxButtons.YesNoCancel);
@@ -984,7 +1127,7 @@ namespace SMPLSceneEditor
 		#region Scene
 		private void OnKeyDownObjectSearch(object sender, System.Windows.Forms.KeyEventArgs e)
 		{
-			if(e.KeyCode != Keys.Return || string.IsNullOrWhiteSpace(searchScene.Text))
+			if(e.KeyCode != Keys.Return || string.IsNullOrWhiteSpace(searchScene.Text) || (editHitbox != null && editHitbox.Checked))
 				return;
 
 			var prio = 0;
@@ -1077,8 +1220,11 @@ namespace SMPLSceneEditor
 			var pos = window.GetView().Center.ToSystem();
 			var mousePos = GetMousePosition();
 			var dist = pos.DistanceBetweenPoints(mousePos);
+			var editingHitbox = editHitbox != null && editHitbox.Checked;
+			var ptsA = selectedHitboxPointIndexesA;
+			var ptsB = selectedHitboxPointIndexesB;
 
-			if(selectedUIDs.Count == 0)
+			if(selectedUIDs.Count == 0 || (editingHitbox && ptsA.Count == 0 && ptsB.Count == 0))
 			{
 				if(delta < 0)
 				{
@@ -1086,7 +1232,28 @@ namespace SMPLSceneEditor
 					SetViewPosition(pos);
 				}
 				SetViewScale(sceneSc + delta);
+				return;
 			}
+
+			if(editingHitbox)
+			{
+				var hitbox = (Hitbox)ThingManager.Get(selectedUIDs[0], "Hitbox");
+
+				for(int i = 0; i < ptsA.Count; i++)
+				{
+					var line = hitbox.LocalLines[ptsA[i]];
+					line.A += line.A * delta;
+					hitbox.LocalLines[ptsA[i]] = line;
+				}
+				for(int i = 0; i < ptsB.Count; i++)
+				{
+					var line = hitbox.LocalLines[ptsB[i]];
+					line.B += line.B * delta;
+					hitbox.LocalLines[ptsB[i]] = line;
+				}
+				return;
+			}
+
 
 			for(int i = 0; i < selectedUIDs.Count; i++)
 			{
@@ -1101,6 +1268,7 @@ namespace SMPLSceneEditor
 		private void OnMouseLeaveScene(object sender, EventArgs e)
 		{
 			isHoveringScene = false;
+			isDragSelecting = false;
 		}
 		private void OnMouseEnterScene(object sender, EventArgs e)
 		{
@@ -1111,8 +1279,11 @@ namespace SMPLSceneEditor
 			if(e.Button == MouseButtons.Middle)
 			{
 				var editIndex = editSelectionOptions.SelectedIndex;
+				var editHitboxPts = editHitbox != null && editHitbox.Checked;
+				var ptsA = selectedHitboxPointIndexesA;
+				var ptsB = selectedHitboxPointIndexesB;
 
-				if(selectedUIDs.Count == 0)
+				if(selectedUIDs.Count == 0 || (editHitboxPts && ptsA.Count == 0 && ptsB.Count == 0))
 				{
 					var view = window.GetView();
 					var pos = view.Center.ToSystem();
@@ -1122,8 +1293,74 @@ namespace SMPLSceneEditor
 					else if(editIndex == 1)
 						SetViewAngle(DragAngle(pos, view.Rotation, true));
 				}
-				else
+				else if(editHitboxPts)
 				{
+					var uid = selectedUIDs[0];
+					var hitbox = (Hitbox)ThingManager.Get(uid, "Hitbox");
+					var sc = (float)ThingManager.Get(uid, "Scale");
+
+					if(ptsA.Count == 0 && ptsB.Count == 0)
+						return;
+
+					if(editIndex == 0)
+					{
+						for(int i = 0; i < ptsA.Count; i++)
+						{
+							var line = hitbox.LocalLines[ptsA[i]];
+							hitbox.LocalLines[ptsA[i]] = new(TrySnap(Drag(line.A, false, true, sc), ptsA[i]), line.B);
+						}
+						for(int i = 0; i < ptsB.Count; i++)
+						{
+							var line = hitbox.LocalLines[ptsB[i]];
+							hitbox.LocalLines[ptsB[i]] = new(line.A, TrySnap(Drag(line.B, false, true, sc), ptsB[i]));
+						}
+
+						Vector2 TrySnap(Vector2 draggedPos, int index)
+						{
+							var snapValue = (float)snap.Value;
+							if(snapValue == 0)
+								return draggedPos;
+
+							for(int i = 0; i < hitbox.LocalLines.Count; i++)
+							{
+								if(i == index) // shouldn't be the same line
+									continue;
+
+								if(hitbox.LocalLines[i].A.DistanceBetweenPoints(draggedPos) < snapValue)
+									return hitbox.LocalLines[i].A;
+								else if(hitbox.LocalLines[i].B.DistanceBetweenPoints(draggedPos) < snapValue)
+									return hitbox.LocalLines[i].B;
+							}
+							return draggedPos;
+						}
+					}
+					else if(editIndex == 1)
+					{
+						var thingPos = (Vector2)ThingManager.Get(uid, "Position");
+						var a = thingPos.AngleBetweenPoints(GetMousePosition());
+						var ang = DragAngle(thingPos, a);
+
+						for(int i = 0; i < ptsA.Count; i++)
+						{
+							var line = hitbox.LocalLines[ptsA[i]];
+							var matrix =
+								Matrix3x2.CreateTranslation(line.A) *
+								Matrix3x2.CreateRotation((ang - a).DegreesToRadians());
+
+							hitbox.LocalLines[ptsA[i]] = new(matrix.Translation, line.B);
+						}
+						for(int i = 0; i < ptsB.Count; i++)
+						{
+							var line = hitbox.LocalLines[ptsB[i]];
+							var matrix =
+								Matrix3x2.CreateTranslation(line.B) *
+								Matrix3x2.CreateRotation((ang - a).DegreesToRadians());
+
+							hitbox.LocalLines[ptsB[i]] = new(line.A, matrix.Translation);
+						}
+					}
+				}
+				else
 					for(int i = 0; i < selectedUIDs.Count; i++)
 					{
 						var uid = selectedUIDs[i];
@@ -1136,7 +1373,6 @@ namespace SMPLSceneEditor
 						else if(editIndex == 1)
 							ThingManager.Set(uid, "Angle", DragAngle(pos, ang));
 					}
-				}
 
 				Cursor.Current = editCursors[editIndex];
 			}
@@ -1150,6 +1386,9 @@ namespace SMPLSceneEditor
 		{
 			searchBox.Select();
 
+			if(e.Button == MouseButtons.Right)
+				windowPicture.ContextMenuStrip = editHitbox != null && editHitbox.Checked ? sceneRightClickMenuHitbox : sceneRightClickMenu;
+
 			if(e.Button != MouseButtons.Left)
 				return;
 
@@ -1160,7 +1399,7 @@ namespace SMPLSceneEditor
 		private void OnMouseUpScene(object sender, MouseEventArgs e)
 		{
 			if(e.Button == MouseButtons.Left)
-				ResetThingPanel();
+				TryResetThingPanel();
 
 			UpdateThingPanel();
 
@@ -1237,14 +1476,56 @@ namespace SMPLSceneEditor
 			}
 		}
 
+		private void OnSceneRightclickMenuCreateHitboxLine(object sender, EventArgs e)
+		{
+			var off = new Vector2(50f * sceneSc, 0);
+			AddHitboxLine(selectedUIDs[0], new List<Line>() { new(rightClickPos - off, rightClickPos + off) });
+		}
+		private void OnSceneRightclickMenuCreateHitboxSquare(object sender, EventArgs e)
+		{
+			var off = new Vector2(50f) * sceneSc;
+			var uid = selectedUIDs[0];
+			var p = rightClickPos;
+			var lines = new List<Line>()
+			{
+				new(p + new Vector2(-off.X, -off.Y), p + new Vector2(off.X, -off.Y)),
+				new(p + new Vector2(off.X, -off.Y), p + new Vector2(off.X, off.Y)),
+				new(p + new Vector2(off.X, off.Y), p + new Vector2(-off.X, off.Y)),
+				new(p + new Vector2(-off.X, off.Y), p + new Vector2(-off.X, -off.Y)),
+			};
+			AddHitboxLine(uid, lines);
+		}
+		private void OnSceneRightclickMenuCreateHitboxCircle(object sender, EventArgs e)
+		{
+			var uid = selectedUIDs[0];
+			var radius = 50f * sceneSc;
+			var angStep = 360f / 8f;
+			var lines = new List<Line>();
+
+			for(int i = 0; i < 8; i++)
+			{
+				var p = rightClickPos.PointMoveAtAngle(angStep * i, radius, false);
+				var p1 = rightClickPos.PointMoveAtAngle(angStep * (i - 1), radius, false);
+				lines.Add(new(p, p1));
+			}
+			AddHitboxLine(uid, lines);
+		}
+
 		private void OnSceneRightClickMenuResetView(object sender, EventArgs e)
 		{
 			SetView();
 		}
 		private void OnSceneRightClickMenuDeselect(object sender, EventArgs e)
 		{
+			if(editHitbox != null && editHitbox.Checked)
+			{
+				selectedHitboxPointIndexesA.Clear();
+				selectedHitboxPointIndexesB.Clear();
+				return;
+			}
+
 			selectedUIDs.Clear();
-			ResetThingPanel();
+			TryResetThingPanel();
 		}
 		#endregion
 		#region EditThingPanel
@@ -1273,7 +1554,7 @@ namespace SMPLSceneEditor
 				selectedUIDs.Clear();
 				selectedUIDs.Add(selectedItem);
 
-				ResetThingPanel();
+				TryResetThingPanel();
 				UpdateThingPanel();
 			}
 			else if(list.Name == "PropTypes")
@@ -1412,7 +1693,6 @@ namespace SMPLSceneEditor
 
 			UpdateThingPanel();
 		}
-
 		private void OnThingListPick(object sender, ToolStripItemClickedEventArgs e)
 		{
 			if(pickThingProperty != "")
@@ -1475,7 +1755,7 @@ namespace SMPLSceneEditor
 		const int SPACING_X = 50, SPACING_Y = 20, BUTTON_W = 70, BUTTON_H = 25, TEXTBOX_H = 25,
 			W = 400, H = SPACING_Y * 5 + BUTTON_H;
 
-		private Vector2 Drag(Vector2 point, bool reverse = false, bool snapToGrid = false)
+		private Vector2 Drag(Vector2 point, bool reverse = false, bool snapToGrid = false, float scale = 1f)
 		{
 			var view = window.GetView();
 			var prev = snapToGrid ? prevFormsMousePosGrid : prevFormsMousePos;
@@ -1491,7 +1771,7 @@ namespace SMPLSceneEditor
 			if(reverse)
 				dist *= -1;
 
-			return dist == 0 ? point : point.PointMoveAtAngle(view.Rotation + ang, dist, false);
+			return dist == 0 ? point : point.PointMoveAtAngle(view.Rotation + ang, dist / scale, false);
 		}
 		private float DragAngle(Vector2 point, float angle, bool reverse = false)
 		{

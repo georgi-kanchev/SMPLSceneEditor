@@ -52,7 +52,7 @@
 			this.cameraToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.sceneRightClickMenuResetView = new System.Windows.Forms.ToolStripMenuItem();
-			this.unselectAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuUnselectAll = new System.Windows.Forms.ToolStripMenuItem();
 			this.selectThingTip = new System.Windows.Forms.Label();
 			this.rightTable = new System.Windows.Forms.TableLayoutPanel();
 			this.thingTypesTable = new System.Windows.Forms.TableLayoutPanel();
@@ -61,6 +61,14 @@
 			this.pickColor = new System.Windows.Forms.ColorDialog();
 			this.pickAsset = new System.Windows.Forms.OpenFileDialog();
 			this.thingsList = new System.Windows.Forms.ContextMenuStrip(this.components);
+			this.sceneRightClickMenuHitbox = new System.Windows.Forms.ContextMenuStrip(this.components);
+			this.sceneRightClickMenuHitboxCreateLine = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuHitboxSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+			this.sceneRightClickMenuHitboxResetView = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuDeselectAll = new System.Windows.Forms.ToolStripMenuItem();
+			this.lineToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.squareToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.circleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).BeginInit();
 			this.windowSplit.Panel1.SuspendLayout();
 			this.windowSplit.Panel2.SuspendLayout();
@@ -76,6 +84,7 @@
 			((System.ComponentModel.ISupportInitialize)(this.windowPicture)).BeginInit();
 			this.sceneRightClickMenu.SuspendLayout();
 			this.rightTable.SuspendLayout();
+			this.sceneRightClickMenuHitbox.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// windowSplit
@@ -191,7 +200,7 @@
 			this.searchBox.Size = new System.Drawing.Size(142, 54);
 			this.searchBox.TabIndex = 9;
 			this.searchBox.TabStop = false;
-			this.searchBox.Text = "Search {Thing}";
+			this.searchBox.Text = "Search";
 			// 
 			// searchScene
 			// 
@@ -217,7 +226,7 @@
 			this.editSelectionGroup.Size = new System.Drawing.Size(186, 54);
 			this.editSelectionGroup.TabIndex = 6;
 			this.editSelectionGroup.TabStop = false;
-			this.editSelectionGroup.Text = "Edit Selected {Things}";
+			this.editSelectionGroup.Text = "Edit Selection";
 			// 
 			// editSelectionOptions
 			// 
@@ -332,12 +341,11 @@
 			// 
 			// sceneRightClickMenu
 			// 
-			this.sceneRightClickMenu.BackColor = System.Drawing.Color.White;
 			this.sceneRightClickMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.sceneRightClickMenuCreate,
             this.sceneRightClickMenuSeparator1,
             this.sceneRightClickMenuResetView,
-            this.unselectAllToolStripMenuItem});
+            this.sceneRightClickMenuUnselectAll});
 			this.sceneRightClickMenu.Name = "sceneRightClickMenu";
 			this.sceneRightClickMenu.Size = new System.Drawing.Size(136, 76);
 			// 
@@ -384,12 +392,12 @@
 			this.sceneRightClickMenuResetView.Text = "Reset View";
 			this.sceneRightClickMenuResetView.Click += new System.EventHandler(this.OnSceneRightClickMenuResetView);
 			// 
-			// unselectAllToolStripMenuItem
+			// sceneRightClickMenuUnselectAll
 			// 
-			this.unselectAllToolStripMenuItem.Name = "unselectAllToolStripMenuItem";
-			this.unselectAllToolStripMenuItem.Size = new System.Drawing.Size(135, 22);
-			this.unselectAllToolStripMenuItem.Text = "Deselect All";
-			this.unselectAllToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuDeselect);
+			this.sceneRightClickMenuUnselectAll.Name = "sceneRightClickMenuUnselectAll";
+			this.sceneRightClickMenuUnselectAll.Size = new System.Drawing.Size(135, 22);
+			this.sceneRightClickMenuUnselectAll.Text = "Deselect All";
+			this.sceneRightClickMenuUnselectAll.Click += new System.EventHandler(this.OnSceneRightClickMenuDeselect);
 			// 
 			// selectThingTip
 			// 
@@ -459,6 +467,66 @@
 			this.thingsList.Size = new System.Drawing.Size(61, 4);
 			this.thingsList.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.OnThingListPick);
 			// 
+			// sceneRightClickMenuHitbox
+			// 
+			this.sceneRightClickMenuHitbox.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.sceneRightClickMenuHitboxCreateLine,
+            this.sceneRightClickMenuHitboxSeparator1,
+            this.sceneRightClickMenuHitboxResetView,
+            this.sceneRightClickMenuDeselectAll});
+			this.sceneRightClickMenuHitbox.Name = "sceneRightClickMenuHitbox";
+			this.sceneRightClickMenuHitbox.Size = new System.Drawing.Size(181, 98);
+			// 
+			// sceneRightClickMenuHitboxCreateLine
+			// 
+			this.sceneRightClickMenuHitboxCreateLine.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.lineToolStripMenuItem,
+            this.squareToolStripMenuItem,
+            this.circleToolStripMenuItem});
+			this.sceneRightClickMenuHitboxCreateLine.Name = "sceneRightClickMenuHitboxCreateLine";
+			this.sceneRightClickMenuHitboxCreateLine.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuHitboxCreateLine.Text = "Create";
+			// 
+			// sceneRightClickMenuHitboxSeparator1
+			// 
+			this.sceneRightClickMenuHitboxSeparator1.Name = "sceneRightClickMenuHitboxSeparator1";
+			this.sceneRightClickMenuHitboxSeparator1.Size = new System.Drawing.Size(177, 6);
+			// 
+			// sceneRightClickMenuHitboxResetView
+			// 
+			this.sceneRightClickMenuHitboxResetView.Name = "sceneRightClickMenuHitboxResetView";
+			this.sceneRightClickMenuHitboxResetView.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuHitboxResetView.Text = "Reset View";
+			this.sceneRightClickMenuHitboxResetView.Click += new System.EventHandler(this.OnSceneRightClickMenuResetView);
+			// 
+			// sceneRightClickMenuDeselectAll
+			// 
+			this.sceneRightClickMenuDeselectAll.Name = "sceneRightClickMenuDeselectAll";
+			this.sceneRightClickMenuDeselectAll.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuDeselectAll.Text = "Deselect All";
+			this.sceneRightClickMenuDeselectAll.Click += new System.EventHandler(this.OnSceneRightClickMenuDeselect);
+			// 
+			// lineToolStripMenuItem
+			// 
+			this.lineToolStripMenuItem.Name = "lineToolStripMenuItem";
+			this.lineToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.lineToolStripMenuItem.Text = "Line (1 side)";
+			this.lineToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateHitboxLine);
+			// 
+			// squareToolStripMenuItem
+			// 
+			this.squareToolStripMenuItem.Name = "squareToolStripMenuItem";
+			this.squareToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.squareToolStripMenuItem.Text = "Square (4 sides)";
+			this.squareToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateHitboxSquare);
+			// 
+			// circleToolStripMenuItem
+			// 
+			this.circleToolStripMenuItem.Name = "circleToolStripMenuItem";
+			this.circleToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.circleToolStripMenuItem.Text = "Circle (8 sides)";
+			this.circleToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateHitboxCircle);
+			// 
 			// FormWindow
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -492,6 +560,7 @@
 			((System.ComponentModel.ISupportInitialize)(this.windowPicture)).EndInit();
 			this.sceneRightClickMenu.ResumeLayout(false);
 			this.rightTable.ResumeLayout(false);
+			this.sceneRightClickMenuHitbox.ResumeLayout(false);
 			this.ResumeLayout(false);
 
 		}
@@ -525,10 +594,18 @@
 		private TextBox sceneName;
 		private TextBox searchScene;
 		private ToolStripMenuItem lightToolStripMenuItem;
-		private ToolStripMenuItem unselectAllToolStripMenuItem;
+		private ToolStripMenuItem sceneRightClickMenuUnselectAll;
 		private ToolStripMenuItem cameraToolStripMenuItem;
 		private ColorDialog pickColor;
 		private OpenFileDialog pickAsset;
 		private ContextMenuStrip thingsList;
+		private ContextMenuStrip sceneRightClickMenuHitbox;
+		private ToolStripMenuItem sceneRightClickMenuHitboxCreateLine;
+		private ToolStripSeparator sceneRightClickMenuHitboxSeparator1;
+		private ToolStripMenuItem sceneRightClickMenuHitboxResetView;
+		private ToolStripMenuItem sceneRightClickMenuDeselectAll;
+		private ToolStripMenuItem lineToolStripMenuItem;
+		private ToolStripMenuItem squareToolStripMenuItem;
+		private ToolStripMenuItem circleToolStripMenuItem;
 	}
 }
