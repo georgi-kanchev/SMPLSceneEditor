@@ -39,6 +39,9 @@ namespace SMPLSceneEditor
 			{ "Camera", Color.Red },
 			{ "Light", Color.Yellow },
 		};
+
+		private Color bgCol = Color.Black, bbCol = Color.White, selCol = new(0, 180, 255, 100), hitCol = new(0, 255, 0),
+			gridCol = new(50, 50, 50), gridCol0 = Color.Yellow, gridCol1000 = Color.White;
 		#endregion
 
 		#region Init
@@ -80,6 +83,7 @@ namespace SMPLSceneEditor
 
 		private void InitTables()
 		{
+			var scene = CreateDefaultTable("tableScene");
 			var thing = CreateDefaultTable("tableThing");
 			var sprite = CreateDefaultTable("tableSprite");
 			var visual = CreateDefaultTable("tableVisual");
@@ -87,16 +91,17 @@ namespace SMPLSceneEditor
 			var camera = CreateDefaultTable("tableCamera");
 			var types = thingTypesTable;
 
+			types.Hide();
 			AddThingProperty(types, "Types", "PropTypes", typeof(ReadOnlyCollection<string>));
 
+			AddPropsScene();
 			AddPropsThing();
 			AddPropsSprite();
 			AddPropsVisual();
 			AddPropsLight();
 			AddPropsCamera();
 
-			rightTable.Controls.Add(thing, 0, 1);
-
+			editThingTableTypes[scene.Name] = scene;
 			editThingTableTypes[thing.Name] = thing;
 			editThingTableTypes[sprite.Name] = sprite;
 			editThingTableTypes[visual.Name] = visual;
@@ -119,13 +124,27 @@ namespace SMPLSceneEditor
 
 				return result;
 			}
+			void AddPropsScene()
+			{
+				AddThingProperty(scene, "SMPL Scene", rightLabel: true); AddThingProperty(scene, "Editor Colors");
+				AddThingProperty(scene, "Background", "SceneBackgroundColor", typeof(Color));
+				AddThingProperty(scene, "Grid", "SceneGridColor", typeof(Color));
+				AddThingProperty(scene, "Grid 0", "SceneGrid0Color", typeof(Color));
+				AddThingProperty(scene, "Grid 1000", "SceneGrid1000Color", typeof(Color));
+				AddThingProperty(scene, ""); AddThingProperty(scene, "");
+				AddThingProperty(scene, "Bound Box", "SceneBoundingBoxColor", typeof(Color));
+				AddThingProperty(scene, "Select", "SceneSelectColor", typeof(Color));
+				AddThingProperty(scene, ""); AddThingProperty(scene, "");
+				AddThingProperty(scene, "Camera", "SceneCameraColor", typeof(Color));
+				AddThingProperty(scene, "Hitbox", "SceneHitboxColor", typeof(Color));
+				AddThingProperty(scene, "Light", "SceneLightColor", typeof(Color));
+			}
 			void AddPropsThing()
 			{
 				AddThingProperty(thing, "Self", rightLabel: true); AddThingProperty(thing, "Properties", null);
 				AddThingProperty(thing, "UID", "PropUID", typeof(string));
 				AddThingProperty(thing, "Old UID", "PropOldUID", typeof(string), readOnly: true);
 				AddThingProperty(thing, "Age", "PropAgeTimer", typeof(string), readOnly: true);
-				AddThingProperty(thing, "Update Order", "PropUpdateOrder", typeof(int));
 				AddThingProperty(thing, "Position", "PropPosition", typeof(Vector2));
 				AddThingProperty(thing, "Angle", "PropAngle", typeof(float));
 				AddThingProperty(thing, "Direction", "PropDirection", typeof(Vector2), readOnly: true, smallNumericStep: true);
@@ -281,6 +300,13 @@ namespace SMPLSceneEditor
 				lab.TextAlign = ContentAlignment.MiddleRight;
 				lab.Controls.Add(btn);
 			}
+			else if(valueType == typeof(ThingManager.Effects))
+			{
+				var btn = new Button() { Text = "Uniforms", Dock = DockStyle.Left, Width = 100 };
+				btn.Click += SetUniform;
+				lab.TextAlign = ContentAlignment.MiddleRight;
+				lab.Controls.Add(btn);
+			}
 
 			void PickThingList(object? sender, EventArgs e)
 			{
@@ -291,10 +317,34 @@ namespace SMPLSceneEditor
 			}
 			void PickColor(object? sender, EventArgs e)
 			{
-				if(pickColor.ShowDialog() != DialogResult.OK)
+				if(sender == null || pickColor.ShowDialog() != DialogResult.OK)
 					return;
 
 				var c = pickColor.Color;
+				var control = (Control)sender;
+
+				if(control.Parent.Name.StartsWith("Scene"))
+				{
+					var cols = nonVisualTypeColors;
+					switch(control.Parent.Name)
+					{
+						case "SceneBackgroundColor": bgCol = C(bgCol); break;
+						case "SceneBoundingBoxColor": bbCol = C(bbCol); break;
+						case "SceneSelectColor": selCol = C(selCol); break;
+						case "SceneCameraColor": cols["Camera"] = C(cols["Camera"]); break;
+						case "SceneHitboxColor": hitCol = C(hitCol); break;
+						case "SceneLightColor": cols["Light"] = C(cols["Light"]); break;
+						case "SceneGridColor": gridCol = C(gridCol); break;
+						case "SceneGrid0Color": gridCol0 = C(gridCol0); break;
+						case "SceneGrid1000Color": gridCol1000 = C(gridCol1000); break;
+					}
+
+					TryResetThingPanel();
+					return;
+
+					Color C(Color col) => new(c.R, c.G, c.B, col.A);
+				}
+
 				var uid = selectedUIDs[0];
 				var col = (Color)ThingManager.Get(uid, property);
 
@@ -317,6 +367,50 @@ namespace SMPLSceneEditor
 			{
 				EditList("Edit List", (List<string>)ThingManager.Get(selectedUIDs[0], property), thingList, uniqueList);
 				UpdateThingPanel();
+			}
+			void SetUniform(object? sender, EventArgs e)
+			{
+				var uid = selectedUIDs[0];
+				var effect = (ThingManager.Effects)ThingManager.Get(uid, "Effect");
+				if(effect == ThingManager.Effects.None)
+					return;
+				var code = (ThingManager.CodeGLSL)ThingManager.CallGet(selectedUIDs[0], "EffectCode", effect);
+				var frag = string.IsNullOrWhiteSpace(code.FragmentUniforms) ? "" : $"- Fragment Uniforms:{code.FragmentUniforms}";
+				var vert = string.IsNullOrWhiteSpace(code.VertexUniforms) ? "" : $"- Vertex Uniforms:{code.VertexUniforms}";
+
+				var input = GetInput($"Set {effect} Uniform", "- Syntax examples:\n" +
+					"BoolName true\n" +
+					"IntName 3\n" +
+					"FloatName 0.5\n" +
+					"Vec2Name 0.3 0.1\n" +
+					"Vec3Name 25.0 13.5 2.0\n" +
+					"Vec4Name 0.2 0.9 0.3 1.0\n" +
+					"ColorName 1.0 0.8 0.2 1.0\n" +
+					"ArrayName[ArrayIndex] ..." +
+					$"\n\n{frag}{vert}");
+
+				if(string.IsNullOrWhiteSpace(input))
+					return;
+
+				var a = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+				if(a[1] == "true")
+					ThingManager.CallVoid(uid, "SetShaderBool", a[0], true);
+				else if(a[1] == "false")
+					ThingManager.CallVoid(uid, "SetShaderBool", a[0], false);
+				else if(a.Length == 2 && a[1].IsNumber())
+				{
+					var n = a[1].ToNumber();
+					ThingManager.CallVoid(uid, "SetShaderFloat", a[0], n);
+					ThingManager.CallVoid(uid, "SetShaderInt", a[0], (int)n);
+				}
+				else if(a.Length == 3 && a[1].IsNumber() && a[2].IsNumber())
+					ThingManager.CallVoid(uid, "SetShaderVector2", a[0], new Vector2(a[1].ToNumber(), a[2].ToNumber()));
+				else if(a.Length == 4 && a[1].IsNumber() && a[2].IsNumber() && a[3].IsNumber())
+					ThingManager.CallVoid(uid, "SetShaderVector3", a[0], new Vector3(a[1].ToNumber(), a[2].ToNumber(), a[3].ToNumber()));
+				else if(a.Length == 5 && a[1].IsNumber() && a[2].IsNumber() && a[3].IsNumber() && a[4].IsNumber())
+					ThingManager.CallVoid(uid, "SetShaderVector4", a[0], new Vector4(a[1].ToNumber(), a[2].ToNumber(), a[3].ToNumber(), a[4].ToNumber()));
+				else
+					MessageBox.Show(this, $"The {effect} uniform was not set due to invalid input.", $"Set {effect} Uniform Failed");
 			}
 
 			void SetDefault(Control control, float fontSize = FONT_SIZE, bool reverseColors = false)
@@ -390,7 +484,7 @@ namespace SMPLSceneEditor
 			view.Size = new(window.Size.X * sceneSc, window.Size.Y * sceneSc);
 			window.SetView(view);
 
-			window.Clear();
+			window.Clear(bgCol);
 			DrawGrid();
 			UpdateSceneValues();
 
@@ -408,10 +502,7 @@ namespace SMPLSceneEditor
 		}
 		private void UpdateThingPanel()
 		{
-			rightTable.Visible = selectedUIDs.Count == 1;
-			selectThingTip.Visible = selectedUIDs.Count != 1;
-
-			if(rightTable.Visible == false)
+			if(selectedUIDs.Count != 1)
 				return;
 
 			var uid = selectedUIDs[0];
@@ -542,15 +633,58 @@ namespace SMPLSceneEditor
 
 			Vector2 Local(Vector2 global) => (Vector2)ThingManager.CallGet(uid, "LocalPositionFromSelf", global);
 		}
+		private void TrySelectThing(string uid)
+		{
+			if(selectedUIDs.Contains(uid))
+				return;
+
+			selectedUIDs.Add(uid);
+			TryResetThingPanel();
+		}
 
 		private void TryResetThingPanel()
 		{
-			if(rightTable.Controls.ContainsKey("tableThing") || (editHitbox != null && editHitbox.Checked))
+			var thing = selectedUIDs.Count == 1 && rightTable.Controls.ContainsKey("tableThing") == false;
+			var scene = selectedUIDs.Count == 0 && rightTable.Controls.ContainsKey("tableScene") == false;
+
+			if(editHitbox != null && editHitbox.Checked)
 				return;
 
-			rightTable.Controls.Clear();
-			rightTable.Controls.Add(thingTypesTable);
-			rightTable.Controls.Add(editThingTableTypes["tableThing"]);
+			if(thing || scene)
+			{
+				rightTable.Controls.Clear();
+				thingTypesTable.Visible = selectedUIDs.Count == 1;
+				rightTable.Controls.Add(thingTypesTable);
+				rightTable.Controls.Add(editThingTableTypes[selectedUIDs.Count == 1 ? "tableThing" : "tableScene"], 0, 1);
+			}
+
+			if(selectedUIDs.Count == 0)
+			{
+				SetColor("SceneBackgroundColor", bgCol);
+				SetColor("SceneBoundingBoxColor", bbCol);
+				SetColor("SceneSelectColor", selCol);
+				SetColor("SceneCameraColor", nonVisualTypeColors["Camera"]);
+				SetColor("SceneHitboxColor", hitCol);
+				SetColor("SceneLightColor", nonVisualTypeColors["Light"]);
+				SetColor("SceneGridColor", gridCol);
+				SetColor("SceneGrid0Color", gridCol0);
+				SetColor("SceneGrid1000Color", gridCol1000);
+
+				void SetColor(string name, Color col)
+				{
+					var table = (TableLayoutPanel)editThingTableTypes["tableScene"].Controls.Find(name, true)[0];
+					SetNumber((NumericUpDown)table.Controls[0], col.R);
+					SetNumber((NumericUpDown)table.Controls[1], col.G);
+					SetNumber((NumericUpDown)table.Controls[2], col.B);
+					SetNumber((NumericUpDown)table.Controls[3], col.A);
+					table.BackColor = System.Drawing.Color.FromArgb(255, col.R, col.G, col.B);
+				}
+				void SetNumber(NumericUpDown number, float value, bool readOnly = false)
+				{
+					number.Enabled = readOnly == false;
+					number.Value = (decimal)value.Limit((float)number.Minimum, (float)number.Maximum);
+				}
+			}
 		}
 
 		private void UpdateSceneValues()
@@ -613,11 +747,11 @@ namespace SMPLSceneEditor
 			Color GetColor(float coordinate)
 			{
 				if(coordinate == 0)
-					return SFML.Graphics.Color.Yellow;
+					return gridCol0;
 				else if(coordinate % 1000 == 0)
-					return SFML.Graphics.Color.White;
+					return gridCol1000;
 
-				return new SFML.Graphics.Color(50, 50, 50);
+				return gridCol;
 			}
 			VertexArray GetVertexArray(float coordinate)
 			{
@@ -670,6 +804,8 @@ namespace SMPLSceneEditor
 		{
 			if(Directory.Exists(finalGameDir) || selectGameDirShown)
 				return;
+
+			TryResetThingPanel();
 
 			selectGameDirShown = true;
 
@@ -808,14 +944,14 @@ namespace SMPLSceneEditor
 						continue;
 
 					if(dragSelHitbox != null && dragSelHitbox.ConvexContains(hitbox))
-						SelectObject(uid);
+						TrySelectOrDeselectThing(uid);
 				}
 			}
 
 			if(clickedUIDs.Count > 0)
-				SelectObject(clickedUIDs[selectDepthIndex]);
+				TrySelectOrDeselectThing(clickedUIDs[selectDepthIndex]);
 
-			void SelectObject(string uid)
+			void TrySelectOrDeselectThing(string uid)
 			{
 				if(selectedUIDs.Contains(uid) == false)
 					selectedUIDs.Add(uid);
@@ -839,8 +975,11 @@ namespace SMPLSceneEditor
 		}
 		private void TryDrawSelection()
 		{
-			var unselectedCol = new Color(0, 100, 0);
-			var selectCol = Color.Green;
+			var hitboxSelectCol = hitCol;
+			var r = hitCol.R / 2;
+			var g = hitCol.G / 2;
+			var b = hitCol.B / 2;
+			var hitboxDeselectedCol = new Color((byte)r, (byte)g, (byte)b);
 
 			if(isDragSelecting)
 				DrawBoundingBox(GetDragSelectionHitbox(), Keyboard.IsKeyPressed(Keyboard.Key.LAlt));
@@ -858,7 +997,7 @@ namespace SMPLSceneEditor
 				var hitbox = (Hitbox)ThingManager.Get(selectedUIDs[i], "Hitbox");
 				for(int j = 0; j < hitbox.Lines.Count; j++)
 				{
-					var col = ptsA.Contains(j) || ptsB.Contains(j) ? selectCol : unselectedCol;
+					var col = ptsA.Contains(j) || ptsB.Contains(j) ? hitboxSelectCol : hitboxDeselectedCol;
 					hitbox.Lines[j].Draw(window, col, sceneSc * 4);
 				}
 			}
@@ -872,17 +1011,17 @@ namespace SMPLSceneEditor
 			for(int j = 0; j < lines.Count; j++)
 			{
 				if(ptsA.Contains(j) == false)
-					lines[j].A.DrawPoint(window, unselectedCol, sz);
+					lines[j].A.DrawPoint(window, hitboxDeselectedCol, sz);
 				if(ptsB.Contains(j) == false)
-					lines[j].B.DrawPoint(window, unselectedCol, sz);
+					lines[j].B.DrawPoint(window, hitboxDeselectedCol, sz);
 			}
 			// always draw selected points on top
 			for(int j = 0; j < lines.Count; j++)
 			{
 				if(ptsA.Contains(j))
-					lines[j].A.DrawPoint(window, selectCol, sz);
+					lines[j].A.DrawPoint(window, hitboxSelectCol, sz);
 				if(ptsB.Contains(j))
-					lines[j].B.DrawPoint(window, selectCol, sz);
+					lines[j].B.DrawPoint(window, hitboxSelectCol, sz);
 			}
 
 			void DrawBoundingBox(Hitbox? boundingBox, bool unselect = false)
@@ -894,8 +1033,10 @@ namespace SMPLSceneEditor
 				var topR = boundingBox.Lines[0].B;
 				var botR = boundingBox.Lines[1].B;
 				var botL = boundingBox.Lines[2].B;
-				var outCol = Color.White;
-				var fillCol = unselect ? new Color(255, 180, 0, 100) : new Color(0, 180, 255, 100);
+				var r = 255 - selCol.R;
+				var g = 255 - selCol.G;
+				var b = 255 - selCol.B;
+				var fillCol = unselect ? new Color((byte)r, (byte)g, (byte)b, 100) : selCol;
 				var fill = new Vertex[]
 				{
 					new(topL.ToSFML(), fillCol),
@@ -904,7 +1045,7 @@ namespace SMPLSceneEditor
 					new(botL.ToSFML(), fillCol),
 				};
 
-				boundingBox.Draw(window, outCol, sceneSc * 4);
+				boundingBox.Draw(window, bbCol, sceneSc * 4);
 
 				for(int i = 0; i < selectedUIDs.Count; i++)
 				{
@@ -1170,7 +1311,7 @@ namespace SMPLSceneEditor
 
 			searchScene.Text = "";
 			selectedUIDs.Clear();
-			selectedUIDs.Add(bestGuess);
+			TrySelectThing(bestGuess);
 			UpdateThingPanel();
 			FocusThing(bestGuess);
 		}
@@ -1552,7 +1693,7 @@ namespace SMPLSceneEditor
 
 				FocusThing(selectedItem);
 				selectedUIDs.Clear();
-				selectedUIDs.Add(selectedItem);
+				TrySelectThing(selectedItem);
 
 				TryResetThingPanel();
 				UpdateThingPanel();
@@ -1567,6 +1708,7 @@ namespace SMPLSceneEditor
 				rightTable.Controls.Clear();
 				rightTable.Controls.Add(thingTypesTable);
 				rightTable.Controls.Add(table);
+
 				UpdateThingPanel();
 			}
 			else if(list.Name == "PropBlendMode")
@@ -1658,16 +1800,51 @@ namespace SMPLSceneEditor
 			var numeric = (NumericUpDown)sender;
 			var propName = numeric.Name["Prop".Length..];
 			var vecColIndex = 0;
-			if(numeric.Parent.Name.StartsWith("Prop")) // is vector or color
+			var parName = numeric.Parent.Name;
+			if(parName.StartsWith("Prop") || parName.StartsWith("Scene")) // is vector or color
 			{
 				vecColIndex = (int)propName[^1].ToString().ToNumber();
 				propName = propName[..^1];
 			}
 
-			var uid = selectedUIDs[0];
-			var propType = ThingManager.GetPropertyInfo(uid, propName).Type;
 			var valueFloat = (float)numeric.Value;
 			var valueInt = (int)numeric.Value;
+
+			if(numeric.Parent.Name.StartsWith("Scene"))
+			{
+				var cols = nonVisualTypeColors;
+				switch(numeric.Parent.Name)
+				{
+					case "SceneBackgroundColor": bgCol = SetColor(bgCol); break;
+					case "SceneBoundingBoxColor": bbCol = SetColor(bbCol); break;
+					case "SceneSelectColor": selCol = SetColor(selCol); break;
+					case "SceneCameraColor": cols["Camera"] = SetColor(cols["Camera"]); break;
+					case "SceneHitboxColor": hitCol = SetColor(hitCol); break;
+					case "SceneLightColor": cols["Light"] = SetColor(cols["Light"]); break;
+					case "SceneGridColor": gridCol = SetColor(gridCol); break;
+					case "SceneGrid0Color": gridCol0 = SetColor(gridCol0); break;
+					case "SceneGrid1000Color": gridCol1000 = SetColor(gridCol1000); break;
+				}
+
+				TryResetThingPanel();
+				return;
+
+				Color SetColor(Color col)
+				{
+					if(vecColIndex == 0)
+						col.R = (byte)valueInt;
+					else if(vecColIndex == 1)
+						col.G = (byte)valueInt;
+					else if(vecColIndex == 2)
+						col.B = (byte)valueInt;
+					else if(vecColIndex == 3)
+						col.A = (byte)valueInt;
+					return col;
+				}
+			}
+
+			var uid = selectedUIDs[0];
+			var propType = ThingManager.GetPropertyInfo(uid, propName).Type;
 
 			if(propType == "Vector2")
 			{

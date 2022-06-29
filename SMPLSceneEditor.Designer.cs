@@ -53,7 +53,6 @@
 			this.sceneRightClickMenuSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.sceneRightClickMenuResetView = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuUnselectAll = new System.Windows.Forms.ToolStripMenuItem();
-			this.selectThingTip = new System.Windows.Forms.Label();
 			this.rightTable = new System.Windows.Forms.TableLayoutPanel();
 			this.thingTypesTable = new System.Windows.Forms.TableLayoutPanel();
 			this.gameDir = new System.Windows.Forms.FolderBrowserDialog();
@@ -63,12 +62,12 @@
 			this.thingsList = new System.Windows.Forms.ContextMenuStrip(this.components);
 			this.sceneRightClickMenuHitbox = new System.Windows.Forms.ContextMenuStrip(this.components);
 			this.sceneRightClickMenuHitboxCreateLine = new System.Windows.Forms.ToolStripMenuItem();
-			this.sceneRightClickMenuHitboxSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-			this.sceneRightClickMenuHitboxResetView = new System.Windows.Forms.ToolStripMenuItem();
-			this.sceneRightClickMenuDeselectAll = new System.Windows.Forms.ToolStripMenuItem();
 			this.lineToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.squareToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.circleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuHitboxSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+			this.sceneRightClickMenuHitboxResetView = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuDeselectAll = new System.Windows.Forms.ToolStripMenuItem();
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).BeginInit();
 			this.windowSplit.Panel1.SuspendLayout();
 			this.windowSplit.Panel2.SuspendLayout();
@@ -102,7 +101,6 @@
 			// 
 			// windowSplit.Panel2
 			// 
-			this.windowSplit.Panel2.Controls.Add(this.selectThingTip);
 			this.windowSplit.Panel2.Controls.Add(this.rightTable);
 			this.windowSplit.Size = new System.Drawing.Size(1564, 761);
 			this.windowSplit.SplitterDistance = 1205;
@@ -399,19 +397,6 @@
 			this.sceneRightClickMenuUnselectAll.Text = "Deselect All";
 			this.sceneRightClickMenuUnselectAll.Click += new System.EventHandler(this.OnSceneRightClickMenuDeselect);
 			// 
-			// selectThingTip
-			// 
-			this.selectThingTip.BackColor = System.Drawing.Color.Black;
-			this.selectThingTip.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.selectThingTip.Font = new System.Drawing.Font("Segoe UI", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.selectThingTip.ForeColor = System.Drawing.Color.White;
-			this.selectThingTip.Location = new System.Drawing.Point(0, 0);
-			this.selectThingTip.Name = "selectThingTip";
-			this.selectThingTip.Size = new System.Drawing.Size(351, 757);
-			this.selectThingTip.TabIndex = 6;
-			this.selectThingTip.Text = "Select a {Thing} to Edit";
-			this.selectThingTip.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-			// 
 			// rightTable
 			// 
 			this.rightTable.CellBorderStyle = System.Windows.Forms.TableLayoutPanelCellBorderStyle.InsetDouble;
@@ -475,7 +460,7 @@
             this.sceneRightClickMenuHitboxResetView,
             this.sceneRightClickMenuDeselectAll});
 			this.sceneRightClickMenuHitbox.Name = "sceneRightClickMenuHitbox";
-			this.sceneRightClickMenuHitbox.Size = new System.Drawing.Size(181, 98);
+			this.sceneRightClickMenuHitbox.Size = new System.Drawing.Size(136, 76);
 			// 
 			// sceneRightClickMenuHitboxCreateLine
 			// 
@@ -484,48 +469,48 @@
             this.squareToolStripMenuItem,
             this.circleToolStripMenuItem});
 			this.sceneRightClickMenuHitboxCreateLine.Name = "sceneRightClickMenuHitboxCreateLine";
-			this.sceneRightClickMenuHitboxCreateLine.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuHitboxCreateLine.Size = new System.Drawing.Size(135, 22);
 			this.sceneRightClickMenuHitboxCreateLine.Text = "Create";
-			// 
-			// sceneRightClickMenuHitboxSeparator1
-			// 
-			this.sceneRightClickMenuHitboxSeparator1.Name = "sceneRightClickMenuHitboxSeparator1";
-			this.sceneRightClickMenuHitboxSeparator1.Size = new System.Drawing.Size(177, 6);
-			// 
-			// sceneRightClickMenuHitboxResetView
-			// 
-			this.sceneRightClickMenuHitboxResetView.Name = "sceneRightClickMenuHitboxResetView";
-			this.sceneRightClickMenuHitboxResetView.Size = new System.Drawing.Size(180, 22);
-			this.sceneRightClickMenuHitboxResetView.Text = "Reset View";
-			this.sceneRightClickMenuHitboxResetView.Click += new System.EventHandler(this.OnSceneRightClickMenuResetView);
-			// 
-			// sceneRightClickMenuDeselectAll
-			// 
-			this.sceneRightClickMenuDeselectAll.Name = "sceneRightClickMenuDeselectAll";
-			this.sceneRightClickMenuDeselectAll.Size = new System.Drawing.Size(180, 22);
-			this.sceneRightClickMenuDeselectAll.Text = "Deselect All";
-			this.sceneRightClickMenuDeselectAll.Click += new System.EventHandler(this.OnSceneRightClickMenuDeselect);
 			// 
 			// lineToolStripMenuItem
 			// 
 			this.lineToolStripMenuItem.Name = "lineToolStripMenuItem";
-			this.lineToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.lineToolStripMenuItem.Size = new System.Drawing.Size(156, 22);
 			this.lineToolStripMenuItem.Text = "Line (1 side)";
 			this.lineToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateHitboxLine);
 			// 
 			// squareToolStripMenuItem
 			// 
 			this.squareToolStripMenuItem.Name = "squareToolStripMenuItem";
-			this.squareToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.squareToolStripMenuItem.Size = new System.Drawing.Size(156, 22);
 			this.squareToolStripMenuItem.Text = "Square (4 sides)";
 			this.squareToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateHitboxSquare);
 			// 
 			// circleToolStripMenuItem
 			// 
 			this.circleToolStripMenuItem.Name = "circleToolStripMenuItem";
-			this.circleToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.circleToolStripMenuItem.Size = new System.Drawing.Size(156, 22);
 			this.circleToolStripMenuItem.Text = "Circle (8 sides)";
 			this.circleToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateHitboxCircle);
+			// 
+			// sceneRightClickMenuHitboxSeparator1
+			// 
+			this.sceneRightClickMenuHitboxSeparator1.Name = "sceneRightClickMenuHitboxSeparator1";
+			this.sceneRightClickMenuHitboxSeparator1.Size = new System.Drawing.Size(132, 6);
+			// 
+			// sceneRightClickMenuHitboxResetView
+			// 
+			this.sceneRightClickMenuHitboxResetView.Name = "sceneRightClickMenuHitboxResetView";
+			this.sceneRightClickMenuHitboxResetView.Size = new System.Drawing.Size(135, 22);
+			this.sceneRightClickMenuHitboxResetView.Text = "Reset View";
+			this.sceneRightClickMenuHitboxResetView.Click += new System.EventHandler(this.OnSceneRightClickMenuResetView);
+			// 
+			// sceneRightClickMenuDeselectAll
+			// 
+			this.sceneRightClickMenuDeselectAll.Name = "sceneRightClickMenuDeselectAll";
+			this.sceneRightClickMenuDeselectAll.Size = new System.Drawing.Size(135, 22);
+			this.sceneRightClickMenuDeselectAll.Text = "Deselect All";
+			this.sceneRightClickMenuDeselectAll.Click += new System.EventHandler(this.OnSceneRightClickMenuDeselect);
 			// 
 			// FormWindow
 			// 
@@ -587,7 +572,6 @@
 		private FolderBrowserDialog gameDir;
 		private OpenFileDialog load;
 		private GroupBox searchBox;
-		private Label selectThingTip;
 		private TableLayoutPanel rightTable;
 		private TableLayoutPanel thingTypesTable;
 		private GroupBox sceneGroup;
