@@ -1,12 +1,14 @@
+global using System.Collections.ObjectModel;
 global using System.Numerics;
 global using SFML.Graphics;
 global using SFML.System;
 global using SFML.Window;
 global using SMPL;
+global using SMPL.Graphics;
 global using SMPL.Tools;
 global using Color = SFML.Graphics.Color;
+global using BlendMode = SMPL.Graphics.BlendMode;
 global using Cursor = System.Windows.Forms.Cursor;
-using System.Collections.ObjectModel;
 
 namespace SMPLSceneEditor
 {
@@ -78,7 +80,7 @@ namespace SMPLSceneEditor
 			SetView();
 
 			var desktopRes = Screen.PrimaryScreen.Bounds.Size;
-			ThingManager.CreateCamera(Scene.MAIN_CAMERA_UID, new(desktopRes.Width, desktopRes.Height));
+			Thing.CreateCamera(Scene.MAIN_CAMERA_UID, new(desktopRes.Width, desktopRes.Height));
 		}
 
 		private void InitTables()
@@ -92,7 +94,7 @@ namespace SMPLSceneEditor
 			var types = thingTypesTable;
 
 			types.Hide();
-			AddThingProperty(types, "Types", "PropTypes", typeof(ReadOnlyCollection<string>));
+			AddThingProperty(types, "Types", Property.THING_TYPES, typeof(ReadOnlyCollection<string>));
 
 			AddPropsScene();
 			AddPropsThing();
@@ -142,60 +144,62 @@ namespace SMPLSceneEditor
 			void AddPropsThing()
 			{
 				AddThingProperty(thing, "Self", rightLabel: true); AddThingProperty(thing, "Properties", null);
-				AddThingProperty(thing, "UID", "PropUID", typeof(string));
-				AddThingProperty(thing, "Old UID", "PropOldUID", typeof(string), readOnly: true);
-				AddThingProperty(thing, "Age", "PropAgeTimer", typeof(string), readOnly: true);
-				AddThingProperty(thing, "Position", "PropPosition", typeof(Vector2));
-				AddThingProperty(thing, "Angle", "PropAngle", typeof(float));
-				AddThingProperty(thing, "Direction", "PropDirection", typeof(Vector2), readOnly: true, smallNumericStep: true);
-				AddThingProperty(thing, "Scale", "PropScale", typeof(float), smallNumericStep: true);
+				AddThingProperty(thing, "UID", Property.THING_UID, typeof(string));
+				AddThingProperty(thing, "Old UID", Property.THING_OLD_UID, typeof(string), readOnly: true);
+				AddThingProperty(thing, "Age", Property.THING_AGE_AS_TIMER, typeof(string), readOnly: true);
+				AddThingProperty(thing, "Position", Property.THING_POSITION, typeof(Vector2));
+				AddThingProperty(thing, "Angle", Property.THING_ANGLE, typeof(float));
+				AddThingProperty(thing, "Direction", Property.THING_DIRECTION, typeof(Vector2), readOnly: true, smallNumericStep: true);
+				AddThingProperty(thing, "Scale", Property.THING_SCALE, typeof(float), smallNumericStep: true);
 				AddThingProperty(thing, ""); AddThingProperty(thing, "");
 				AddThingProperty(thing, "Parent", rightLabel: true); AddThingProperty(thing, "Properties");
-				AddThingProperty(thing, "Parent UID", "PropParentUID", typeof(string));
-				AddThingProperty(thing, "Parent Old UID", "PropParentOldUID", typeof(string), readOnly: true);
-				AddThingProperty(thing, "Children UIDs", "PropChildrenUIDs", typeof(ReadOnlyCollection<string>), thingList: true);
-				AddThingProperty(thing, "Local Position", "PropLocalPosition", typeof(Vector2));
-				AddThingProperty(thing, "Local Angle", "PropLocalAngle", typeof(float));
-				AddThingProperty(thing, "Local Direction", "PropLocalDirection", typeof(Vector2), readOnly: true, smallNumericStep: true);
-				AddThingProperty(thing, "Local Scale", "PropLocalScale", typeof(float), smallNumericStep: true);
+				AddThingProperty(thing, "Parent UID", Property.THING_PARENT_UID, typeof(string));
+				AddThingProperty(thing, "Parent Old UID", Property.THING_PARENT_OLD_UID, typeof(string), readOnly: true);
+				AddThingProperty(thing, "Children UIDs", Property.THING_CHILDREN_UIDS, typeof(ReadOnlyCollection<string>), thingList: true);
+				AddThingProperty(thing, "Local Position", Property.THING_LOCAL_POSITION, typeof(Vector2));
+				AddThingProperty(thing, "Local Angle", Property.THING_LOCAL_ANGLE, typeof(float));
+				AddThingProperty(thing, "Local Direction", Property.THING_LOCAL_DIRECTION, typeof(Vector2), readOnly: true, smallNumericStep: true);
+				AddThingProperty(thing, "Local Scale", Property.THING_LOCAL_SCALE, typeof(float), smallNumericStep: true);
 
 			}
 			void AddPropsSprite()
 			{
-				AddThingProperty(sprite, "Local Size", "PropLocalSize", typeof(Vector2));
-				AddThingProperty(sprite, "Size", "PropSize", typeof(Vector2));
+				AddThingProperty(sprite, "Local Size", Property.SPRITE_LOCAL_SIZE, typeof(Vector2));
+				AddThingProperty(sprite, "Size", Property.SPRITE_SIZE, typeof(Vector2));
 				AddThingProperty(sprite, ""); AddThingProperty(sprite, "");
-				AddThingProperty(sprite, "Origin Unit", "PropOriginUnit", typeof(Vector2), smallNumericStep: true);
-				AddThingProperty(sprite, "Origin", "PropOrigin", typeof(Vector2));
+				AddThingProperty(sprite, "Origin Unit", Property.SPRITE_ORIGIN_UNIT, typeof(Vector2), smallNumericStep: true);
+				AddThingProperty(sprite, "Origin", Property.SPRITE_ORIGIN, typeof(Vector2));
 				AddThingProperty(sprite, ""); AddThingProperty(sprite, "");
-				AddThingProperty(sprite, "Texture Coordinates Unit A", "PropTexCoordsUnitA", typeof(Vector2), labelSizeOffset: -3, smallNumericStep: true);
-				AddThingProperty(sprite, "Texture Coordinates Unit B", "PropTexCoordsUnitB", typeof(Vector2), labelSizeOffset: -3, smallNumericStep: true);
+				AddThingProperty(sprite, "Texture Coordinates Unit A", Property.SPRITE_TEX_COORD_UNIT_A, typeof(Vector2), labelSizeOffset: -3, smallNumericStep: true);
+				AddThingProperty(sprite, "Texture Coordinates Unit B", Property.SPRITE_TEX_COORD_UNIT_B, typeof(Vector2), labelSizeOffset: -3, smallNumericStep: true);
+				AddThingProperty(sprite, "Texture Coordinates A", Property.SPRITE_TEX_COORD_A, typeof(Vector2), labelSizeOffset: 0, smallNumericStep: true);
+				AddThingProperty(sprite, "Texture Coordinates B", Property.SPRITE_TEX_COORD_B, typeof(Vector2), labelSizeOffset: 0, smallNumericStep: true);
 			}
 			void AddPropsVisual()
 			{
-				AddThingProperty(visual, "Is Hidden", "PropIsHidden", typeof(bool));
+				AddThingProperty(visual, "Is Hidden", Property.VISUAL_IS_HIDDEN, typeof(bool));
 				AddThingProperty(visual, ""); AddThingProperty(visual, "");
-				AddThingProperty(visual, "Depth", "PropDepth", typeof(int));
-				AddThingProperty(visual, "Tint", "PropTint", typeof(Color));
-				AddThingProperty(visual, "Blend Mode", "PropBlendMode", typeof(ThingManager.BlendModes));
-				AddThingProperty(visual, "Effect", "PropEffect", typeof(ThingManager.Effects));
+				AddThingProperty(visual, "Depth", Property.VISUAL_DEPTH, typeof(int));
+				AddThingProperty(visual, "Tint", Property.VISUAL_TINT, typeof(Color));
+				AddThingProperty(visual, "Blend Mode", Property.VISUAL_BLEND_MODE, typeof(BlendMode));
+				AddThingProperty(visual, "Effect", Property.VISUAL_EFFECT, typeof(Effect));
 				AddThingProperty(visual, ""); AddThingProperty(visual, "");
-				AddThingProperty(visual, "Texture Path", "PropTexturePath", typeof(string));
-				AddThingProperty(visual, "Has Smooth Texture", "PropHasSmoothTexture", typeof(bool));
-				AddThingProperty(visual, "Has Repeated Texture", "PropHasRepeatedTexture", typeof(bool));
+				AddThingProperty(visual, "Texture Path", Property.VISUAL_TEXTURE_PATH, typeof(string));
+				AddThingProperty(visual, "Is Smooth", Property.VISUAL_IS_SMOOTH, typeof(bool));
+				AddThingProperty(visual, "Is Repeated", Property.VISUAL_IS_REPEATED, typeof(bool));
 				AddThingProperty(visual, ""); AddThingProperty(visual, "");
-				AddThingProperty(visual, "Camera UIDs", "PropCameraUIDs", typeof(List<string>), thingList: true);
+				AddThingProperty(visual, "Camera UIDs", Property.VISUAL_CAMERA_UIDS, typeof(List<string>), thingList: true);
 				AddThingProperty(visual, ""); AddThingProperty(visual, "");
-				AddThingProperty(visual, "Hitbox", "PropHitbox", typeof(string), readOnly: true);
+				AddThingProperty(visual, "Hitbox", Property.THING_HITBOX, typeof(string), readOnly: true);
 			}
 			void AddPropsLight()
 			{
-				AddThingProperty(light, "Color", "PropColor", typeof(Color));
+				AddThingProperty(light, "Color", Property.LIGHT_COLOR, typeof(Color));
 			}
 			void AddPropsCamera()
 			{
-				AddThingProperty(camera, "Resolution", "PropResolution", typeof(Vector2), readOnly: true);
-				AddThingProperty(camera, "Is Smooth", "PropIsSmooth", typeof(bool));
+				AddThingProperty(camera, "Resolution", Property.CAMERA_RESOLUTION, typeof(Vector2), readOnly: true);
+				AddThingProperty(camera, "Is Smooth", Property.CAMERA_IS_SMOOTH, typeof(bool));
 			}
 		}
 		private void AddThingProperty(TableLayoutPanel table, string label, string? propName = null, Type? valueType = null, bool readOnly = false,
@@ -260,7 +264,7 @@ namespace SMPLSceneEditor
 			if(valueType != typeof(Button))
 				table.Controls.Add(lab);
 
-			if(propName == "PropHitbox")
+			if(propName == Property.THING_HITBOX)
 			{
 				editHitbox = new CheckBox() { Text = "Edit", Dock = DockStyle.Left };
 				lab.TextAlign = ContentAlignment.MiddleRight;
@@ -271,7 +275,6 @@ namespace SMPLSceneEditor
 			if(propName == null || readOnly)
 				return;
 
-			var property = propName.Replace("Prop", "");
 			if(propName.Contains("Path"))
 			{
 				var btn = new Button() { Text = "Assets", Dock = DockStyle.Left };
@@ -279,7 +282,7 @@ namespace SMPLSceneEditor
 				lab.TextAlign = ContentAlignment.MiddleRight;
 				lab.Controls.Add(btn);
 			}
-			else if(valueType == typeof(string) && propName != "PropUID" && propName.Contains("UID"))
+			else if(valueType == typeof(string) && propName != Property.THING_UID && propName.Contains("UID"))
 			{
 				var btn = new Button() { Text = "Things", Dock = DockStyle.Left, Width = 80 };
 				btn.Click += PickThingList;
@@ -300,7 +303,7 @@ namespace SMPLSceneEditor
 				lab.TextAlign = ContentAlignment.MiddleRight;
 				lab.Controls.Add(btn);
 			}
-			else if(valueType == typeof(ThingManager.Effects))
+			else if(valueType == typeof(Effect))
 			{
 				var btn = new Button() { Text = "Uniforms", Dock = DockStyle.Left, Width = 100 };
 				btn.Click += SetUniform;
@@ -313,7 +316,7 @@ namespace SMPLSceneEditor
 				if(sender == null)
 					return;
 				var control = (Control)sender;
-				PickThing(control, property);
+				PickThing(control, propName);
 			}
 			void PickColor(object? sender, EventArgs e)
 			{
@@ -346,9 +349,9 @@ namespace SMPLSceneEditor
 				}
 
 				var uid = selectedUIDs[0];
-				var col = (Color)ThingManager.Get(uid, property);
+				var col = (Color)Thing.Get(uid, propName);
 
-				ThingManager.Set(uid, property, new Color(c.R, c.G, c.B, col.A));
+				Thing.Set(uid, propName, new Color(c.R, c.G, c.B, col.A));
 				UpdateThingPanel();
 			}
 			void PickAsset(object? sender, EventArgs e)
@@ -360,21 +363,21 @@ namespace SMPLSceneEditor
 				var asset = pickAsset.FileName;
 				var uid = selectedUIDs[0];
 
-				ThingManager.Set(uid, property, GetMirrorAssetPath(asset));
+				Thing.Set(uid, propName, GetMirrorAssetPath(asset));
 				UpdateThingPanel();
 			}
 			void EditTextList(object? sender, EventArgs e)
 			{
-				EditList("Edit List", (List<string>)ThingManager.Get(selectedUIDs[0], property), thingList, uniqueList);
+				EditList("Edit List", (List<string>)Thing.Get(selectedUIDs[0], propName), thingList, uniqueList);
 				UpdateThingPanel();
 			}
 			void SetUniform(object? sender, EventArgs e)
 			{
 				var uid = selectedUIDs[0];
-				var effect = (ThingManager.Effects)ThingManager.Get(uid, "Effect");
-				if(effect == ThingManager.Effects.None)
+				var effect = (Effect)Thing.Get(uid, Property.VISUAL_EFFECT);
+				if(effect == Effect.None)
 					return;
-				var code = (ThingManager.CodeGLSL)ThingManager.CallGet(selectedUIDs[0], "EffectCode", effect);
+				var code = (CodeGLSL)Thing.CallGet(selectedUIDs[0], "GetEffectCode", effect);
 				var frag = string.IsNullOrWhiteSpace(code.FragmentUniforms) ? "" : $"- Fragment Uniforms:{code.FragmentUniforms}";
 				var vert = string.IsNullOrWhiteSpace(code.VertexUniforms) ? "" : $"- Vertex Uniforms:{code.VertexUniforms}";
 
@@ -394,21 +397,21 @@ namespace SMPLSceneEditor
 
 				var a = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 				if(a[1] == "true")
-					ThingManager.CallVoid(uid, "SetShaderBool", a[0], true);
+					Thing.CallVoid(uid, "SetShaderBool", a[0], true);
 				else if(a[1] == "false")
-					ThingManager.CallVoid(uid, "SetShaderBool", a[0], false);
+					Thing.CallVoid(uid, "SetShaderBool", a[0], false);
 				else if(a.Length == 2 && a[1].IsNumber())
 				{
 					var n = a[1].ToNumber();
-					ThingManager.CallVoid(uid, "SetShaderFloat", a[0], n);
-					ThingManager.CallVoid(uid, "SetShaderInt", a[0], (int)n);
+					Thing.CallVoid(uid, "SetShaderFloat", a[0], n);
+					Thing.CallVoid(uid, "SetShaderInt", a[0], (int)n);
 				}
 				else if(a.Length == 3 && a[1].IsNumber() && a[2].IsNumber())
-					ThingManager.CallVoid(uid, "SetShaderVector2", a[0], new Vector2(a[1].ToNumber(), a[2].ToNumber()));
+					Thing.CallVoid(uid, "SetShaderVector2", a[0], new Vector2(a[1].ToNumber(), a[2].ToNumber()));
 				else if(a.Length == 4 && a[1].IsNumber() && a[2].IsNumber() && a[3].IsNumber())
-					ThingManager.CallVoid(uid, "SetShaderVector3", a[0], new Vector3(a[1].ToNumber(), a[2].ToNumber(), a[3].ToNumber()));
+					Thing.CallVoid(uid, "SetShaderVector3", a[0], new Vector3(a[1].ToNumber(), a[2].ToNumber(), a[3].ToNumber()));
 				else if(a.Length == 5 && a[1].IsNumber() && a[2].IsNumber() && a[3].IsNumber() && a[4].IsNumber())
-					ThingManager.CallVoid(uid, "SetShaderVector4", a[0], new Vector4(a[1].ToNumber(), a[2].ToNumber(), a[3].ToNumber(), a[4].ToNumber()));
+					Thing.CallVoid(uid, "SetShaderVector4", a[0], new Vector4(a[1].ToNumber(), a[2].ToNumber(), a[3].ToNumber(), a[4].ToNumber()));
 				else
 					MessageBox.Show(this, $"The {effect} uniform was not set due to invalid input.", $"Set {effect} Uniform Failed");
 			}
@@ -425,7 +428,7 @@ namespace SMPLSceneEditor
 				control.Font = new System.Drawing.Font(FONT, fontSize, FontStyle.Regular, GraphicsUnit.Point);
 				control.BackColor = reverseColors ? white : black;
 				control.ForeColor = reverseColors ? black : white;
-				control.Name = propName;
+				control.Name = $"Prop{propName}";
 				control.TabStop = false;
 				control.Dock = DockStyle.Fill;
 				control.TabStop = true;
@@ -490,7 +493,7 @@ namespace SMPLSceneEditor
 
 			TrySelect();
 
-			ThingManager.DrawAllVisuals(window);
+			Thing.DrawAllVisuals(window);
 			DrawAllNonVisuals();
 
 			TryDrawSelection();
@@ -506,7 +509,7 @@ namespace SMPLSceneEditor
 				return;
 
 			var uid = selectedUIDs[0];
-			var props = ThingManager.GetPropertiesInfo(uid);
+			var props = ThingInfo.GetProperties(uid);
 
 			for(int i = 0; i < props.Count; i++)
 			{
@@ -530,9 +533,9 @@ namespace SMPLSceneEditor
 				else if(type == "Single")
 					SetNumber((NumericUpDown)control, (float)Get(), readOnly);
 				else if(type == "List<String>")
-					ProcessList((ComboBox)control, (List<string>)ThingManager.Get(uid, propName));
+					ProcessList((ComboBox)control, (List<string>)Thing.Get(uid, propName));
 				else if(type == "ReadOnlyCollection<String>")
-					ProcessList((ComboBox)control, (ReadOnlyCollection<string>)ThingManager.Get(uid, propName));
+					ProcessList((ComboBox)control, (ReadOnlyCollection<string>)Thing.Get(uid, propName));
 				else if(type == "Vector2")
 				{
 					var table = (TableLayoutPanel)control;
@@ -550,14 +553,14 @@ namespace SMPLSceneEditor
 					SetNumber((NumericUpDown)table.Controls[3], col.A);
 					control.BackColor = System.Drawing.Color.FromArgb(255, col.R, col.G, col.B);
 				}
-				else if(type == "BlendModes")
-					ProcessEnumList((ComboBox)control, typeof(ThingManager.BlendModes), propName);
-				else if(type == "Effects")
-					ProcessEnumList((ComboBox)control, typeof(ThingManager.Effects), propName);
+				else if(type == "BlendMode")
+					ProcessEnumList((ComboBox)control, typeof(BlendMode), propName);
+				else if(type == "Effect")
+					ProcessEnumList((ComboBox)control, typeof(Effect), propName);
 				else if(type == "Hitbox")
-					SetText((TextBox)control, $"{((Hitbox)ThingManager.Get(uid, propName)).Lines.Count} Lines", readOnly);
+					SetText((TextBox)control, $"{((Hitbox)Thing.Get(uid, propName)).Lines.Count} Lines", readOnly);
 
-				object Get() => ThingManager.Get(uid, propName);
+				object Get() => Thing.Get(uid, propName);
 			}
 
 			void ProcessEnumList(ComboBox list, Type enumType, string propName)
@@ -570,7 +573,7 @@ namespace SMPLSceneEditor
 				for(int i = 0; i < names.Length; i++)
 					list.Items.Add(names[i]);
 
-				list.SelectedIndex = (int)ThingManager.Get(uid, propName);
+				list.SelectedIndex = (int)Thing.Get(uid, propName);
 			}
 			void SetText(TextBox text, string value, bool readOnly = false)
 			{
@@ -591,16 +594,16 @@ namespace SMPLSceneEditor
 		}
 		private void DrawAllNonVisuals()
 		{
-			var uids = ThingManager.GetUIDs();
+			var uids = Thing.GetUIDs();
 			for(int i = 0; i < uids.Count; i++)
 			{
 				var uid = uids[i];
-				var type = ((ReadOnlyCollection<string>)ThingManager.Get(uid, "Types"))[0];
+				var type = ((ReadOnlyCollection<string>)Thing.Get(uid, Property.THING_TYPES))[0];
 
 				if(nonVisualTypeColors.ContainsKey(type) == false)
 					continue;
 
-				var boundingBox = (Hitbox)ThingManager.Get(uid, "BoundingBox");
+				var boundingBox = (Hitbox)Thing.Get(uid, Property.THING_BOUNDING_BOX);
 				boundingBox.Draw(window, nonVisualTypeColors[type], sceneSc * 4);
 			}
 		}
@@ -626,12 +629,12 @@ namespace SMPLSceneEditor
 		}
 		private void AddHitboxLine(string uid, List<Line> line)
 		{
-			var hitbox = (Hitbox)ThingManager.Get(uid, "Hitbox");
+			var hitbox = (Hitbox)Thing.Get(uid, Property.THING_HITBOX);
 			for(int i = 0; i < line.Count; i++)
 				hitbox.LocalLines.Add(new Line(Local(line[i].A), Local(line[i].B)));
 			UpdateThingPanel();
 
-			Vector2 Local(Vector2 global) => (Vector2)ThingManager.CallGet(uid, "LocalPositionFromSelf", global);
+			Vector2 Local(Vector2 global) => (Vector2)Thing.CallGet(uid, Method.THING_GET_LOCAL_POSITION_FROM_SELF, global);
 		}
 		private void TrySelectThing(string uid)
 		{
@@ -660,15 +663,15 @@ namespace SMPLSceneEditor
 
 			if(selectedUIDs.Count == 0)
 			{
-				SetColor("SceneBackgroundColor", bgCol);
-				SetColor("SceneBoundingBoxColor", bbCol);
-				SetColor("SceneSelectColor", selCol);
-				SetColor("SceneCameraColor", nonVisualTypeColors["Camera"]);
-				SetColor("SceneHitboxColor", hitCol);
-				SetColor("SceneLightColor", nonVisualTypeColors["Light"]);
-				SetColor("SceneGridColor", gridCol);
-				SetColor("SceneGrid0Color", gridCol0);
-				SetColor("SceneGrid1000Color", gridCol1000);
+				SetColor("PropSceneBackgroundColor", bgCol);
+				SetColor("PropSceneBoundingBoxColor", bbCol);
+				SetColor("PropSceneSelectColor", selCol);
+				SetColor("PropSceneCameraColor", nonVisualTypeColors["Camera"]);
+				SetColor("PropSceneHitboxColor", hitCol);
+				SetColor("PropSceneLightColor", nonVisualTypeColors["Light"]);
+				SetColor("PropSceneGridColor", gridCol);
+				SetColor("PropSceneGrid0Color", gridCol0);
+				SetColor("PropSceneGrid1000Color", gridCol1000);
 
 				void SetColor(string name, Color col)
 				{
@@ -847,7 +850,7 @@ namespace SMPLSceneEditor
 
 			var mousePos = GetMousePosition();
 			var rawMousePos = Mouse.GetPosition(window);
-			var uids = ThingManager.GetUIDs();
+			var uids = Thing.GetUIDs();
 			var dragSelHitbox = GetDragSelectionHitbox();
 			var clickedUIDs = new List<string>();
 			var dist = selectStartPos.DistanceBetweenPoints(new(rawMousePos.X, rawMousePos.Y));
@@ -858,7 +861,7 @@ namespace SMPLSceneEditor
 
 			if(editingHitbox)
 			{
-				var hitbox = (Hitbox)ThingManager.Get(selectedUIDs[0], "Hitbox");
+				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Property.THING_HITBOX);
 				if(hitbox == null)
 					return;
 
@@ -988,13 +991,13 @@ namespace SMPLSceneEditor
 				return;
 
 			for(int i = 0; i < selectedUIDs.Count; i++)
-				DrawBoundingBox((Hitbox)ThingManager.Get(selectedUIDs[i], "BoundingBox"));
+				DrawBoundingBox((Hitbox)Thing.Get(selectedUIDs[i], Property.THING_BOUNDING_BOX));
 
 			var ptsA = selectedHitboxPointIndexesA;
 			var ptsB = selectedHitboxPointIndexesB;
 			for(int i = 0; i < selectedUIDs.Count; i++)
 			{
-				var hitbox = (Hitbox)ThingManager.Get(selectedUIDs[i], "Hitbox");
+				var hitbox = (Hitbox)Thing.Get(selectedUIDs[i], Property.THING_HITBOX);
 				for(int j = 0; j < hitbox.Lines.Count; j++)
 				{
 					var col = ptsA.Contains(j) || ptsB.Contains(j) ? hitboxSelectCol : hitboxDeselectedCol;
@@ -1005,7 +1008,7 @@ namespace SMPLSceneEditor
 			if(editHitbox == null || editHitbox.Checked == false)
 				return;
 
-			var lines = ((Hitbox)ThingManager.Get(selectedUIDs[0], "Hitbox")).Lines;
+			var lines = ((Hitbox)Thing.Get(selectedUIDs[0], Property.THING_HITBOX)).Lines;
 			var sz = sceneSc * HITBOX_POINT_EDIT_MAX_DIST;
 
 			for(int j = 0; j < lines.Count; j++)
@@ -1049,7 +1052,7 @@ namespace SMPLSceneEditor
 
 				for(int i = 0; i < selectedUIDs.Count; i++)
 				{
-					var pos = (Vector2)ThingManager.Get(selectedUIDs[i], "Position");
+					var pos = (Vector2)Thing.Get(selectedUIDs[i], Property.THING_POSITION);
 					pos.DrawPoint(window, Color.Red, sceneSc * 4);
 				}
 
@@ -1069,7 +1072,7 @@ namespace SMPLSceneEditor
 			if(editHitbox != null && editHitbox.Checked)
 			{
 				// work on copy lists since removing from the main list changes other indexes in the main list but not the selectedPts lists
-				var hitbox = (Hitbox)ThingManager.Get(selectedUIDs[0], "Hitbox");
+				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Property.THING_HITBOX);
 				var lines = new List<Line>(hitbox.LocalLines);
 				var ptsA = new List<int>(selectedHitboxPointIndexesA);
 				var ptsB = new List<int>(selectedHitboxPointIndexesB);
@@ -1107,7 +1110,7 @@ namespace SMPLSceneEditor
 					var uid = selectedUIDs[i];
 
 					selectedUIDs.Remove(uid);
-					ThingManager.Destroy(uid, includeChildren);
+					Thing.Destroy(uid, includeChildren);
 				}
 				UpdateThingPanel();
 			}
@@ -1140,12 +1143,12 @@ namespace SMPLSceneEditor
 
 		private void FocusThing(string uid)
 		{
-			if(ThingManager.Exists(uid) == false)
+			if(Thing.Exists(uid) == false)
 				return;
 
-			SetViewPosition((Vector2)ThingManager.Get(uid, "Position"));
+			SetViewPosition((Vector2)Thing.Get(uid, Property.THING_POSITION));
 
-			var bb = (Hitbox)ThingManager.Get(uid, "BoundingBox");
+			var bb = (Hitbox)Thing.Get(uid, Property.THING_BOUNDING_BOX);
 			var dist1 = bb.Lines[0].A.DistanceBetweenPoints(bb.Lines[0].B);
 			var dist2 = bb.Lines[1].A.DistanceBetweenPoints(bb.Lines[1].B);
 			var scale = (dist1 > dist2 ? dist1 : dist2) / window.Size.X * 2f;
@@ -1155,7 +1158,7 @@ namespace SMPLSceneEditor
 		#region Get
 		private static Hitbox? GetBoundingBox(string uid)
 		{
-			return ThingManager.HasGetter(uid, "BoundingBox") == false ? default : (Hitbox)ThingManager.Get(uid, "BoundingBox");
+			return ThingInfo.HasGetter(uid, Property.THING_BOUNDING_BOX) == false ? default : (Hitbox)Thing.Get(uid, Property.THING_BOUNDING_BOX);
 		}
 		private float GetGridSpacing()
 		{
@@ -1273,7 +1276,7 @@ namespace SMPLSceneEditor
 
 			var prio = 0;
 			var bestGuess = default(string);
-			var uids = ThingManager.GetUIDs();
+			var uids = Thing.GetUIDs();
 
 			for(int i = 0; i < uids.Count; i++)
 			{
@@ -1327,7 +1330,7 @@ namespace SMPLSceneEditor
 			if(MessageBox.Show("Confirm? Any unsaved changes will be lost.", "Confirm Load", MessageBoxButtons.OKCancel) != DialogResult.OK)
 				return;
 
-			ThingManager.DestroyAll();
+			Thing.DestroyAll();
 
 			var scene = Scene.Load<MainScene>(load.FileName);
 			if(scene == null)
@@ -1378,7 +1381,7 @@ namespace SMPLSceneEditor
 
 			if(editingHitbox)
 			{
-				var hitbox = (Hitbox)ThingManager.Get(selectedUIDs[0], "Hitbox");
+				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Property.THING_HITBOX);
 
 				for(int i = 0; i < ptsA.Count; i++)
 				{
@@ -1399,9 +1402,9 @@ namespace SMPLSceneEditor
 			for(int i = 0; i < selectedUIDs.Count; i++)
 			{
 				var uid = selectedUIDs[i];
-				var sc = (float)ThingManager.Get(uid, "Scale");
+				var sc = (float)Thing.Get(uid, Property.THING_SCALE);
 
-				ThingManager.Set(uid, "Scale", sc + delta);
+				Thing.Set(uid, Property.THING_SCALE, sc + delta);
 			}
 
 			UpdateThingPanel();
@@ -1437,8 +1440,8 @@ namespace SMPLSceneEditor
 				else if(editHitboxPts)
 				{
 					var uid = selectedUIDs[0];
-					var hitbox = (Hitbox)ThingManager.Get(uid, "Hitbox");
-					var sc = (float)ThingManager.Get(uid, "Scale");
+					var hitbox = (Hitbox)Thing.Get(uid, Property.THING_HITBOX);
+					var sc = (float)Thing.Get(uid, Property.THING_SCALE);
 
 					if(ptsA.Count == 0 && ptsB.Count == 0)
 						return;
@@ -1477,7 +1480,7 @@ namespace SMPLSceneEditor
 					}
 					else if(editIndex == 1)
 					{
-						var thingPos = (Vector2)ThingManager.Get(uid, "Position");
+						var thingPos = (Vector2)Thing.Get(uid, Property.THING_POSITION);
 						var a = thingPos.AngleBetweenPoints(GetMousePosition());
 						var ang = DragAngle(thingPos, a);
 
@@ -1505,14 +1508,14 @@ namespace SMPLSceneEditor
 					for(int i = 0; i < selectedUIDs.Count; i++)
 					{
 						var uid = selectedUIDs[i];
-						var pos = (Vector2)ThingManager.Get(uid, "Position");
-						var ang = (float)ThingManager.Get(uid, "Angle");
+						var pos = (Vector2)Thing.Get(uid, Property.THING_POSITION);
+						var ang = (float)Thing.Get(uid, Property.THING_ANGLE);
 
 
 						if(editIndex == 0)
-							ThingManager.Set(uid, "Position", Drag(pos, false, true));
+							Thing.Set(uid, Property.THING_POSITION, Drag(pos, false, true));
 						else if(editIndex == 1)
-							ThingManager.Set(uid, "Angle", DragAngle(pos, ang));
+							Thing.Set(uid, Property.THING_ANGLE, DragAngle(pos, ang));
 					}
 
 				Cursor.Current = editCursors[editIndex];
@@ -1556,13 +1559,13 @@ namespace SMPLSceneEditor
 		#region SceneRightClick
 		private void OnSceneRightClickMenuCreateSprite(object sender, EventArgs e)
 		{
-			var uid = ThingManager.CreateSprite("Sprite");
-			ThingManager.Set(uid, "Position", rightClickPos);
+			var uid = Thing.CreateSprite("Sprite", null);
+			Thing.Set(uid, Property.THING_POSITION, rightClickPos);
 		}
 		private void OnSceneRightClickMenuCreateLight(object sender, EventArgs e)
 		{
-			var uid = ThingManager.CreateLight("Light");
-			ThingManager.Set(uid, "Position", rightClickPos);
+			var uid = Thing.CreateLight("Light", Color.White);
+			Thing.Set(uid, Property.THING_POSITION, rightClickPos);
 		}
 		private void OnSceneRightclickMenuCreateCamera(object sender, EventArgs e)
 		{
@@ -1584,8 +1587,8 @@ namespace SMPLSceneEditor
 				return;
 			}
 
-			var uid = ThingManager.CreateCamera("Camera", res);
-			ThingManager.Set(uid, "Position", rightClickPos);
+			var uid = Thing.CreateCamera("Camera", res);
+			Thing.Set(uid, Property.THING_POSITION, rightClickPos);
 
 			string GetInput()
 			{
@@ -1684,7 +1687,7 @@ namespace SMPLSceneEditor
 
 			if(list.Name.Contains("UIDs"))
 			{
-				if(ThingManager.Exists(selectedItem) == false)
+				if(Thing.Exists(selectedItem) == false)
 				{
 					TryAddPlaceholderToList(list);
 					list.SelectedItem = placeholder;
@@ -1698,7 +1701,7 @@ namespace SMPLSceneEditor
 				TryResetThingPanel();
 				UpdateThingPanel();
 			}
-			else if(list.Name == "PropTypes")
+			else if(list.Name == $"Prop{Property.THING_TYPES}")
 			{
 				var table = editThingTableTypes[$"table{list.SelectedItem}"];
 
@@ -1711,15 +1714,15 @@ namespace SMPLSceneEditor
 
 				UpdateThingPanel();
 			}
-			else if(list.Name == "PropBlendMode")
+			else if(list.Name == $"Prop{Property.VISUAL_BLEND_MODE}")
 			{
 				var index = list.SelectedIndex;
-				ThingManager.Set(selectedUIDs[0], "BlendMode", (ThingManager.BlendModes)index);
+				Thing.Set(selectedUIDs[0], Property.VISUAL_BLEND_MODE, (BlendMode)index);
 			}
-			else if(list.Name == "PropEffect")
+			else if(list.Name == $"Prop{Property.VISUAL_EFFECT}")
 			{
 				var index = list.SelectedIndex;
-				ThingManager.Set(selectedUIDs[0], "Effect", (ThingManager.Effects)index);
+				Thing.Set(selectedUIDs[0], Property.VISUAL_EFFECT, (Effect)index);
 			}
 		}
 		private void OnListThingDropDown(object? sender, EventArgs e)
@@ -1762,9 +1765,9 @@ namespace SMPLSceneEditor
 			var propName = textBox.Name["Prop".Length..];
 			var uid = selectedUIDs[0];
 
-			var prop = ThingManager.GetPropertyInfo(uid, propName);
+			var prop = ThingInfo.GetProperty(uid, propName);
 			if(prop.HasSetter)
-				ThingManager.Set(uid, propName, textBox.Text);
+				Thing.Set(uid, propName, textBox.Text);
 
 			// if the uid was changed, update the selection and hitbox uid
 			if(propName == "UID" && string.IsNullOrWhiteSpace(textBox.Text) == false)
@@ -1784,12 +1787,12 @@ namespace SMPLSceneEditor
 			var propName = checkBox.Name["Prop".Length..];
 			var uid = selectedUIDs[0];
 
-			if(propName == "Hitbox")
+			if(propName == Property.THING_HITBOX)
 			{
 
 			}
 			else
-				ThingManager.Set(uid, propName, checkBox.Checked);
+				Thing.Set(uid, propName, checkBox.Checked);
 			UpdateThingPanel();
 		}
 		private void OnNumericChange(object? sender, EventArgs e)
@@ -1844,29 +1847,29 @@ namespace SMPLSceneEditor
 			}
 
 			var uid = selectedUIDs[0];
-			var propType = ThingManager.GetPropertyInfo(uid, propName).Type;
+			var propType = ThingInfo.GetProperty(uid, propName).Type;
 
 			if(propType == "Vector2")
 			{
-				var vec = (Vector2)ThingManager.Get(uid, propName);
+				var vec = (Vector2)Thing.Get(uid, propName);
 				if(vecColIndex == 0) vec.X = valueFloat;
 				else if(vecColIndex == 1) vec.Y = valueFloat;
-				ThingManager.Set(uid, propName, vec);
+				Thing.Set(uid, propName, vec);
 			}
 			else if(propType == "Color")
 			{
-				var col = (Color)ThingManager.Get(uid, propName);
+				var col = (Color)Thing.Get(uid, propName);
 				var val = (byte)valueInt;
 				if(vecColIndex == 0) col.R = val;
 				else if(vecColIndex == 1) col.G = val;
 				else if(vecColIndex == 2) col.B = val;
 				else if(vecColIndex == 3) col.A = val;
-				ThingManager.Set(uid, propName, col);
+				Thing.Set(uid, propName, col);
 			}
 			else if(propType == "Int32")
-				ThingManager.Set(uid, propName, valueInt);
+				Thing.Set(uid, propName, valueInt);
 			else if(propType == "Single")
-				ThingManager.Set(uid, propName, valueFloat);
+				Thing.Set(uid, propName, valueFloat);
 
 			UpdateThingPanel();
 		}
@@ -1874,7 +1877,7 @@ namespace SMPLSceneEditor
 		{
 			if(pickThingProperty != "")
 			{
-				ThingManager.Set(selectedUIDs[0], pickThingProperty, e.ClickedItem.Text);
+				Thing.Set(selectedUIDs[0], pickThingProperty, e.ClickedItem.Text);
 				UpdateThingPanel();
 				return;
 			}
@@ -2153,7 +2156,7 @@ namespace SMPLSceneEditor
 		}
 		private void PickThing(Control control, string property = "")
 		{
-			var uids = ThingManager.GetUIDs();
+			var uids = Thing.GetUIDs();
 
 			thingsList.MaximumSize = new(thingsList.MaximumSize.Width, 300);
 			thingsList.Items.Clear();
