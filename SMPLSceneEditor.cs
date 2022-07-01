@@ -25,13 +25,13 @@ namespace SMPLSceneEditor
 		private readonly RenderWindow window;
 		private float sceneSc = 1f;
 		private int selectDepthIndex;
-		private bool isDragSelecting, isHoveringScene, quitting;
+		private bool isDragSelecting, isHoveringScene;
 		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos;
 		private readonly List<string> selectedUIDs = new();
 		private readonly List<int> selectedHitboxPointIndexesA = new(), selectedHitboxPointIndexesB = new();
 		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
 		private readonly FileSystemWatcher assetsWatcher, assetsFolderWatcher;
-		private string prevAssetsMirrorPath = "Assets", assetsPath = "Assets", finalGameDir = "", pickThingProperty = "", sceneName = "";
+		private string pickThingProperty = "", scenePath = "";
 		private readonly Dictionary<string, TableLayoutPanel> editThingTableTypes = new();
 		private readonly Dictionary<string, string> listBoxPlaceholderTexts = new()
 		{
@@ -390,8 +390,9 @@ namespace SMPLSceneEditor
 			}
 			void PickAsset(object? sender, EventArgs e)
 			{
+				var assetsPath = GetAssetsPath();
 				pickAsset.InitialDirectory = assetsPath;
-				if(assetsPath == "Assets")
+				if(string.IsNullOrWhiteSpace(assetsPath))
 				{
 					MessageBox.Show(this, NO_ASSETS_MSG, "No Assets Found");
 					return;
@@ -801,86 +802,6 @@ namespace SMPLSceneEditor
 			}
 		}
 
-		private void TryCtrlS()
-		{
-			if(ActiveForm == this && Keyboard.IsKeyPressed(Keyboard.Key.LControl) &&
-				Keyboard.IsKeyPressed(Keyboard.Key.S).Once("ctrl-s-save-scene"))
-				TrySaveScene();
-		}
-		private void TrySaveScene()
-		{
-			var scenePath = Path.Join(finalGameDir, sceneName + ".scene");
-			if(File.Exists(scenePath) == false)
-			{
-				if(save.ShowDialog(this) != DialogResult.OK)
-					return;
-			}
-
-			sceneName = Path.GetFileNameWithoutExtension(save.FileName);
-			var gameDir = Path.GetDirectoryName(save.FileName);
-			if(gameDir != null)
-				TryUpdateGameDir(gameDir);
-
-			loop.Stop();
-			if(string.IsNullOrWhiteSpace(sceneName) || MainScene.SaveScene(scenePath) == false)
-			{
-				if(quitting)
-					return;
-
-				MessageBox.Show(this, "Enter a valid Scene name before saving.", "Failed to Save!");
-				loop.Start();
-				return;
-			}
-			loop.Start();
-
-			var prevSceneName = prevAssetsMirrorPath.Replace(" Assets", "");
-			var prevScenePath = finalGameDir + "\\" + prevSceneName + ".scene";
-			if(sceneName != prevSceneName && File.Exists(prevScenePath))
-				File.Delete(prevScenePath);
-
-			var path = sceneName + " Assets";
-			assetsPath = finalGameDir + "\\" + path;
-			if(Directory.Exists(prevAssetsMirrorPath) && prevAssetsMirrorPath != path)
-			{
-				Directory.Move(prevAssetsMirrorPath, path);
-
-				if(Directory.Exists(assetsPath) == false)
-					Directory.Move(finalGameDir + "\\" + prevAssetsMirrorPath, assetsPath);
-			}
-			else
-				Directory.CreateDirectory(assetsPath);
-			prevAssetsMirrorPath = path;
-			assetsFolderWatcher.Path = finalGameDir;
-			assetsFolderWatcher.Filter = path;
-			assetsWatcher.Path = assetsPath;
-		}
-		private void TryUpdateGameDir(string gameDir)
-		{
-			if(finalGameDir == gameDir || Directory.Exists(gameDir) == false)
-				return;
-
-			finalGameDir = gameDir;
-
-			var name = sceneName;
-			name += string.IsNullOrWhiteSpace(name) ? "" : " ";
-			var assetsPath = finalGameDir + "\\" + name + "Assets";
-			if(string.IsNullOrWhiteSpace(name))
-				return;
-
-			Directory.CreateDirectory(assetsPath);
-
-			assetsFolderWatcher.Path = finalGameDir;
-			assetsFolderWatcher.Filter = name + "Assets";
-			assetsWatcher.Path = assetsPath;
-
-			var mirrorPath = GetMirrorAssetPath(assetsPath);
-			if(Directory.Exists(mirrorPath))
-				DeleteMirrorFiles(assetsPath);
-
-			CopyMirrorFiles(assetsPath);
-			MainScene.LoadAsset(mirrorPath);
-		}
-
 		private void TrySelect()
 		{
 			var left = Mouse.IsButtonPressed(Mouse.Button.Left);
@@ -1233,6 +1154,58 @@ namespace SMPLSceneEditor
 		}
 		#endregion
 		#region Files
+		private void TryCtrlS()
+		{
+			if(ActiveForm == this && Keyboard.IsKeyPressed(Keyboard.Key.LControl) &&
+				Keyboard.IsKeyPressed(Keyboard.Key.S).Once("ctrl-s-save-scene"))
+				TrySave();
+		}
+		private void TrySave()
+		{
+			if(File.Exists(scenePath))
+				Save();
+			else
+				SaveAs();
+		}
+		private void SaveAs()
+		{
+			if(save.ShowDialog(this) != DialogResult.OK)
+				return;
+
+			scenePath = save.FileName;
+			Save();
+		}
+		private void Save()
+		{
+			scenePath = save.FileName;
+			MainScene.SaveScene(scenePath);
+
+			var assetsPath = GetAssetsPath();
+			Directory.CreateDirectory(assetsPath);
+			assetsFolderWatcher.Path = GetGameDirectory();
+			assetsFolderWatcher.Filter = Path.GetFileNameWithoutExtension(assetsPath);
+			assetsWatcher.Path = assetsPath;
+		}
+
+		private string GetAssetsPath()
+		{
+			var sceneName = Path.GetFileNameWithoutExtension(scenePath);
+			return string.IsNullOrWhiteSpace(scenePath) ? "" : GetGameDirectory() + "\\" + sceneName + " Assets";
+		}
+		private string GetGameDirectory()
+		{
+			var dir = Path.GetDirectoryName(scenePath);
+			return string.IsNullOrWhiteSpace(dir) ? "" : dir;
+		}
+		private string GetMirrorAssetPath(string path)
+		{
+			var targetPath = path;
+			var gameDir = GetGameDirectory();
+			if(string.IsNullOrWhiteSpace(gameDir) == false)
+				targetPath = targetPath.Replace(gameDir + "\\", "");
+
+			return targetPath;
+		}
 		private void CopyMirrorFiles(string path)
 		{
 			var targetPath = GetMirrorAssetPath(path);
@@ -1294,13 +1267,6 @@ namespace SMPLSceneEditor
 
 			Directory.Delete(path);
 		}
-		private string GetMirrorAssetPath(string path)
-		{
-			var targetPath = path;
-			if(finalGameDir != null)
-				targetPath = targetPath.Replace(finalGameDir + "\\", "");
-			return targetPath;
-		}
 		private void DeleteCache()
 		{
 			var dirs = Directory.GetDirectories(AppContext.BaseDirectory);
@@ -1359,9 +1325,13 @@ namespace SMPLSceneEditor
 			UpdateThingPanel();
 			FocusThing(bestGuess);
 		}
+		private void OnSaveAsClick(object sender, EventArgs e)
+		{
+			SaveAs();
+		}
 		private void OnSaveClick(object sender, EventArgs e)
 		{
-			TrySaveScene();
+			TrySave();
 		}
 		private void OnLoadClick(object sender, EventArgs e)
 		{
@@ -1371,33 +1341,24 @@ namespace SMPLSceneEditor
 			if(MessageBox.Show("Confirm? Any unsaved changes will be lost.", "Confirm Load", MessageBoxButtons.OKCancel) != DialogResult.OK)
 				return;
 
-			var name = Path.GetFileNameWithoutExtension(load.FileName);
-			name += string.IsNullOrWhiteSpace(name) ? "" : " ";
-			var mirrorPath = name + "Assets";
-			var path = finalGameDir + "\\" + mirrorPath;
+			scenePath = load.FileName;
+			var assetsPath = GetAssetsPath();
 
-			while(IsFileLocked(path)) { }
-			CopyMirrorFiles(path);
-
+			CopyMirrorFiles(assetsPath);
 			Thing.DestroyAll();
 
 			var scene = Scene.Load<MainScene>(load.FileName);
 			if(scene == null)
 			{
-				MessageBox.Show("Could not load the selected Scene. The file may be altered or corrupt.", "Failed to Load");
+				MessageBox.Show("Could not load Scene. The file may be altered or corrupt.", "Load Scene Failed");
 				return;
 			}
 
-			sceneName = name;
 			Scene.CurrentScene = scene;
+			MainScene.LoadAsset(GetMirrorAssetPath(assetsPath));
 
-			MainScene.LoadAsset(mirrorPath);
-
-			assetsPath = path;
-			prevAssetsMirrorPath = mirrorPath;
-
-			assetsFolderWatcher.Filter = mirrorPath;
-			assetsFolderWatcher.Path = finalGameDir;
+			assetsFolderWatcher.Filter = Path.GetFileNameWithoutExtension(assetsPath);
+			assetsFolderWatcher.Path = GetGameDirectory();
 			assetsWatcher.Path = assetsPath;
 
 			selectedUIDs.Clear();
@@ -1667,7 +1628,7 @@ namespace SMPLSceneEditor
 		private void OnSceneRightclickMenuCreateText(object sender, EventArgs e)
 		{
 			var result = DialogResult.None;
-			if(assetsPath == "Assets")
+			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
 			{
 				MessageBox.Show(this, "This Text will be invisible without a Font.\n\n" + NO_ASSETS_MSG, "Create Text");
 				return;
@@ -1982,8 +1943,8 @@ namespace SMPLSceneEditor
 
 		private void OnAssetFolderRename(object sender, RenamedEventArgs e)
 		{
-			if(e.FullPath != assetsPath)
-				Directory.Move(e.FullPath, assetsPath);
+			//if(e.FullPath != assetsPath)
+			//	Directory.Move(e.FullPath, assetsPath);
 		}
 		private void OnAppQuitting(object? sender, FormClosingEventArgs e)
 		{
@@ -1996,8 +1957,7 @@ namespace SMPLSceneEditor
 			else if(result == DialogResult.Yes)
 			{
 				DeleteCache();
-				quitting = true;
-				TrySaveScene();
+				TrySave();
 			}
 		}
 		#endregion

@@ -70,6 +70,7 @@
 			this.sceneRightClickMenuHitboxResetView = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuDeselectAll = new System.Windows.Forms.ToolStripMenuItem();
 			this.save = new System.Windows.Forms.SaveFileDialog();
+			this.saveAsButton = new System.Windows.Forms.Button();
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).BeginInit();
 			this.windowSplit.Panel1.SuspendLayout();
 			this.windowSplit.Panel2.SuspendLayout();
@@ -135,13 +136,14 @@
 			// 
 			// sceneGroup
 			// 
+			this.sceneGroup.Controls.Add(this.saveAsButton);
 			this.sceneGroup.Controls.Add(this.saveButton);
 			this.sceneGroup.Controls.Add(this.loadButton);
 			this.sceneGroup.Dock = System.Windows.Forms.DockStyle.Right;
 			this.sceneGroup.ForeColor = System.Drawing.Color.White;
-			this.sceneGroup.Location = new System.Drawing.Point(906, 0);
+			this.sceneGroup.Location = new System.Drawing.Point(960, 0);
 			this.sceneGroup.Name = "sceneGroup";
-			this.sceneGroup.Size = new System.Drawing.Size(291, 54);
+			this.sceneGroup.Size = new System.Drawing.Size(237, 54);
 			this.sceneGroup.TabIndex = 10;
 			this.sceneGroup.TabStop = false;
 			this.sceneGroup.Text = "Scene";
@@ -152,7 +154,7 @@
 			this.saveButton.Dock = System.Windows.Forms.DockStyle.Right;
 			this.saveButton.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.saveButton.ForeColor = System.Drawing.Color.White;
-			this.saveButton.Location = new System.Drawing.Point(134, 19);
+			this.saveButton.Location = new System.Drawing.Point(80, 19);
 			this.saveButton.Name = "saveButton";
 			this.saveButton.Size = new System.Drawing.Size(77, 32);
 			this.saveButton.TabIndex = 8;
@@ -167,7 +169,7 @@
 			this.loadButton.Dock = System.Windows.Forms.DockStyle.Right;
 			this.loadButton.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.loadButton.ForeColor = System.Drawing.Color.White;
-			this.loadButton.Location = new System.Drawing.Point(211, 19);
+			this.loadButton.Location = new System.Drawing.Point(157, 19);
 			this.loadButton.Name = "loadButton";
 			this.loadButton.Size = new System.Drawing.Size(77, 32);
 			this.loadButton.TabIndex = 7;
@@ -522,6 +524,21 @@
 			this.save.Filter = "Scene|*.scene";
 			this.save.Title = "Save Scene";
 			// 
+			// saveAsButton
+			// 
+			this.saveAsButton.BackColor = System.Drawing.Color.Black;
+			this.saveAsButton.Dock = System.Windows.Forms.DockStyle.Right;
+			this.saveAsButton.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.saveAsButton.ForeColor = System.Drawing.Color.White;
+			this.saveAsButton.Location = new System.Drawing.Point(3, 19);
+			this.saveAsButton.Name = "saveAsButton";
+			this.saveAsButton.Size = new System.Drawing.Size(77, 32);
+			this.saveAsButton.TabIndex = 9;
+			this.saveAsButton.TabStop = false;
+			this.saveAsButton.Text = "Save As";
+			this.saveAsButton.UseVisualStyleBackColor = false;
+			this.saveAsButton.Click += new System.EventHandler(this.OnSaveAsClick);
+			// 
 			// FormWindow
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -602,5 +619,6 @@
 		private ToolStripSeparator sceneRightClickMenuCreateSeparator1;
 		private ToolStripMenuItem sceneRightClickMenuCreateNinePatch;
 		private SaveFileDialog save;
+		private Button saveAsButton;
 	}
 }
