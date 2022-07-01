@@ -15,6 +15,9 @@ namespace SMPLSceneEditor
 	public partial class FormWindow : Form
 	{
 		#region Fields
+		private const string NO_ASSETS_MSG = "In order to use Assets, save this Scene or load another.\n\n" +
+			"Upon doing that, a Scene file, alongside an Asset folder will be present in the provided game directory. " +
+			"Fill that folder with Assets and come back here again.";
 		private const float HITBOX_POINT_EDIT_MAX_DIST = 20;
 		private CheckBox? editHitbox;
 		private Control? waitingPickThingControl;
@@ -22,13 +25,13 @@ namespace SMPLSceneEditor
 		private readonly RenderWindow window;
 		private float sceneSc = 1f;
 		private int selectDepthIndex;
-		private bool isDragSelecting, isHoveringScene, confirmDeleteChildrenMsgShown, selectGameDirShown, saveSceneShown, quitting;
+		private bool isDragSelecting, isHoveringScene, quitting;
 		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos;
 		private readonly List<string> selectedUIDs = new();
 		private readonly List<int> selectedHitboxPointIndexesA = new(), selectedHitboxPointIndexesB = new();
 		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
 		private readonly FileSystemWatcher assetsWatcher, assetsFolderWatcher;
-		private string prevAssetsMirrorPath = "Assets", assetsPath = "Assets", finalGameDir = "", pickThingProperty = "";
+		private string prevAssetsMirrorPath = "Assets", assetsPath = "Assets", finalGameDir = "", pickThingProperty = "", sceneName = "";
 		private readonly Dictionary<string, TableLayoutPanel> editThingTableTypes = new();
 		private readonly Dictionary<string, string> listBoxPlaceholderTexts = new()
 		{
@@ -91,6 +94,8 @@ namespace SMPLSceneEditor
 			var visual = CreateDefaultTable("tableVisual");
 			var light = CreateDefaultTable("tableLight");
 			var camera = CreateDefaultTable("tableCamera");
+			var text = CreateDefaultTable("tableText");
+			var ninePatch = CreateDefaultTable("tableNinePatch");
 			var types = thingTypesTable;
 
 			types.Hide();
@@ -102,6 +107,8 @@ namespace SMPLSceneEditor
 			AddPropsVisual();
 			AddPropsLight();
 			AddPropsCamera();
+			AddPropsText();
+			AddPropsNinePatch();
 
 			editThingTableTypes[scene.Name] = scene;
 			editThingTableTypes[thing.Name] = thing;
@@ -109,6 +116,8 @@ namespace SMPLSceneEditor
 			editThingTableTypes[visual.Name] = visual;
 			editThingTableTypes[light.Name] = light;
 			editThingTableTypes[camera.Name] = camera;
+			editThingTableTypes[text.Name] = text;
+			editThingTableTypes[ninePatch.Name] = ninePatch;
 
 			TableLayoutPanel CreateDefaultTable(string name)
 			{
@@ -126,6 +135,10 @@ namespace SMPLSceneEditor
 
 				return result;
 			}
+			void AddSpace(TableLayoutPanel table)
+			{
+				AddThingProperty(table, ""); AddThingProperty(table, "");
+			}
 			void AddPropsScene()
 			{
 				AddThingProperty(scene, "SMPL Scene", rightLabel: true); AddThingProperty(scene, "Editor Colors");
@@ -133,10 +146,10 @@ namespace SMPLSceneEditor
 				AddThingProperty(scene, "Grid", "SceneGridColor", typeof(Color));
 				AddThingProperty(scene, "Grid 0", "SceneGrid0Color", typeof(Color));
 				AddThingProperty(scene, "Grid 1000", "SceneGrid1000Color", typeof(Color));
-				AddThingProperty(scene, ""); AddThingProperty(scene, "");
+				AddSpace(scene);
 				AddThingProperty(scene, "Bound Box", "SceneBoundingBoxColor", typeof(Color));
 				AddThingProperty(scene, "Select", "SceneSelectColor", typeof(Color));
-				AddThingProperty(scene, ""); AddThingProperty(scene, "");
+				AddSpace(scene);
 				AddThingProperty(scene, "Camera", "SceneCameraColor", typeof(Color));
 				AddThingProperty(scene, "Hitbox", "SceneHitboxColor", typeof(Color));
 				AddThingProperty(scene, "Light", "SceneLightColor", typeof(Color));
@@ -147,15 +160,17 @@ namespace SMPLSceneEditor
 				AddThingProperty(thing, "UID", Property.THING_UID, typeof(string));
 				AddThingProperty(thing, "Old UID", Property.THING_OLD_UID, typeof(string), readOnly: true);
 				AddThingProperty(thing, "Age", Property.THING_AGE_AS_TIMER, typeof(string), readOnly: true);
+				AddSpace(thing);
 				AddThingProperty(thing, "Position", Property.THING_POSITION, typeof(Vector2));
 				AddThingProperty(thing, "Angle", Property.THING_ANGLE, typeof(float));
 				AddThingProperty(thing, "Direction", Property.THING_DIRECTION, typeof(Vector2), readOnly: true, smallNumericStep: true);
 				AddThingProperty(thing, "Scale", Property.THING_SCALE, typeof(float), smallNumericStep: true);
-				AddThingProperty(thing, ""); AddThingProperty(thing, "");
+				AddSpace(thing);
 				AddThingProperty(thing, "Parent", rightLabel: true); AddThingProperty(thing, "Properties");
 				AddThingProperty(thing, "Parent UID", Property.THING_PARENT_UID, typeof(string));
 				AddThingProperty(thing, "Parent Old UID", Property.THING_PARENT_OLD_UID, typeof(string), readOnly: true);
 				AddThingProperty(thing, "Children UIDs", Property.THING_CHILDREN_UIDS, typeof(ReadOnlyCollection<string>), thingList: true);
+				AddSpace(thing);
 				AddThingProperty(thing, "Local Position", Property.THING_LOCAL_POSITION, typeof(Vector2));
 				AddThingProperty(thing, "Local Angle", Property.THING_LOCAL_ANGLE, typeof(float));
 				AddThingProperty(thing, "Local Direction", Property.THING_LOCAL_DIRECTION, typeof(Vector2), readOnly: true, smallNumericStep: true);
@@ -166,10 +181,10 @@ namespace SMPLSceneEditor
 			{
 				AddThingProperty(sprite, "Local Size", Property.SPRITE_LOCAL_SIZE, typeof(Vector2));
 				AddThingProperty(sprite, "Size", Property.SPRITE_SIZE, typeof(Vector2));
-				AddThingProperty(sprite, ""); AddThingProperty(sprite, "");
+				AddSpace(sprite);
 				AddThingProperty(sprite, "Origin Unit", Property.SPRITE_ORIGIN_UNIT, typeof(Vector2), smallNumericStep: true);
 				AddThingProperty(sprite, "Origin", Property.SPRITE_ORIGIN, typeof(Vector2));
-				AddThingProperty(sprite, ""); AddThingProperty(sprite, "");
+				AddSpace(sprite);
 				AddThingProperty(sprite, "Texture Coordinates Unit A", Property.SPRITE_TEX_COORD_UNIT_A, typeof(Vector2), labelSizeOffset: -3, smallNumericStep: true);
 				AddThingProperty(sprite, "Texture Coordinates Unit B", Property.SPRITE_TEX_COORD_UNIT_B, typeof(Vector2), labelSizeOffset: -3, smallNumericStep: true);
 				AddThingProperty(sprite, "Texture Coordinates A", Property.SPRITE_TEX_COORD_A, typeof(Vector2), labelSizeOffset: 0, smallNumericStep: true);
@@ -178,18 +193,17 @@ namespace SMPLSceneEditor
 			void AddPropsVisual()
 			{
 				AddThingProperty(visual, "Is Hidden", Property.VISUAL_IS_HIDDEN, typeof(bool));
-				AddThingProperty(visual, ""); AddThingProperty(visual, "");
-				AddThingProperty(visual, "Depth", Property.VISUAL_DEPTH, typeof(int));
-				AddThingProperty(visual, "Tint", Property.VISUAL_TINT, typeof(Color));
-				AddThingProperty(visual, "Blend Mode", Property.VISUAL_BLEND_MODE, typeof(BlendMode));
-				AddThingProperty(visual, "Effect", Property.VISUAL_EFFECT, typeof(Effect));
-				AddThingProperty(visual, ""); AddThingProperty(visual, "");
-				AddThingProperty(visual, "Texture Path", Property.VISUAL_TEXTURE_PATH, typeof(string));
 				AddThingProperty(visual, "Is Smooth", Property.VISUAL_IS_SMOOTH, typeof(bool));
 				AddThingProperty(visual, "Is Repeated", Property.VISUAL_IS_REPEATED, typeof(bool));
-				AddThingProperty(visual, ""); AddThingProperty(visual, "");
+				AddSpace(visual);
+				AddThingProperty(visual, "Texture Path", Property.VISUAL_TEXTURE_PATH, typeof(string));
+				AddThingProperty(visual, "Depth", Property.VISUAL_DEPTH, typeof(int));
+				AddThingProperty(visual, "Tint", Property.VISUAL_TINT, typeof(Color));
+				AddThingProperty(visual, "Effect", Property.VISUAL_EFFECT, typeof(Effect));
+				AddThingProperty(visual, "Blend Mode", Property.VISUAL_BLEND_MODE, typeof(BlendMode));
+				AddSpace(visual);
 				AddThingProperty(visual, "Camera UIDs", Property.VISUAL_CAMERA_UIDS, typeof(List<string>), thingList: true);
-				AddThingProperty(visual, ""); AddThingProperty(visual, "");
+				AddSpace(visual);
 				AddThingProperty(visual, "Hitbox", Property.THING_HITBOX, typeof(string), readOnly: true);
 			}
 			void AddPropsLight()
@@ -198,8 +212,28 @@ namespace SMPLSceneEditor
 			}
 			void AddPropsCamera()
 			{
-				AddThingProperty(camera, "Resolution", Property.CAMERA_RESOLUTION, typeof(Vector2), readOnly: true);
 				AddThingProperty(camera, "Is Smooth", Property.CAMERA_IS_SMOOTH, typeof(bool));
+				AddSpace(camera);
+				AddThingProperty(camera, "Resolution", Property.CAMERA_RESOLUTION, typeof(Vector2), readOnly: true);
+			}
+			void AddPropsText()
+			{
+				AddThingProperty(text, "Font Path", Property.TEXT_FONT_PATH, typeof(string));
+				AddThingProperty(text, "Value", Property.TEXT_VALUE, typeof(string));
+				AddThingProperty(text, "Color", Property.TEXT_COLOR, typeof(Color));
+				AddThingProperty(text, "Style", Property.TEXT_STYLE, typeof(Text.Styles));
+				AddSpace(text);
+				AddThingProperty(text, "Origin Unit", Property.TEXT_ORIGIN_UNIT, typeof(Vector2));
+				AddThingProperty(text, "Symbol Size", Property.TEXT_SYMBOL_SIZE, typeof(int));
+				AddThingProperty(text, "Symbol Space", Property.TEXT_SYMBOL_SPACE, typeof(float));
+				AddThingProperty(text, "Line Space", Property.TEXT_LINE_SPACE, typeof(float));
+				AddSpace(text);
+				AddThingProperty(text, "Outline Color", Property.TEXT_OUTLINE_COLOR, typeof(Color));
+				AddThingProperty(text, "Outline Size", Property.TEXT_OUTLINE_SIZE, typeof(float));
+			}
+			void AddPropsNinePatch()
+			{
+				AddThingProperty(ninePatch, "Border Size", Property.NINE_PATCH_BORDER_SIZE, typeof(float));
 			}
 		}
 		private void AddThingProperty(TableLayoutPanel table, string label, string? propName = null, Type? valueType = null, bool readOnly = false,
@@ -357,6 +391,12 @@ namespace SMPLSceneEditor
 			void PickAsset(object? sender, EventArgs e)
 			{
 				pickAsset.InitialDirectory = assetsPath;
+				if(assetsPath == "Assets")
+				{
+					MessageBox.Show(this, NO_ASSETS_MSG, "No Assets Found");
+					return;
+				}
+
 				if(pickAsset.ShowDialog() != DialogResult.OK)
 					return;
 
@@ -479,7 +519,6 @@ namespace SMPLSceneEditor
 		private void OnUpdate(object? sender, EventArgs e)
 		{
 			SMPL.Tools.Time.Update();
-			TryUpdateGameDir();
 
 			window.Size = new((uint)windowPicture.Width, (uint)windowPicture.Height);
 
@@ -555,6 +594,8 @@ namespace SMPLSceneEditor
 				}
 				else if(type == "BlendMode")
 					ProcessEnumList((ComboBox)control, typeof(BlendMode), propName);
+				else if(type == "Styles")
+					ProcessEnumList((ComboBox)control, typeof(Text.Styles), propName);
 				else if(type == "Effect")
 					ProcessEnumList((ComboBox)control, typeof(Effect), propName);
 				else if(type == "Hitbox")
@@ -647,18 +688,16 @@ namespace SMPLSceneEditor
 
 		private void TryResetThingPanel()
 		{
-			var thing = selectedUIDs.Count == 1 && rightTable.Controls.ContainsKey("tableThing") == false;
-			var scene = selectedUIDs.Count == 0 && rightTable.Controls.ContainsKey("tableScene") == false;
-
 			if(editHitbox != null && editHitbox.Checked)
 				return;
 
-			if(thing || scene)
+			var table = editThingTableTypes[selectedUIDs.Count == 1 ? "tableThing" : "tableScene"];
+			if(rightTable.Controls.Contains(table) == false)
 			{
 				rightTable.Controls.Clear();
 				thingTypesTable.Visible = selectedUIDs.Count == 1;
 				rightTable.Controls.Add(thingTypesTable);
-				rightTable.Controls.Add(editThingTableTypes[selectedUIDs.Count == 1 ? "tableThing" : "tableScene"], 0, 1);
+				rightTable.Controls.Add(table, 0, 1);
 			}
 
 			if(selectedUIDs.Count == 0)
@@ -764,30 +803,42 @@ namespace SMPLSceneEditor
 
 		private void TryCtrlS()
 		{
-			if(saveSceneShown == false && ActiveForm == this &&
-				Keyboard.IsKeyPressed(Keyboard.Key.LControl) && Keyboard.IsKeyPressed(Keyboard.Key.S).Once("ctrl-s-save-scene"))
+			if(ActiveForm == this && Keyboard.IsKeyPressed(Keyboard.Key.LControl) &&
+				Keyboard.IsKeyPressed(Keyboard.Key.S).Once("ctrl-s-save-scene"))
 				TrySaveScene();
 		}
 		private void TrySaveScene()
 		{
-			saveSceneShown = true;
-			if(string.IsNullOrWhiteSpace(sceneName.Text) || MainScene.SaveScene(Path.Join(finalGameDir, sceneName.Text + ".scene")) == false)
+			var scenePath = Path.Join(finalGameDir, sceneName + ".scene");
+			if(File.Exists(scenePath) == false)
+			{
+				if(save.ShowDialog(this) != DialogResult.OK)
+					return;
+			}
+
+			sceneName = Path.GetFileNameWithoutExtension(save.FileName);
+			var gameDir = Path.GetDirectoryName(save.FileName);
+			if(gameDir != null)
+				TryUpdateGameDir(gameDir);
+
+			loop.Stop();
+			if(string.IsNullOrWhiteSpace(sceneName) || MainScene.SaveScene(scenePath) == false)
 			{
 				if(quitting)
 					return;
 
 				MessageBox.Show(this, "Enter a valid Scene name before saving.", "Failed to Save!");
-				saveSceneShown = false;
+				loop.Start();
 				return;
 			}
-			saveSceneShown = false;
+			loop.Start();
 
 			var prevSceneName = prevAssetsMirrorPath.Replace(" Assets", "");
 			var prevScenePath = finalGameDir + "\\" + prevSceneName + ".scene";
-			if(sceneName.Text != prevSceneName && File.Exists(prevScenePath))
+			if(sceneName != prevSceneName && File.Exists(prevScenePath))
 				File.Delete(prevScenePath);
 
-			var path = sceneName.Text + " Assets";
+			var path = sceneName + " Assets";
 			assetsPath = finalGameDir + "\\" + path;
 			if(Directory.Exists(prevAssetsMirrorPath) && prevAssetsMirrorPath != path)
 			{
@@ -803,24 +854,14 @@ namespace SMPLSceneEditor
 			assetsFolderWatcher.Filter = path;
 			assetsWatcher.Path = assetsPath;
 		}
-		private void TryUpdateGameDir()
+		private void TryUpdateGameDir(string gameDir)
 		{
-			if(Directory.Exists(finalGameDir) || selectGameDirShown)
+			if(finalGameDir == gameDir || Directory.Exists(gameDir) == false)
 				return;
 
-			TryResetThingPanel();
+			finalGameDir = gameDir;
 
-			selectGameDirShown = true;
-
-			if(string.IsNullOrWhiteSpace(finalGameDir) == false)
-				MessageBox.Show("Find the game directory or select a new one.", "Game directory has changed!");
-
-			while(gameDir.ShowDialog(this) != DialogResult.OK) { }
-
-			selectGameDirShown = false;
-			finalGameDir = gameDir.SelectedPath;
-
-			var name = sceneName.Text;
+			var name = sceneName;
 			name += string.IsNullOrWhiteSpace(name) ? "" : " ";
 			var assetsPath = finalGameDir + "\\" + name + "Assets";
 			if(string.IsNullOrWhiteSpace(name))
@@ -1095,11 +1136,11 @@ namespace SMPLSceneEditor
 				void Remove(int index) => lines[index] = new Line(new Vector2().NaN(), new Vector2().NaN());
 			}
 
-			if(confirmDeleteChildrenMsgShown == false && selectedUIDs.Count > 0)
+			if(selectedUIDs.Count > 0)
 			{
-				confirmDeleteChildrenMsgShown = true;
+				loop.Stop();
 				var result = MessageBox.Show($"Also delete the children of the selected {{Things}}?", "Delete Selection", MessageBoxButtons.YesNoCancel);
-				confirmDeleteChildrenMsgShown = false;
+				loop.Start();
 				var includeChildren = result == DialogResult.Yes;
 				if(result == DialogResult.Cancel)
 					return;
@@ -1330,6 +1371,14 @@ namespace SMPLSceneEditor
 			if(MessageBox.Show("Confirm? Any unsaved changes will be lost.", "Confirm Load", MessageBoxButtons.OKCancel) != DialogResult.OK)
 				return;
 
+			var name = Path.GetFileNameWithoutExtension(load.FileName);
+			name += string.IsNullOrWhiteSpace(name) ? "" : " ";
+			var mirrorPath = name + "Assets";
+			var path = finalGameDir + "\\" + mirrorPath;
+
+			while(IsFileLocked(path)) { }
+			CopyMirrorFiles(path);
+
 			Thing.DestroyAll();
 
 			var scene = Scene.Load<MainScene>(load.FileName);
@@ -1339,16 +1388,12 @@ namespace SMPLSceneEditor
 				return;
 			}
 
-			sceneName.Text = Path.GetFileNameWithoutExtension(load.FileName);
+			sceneName = name;
 			Scene.CurrentScene = scene;
-			var name = sceneName.Text;
-			name += string.IsNullOrWhiteSpace(name) ? "" : " ";
-			var mirrorPath = name + "Assets";
-			var path = finalGameDir + "\\" + mirrorPath;
-			while(IsFileLocked(path)) { }
-			CopyMirrorFiles(path);
+
 			MainScene.LoadAsset(mirrorPath);
-			assetsPath = finalGameDir + "\\" + mirrorPath;
+
+			assetsPath = path;
 			prevAssetsMirrorPath = mirrorPath;
 
 			assetsFolderWatcher.Filter = mirrorPath;
@@ -1619,6 +1664,25 @@ namespace SMPLSceneEditor
 					$"A valid resolution is between [{minRes.X} {minRes.Y}] and [{maxRes.X} {maxRes.Y}].");
 			}
 		}
+		private void OnSceneRightclickMenuCreateText(object sender, EventArgs e)
+		{
+			var result = DialogResult.None;
+			if(assetsPath == "Assets")
+			{
+				MessageBox.Show(this, "This Text will be invisible without a Font.\n\n" + NO_ASSETS_MSG, "Create Text");
+				return;
+			}
+			else if(MessageBox.Show(this, "Pick a Font?", "Create Text", MessageBoxButtons.YesNo) == DialogResult.Yes)
+				result = pickAsset.ShowDialog();
+
+			var uid = Thing.CreateText("Text", result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName));
+			Thing.Set(uid, Property.THING_POSITION, rightClickPos);
+		}
+		private void OnSceneRightclickMenuCreateNinePatch(object sender, EventArgs e)
+		{
+			var uid = Thing.CreateNinePatch("NinePatch", null);
+			Thing.Set(uid, Property.THING_POSITION, rightClickPos);
+		}
 
 		private void OnSceneRightclickMenuCreateHitboxLine(object sender, EventArgs e)
 		{
@@ -1671,7 +1735,9 @@ namespace SMPLSceneEditor
 			selectedUIDs.Clear();
 			TryResetThingPanel();
 		}
+
 		#endregion
+
 		#region EditThingPanel
 		private void OnListSelectThing(object? sender, EventArgs e)
 		{
@@ -1723,6 +1789,11 @@ namespace SMPLSceneEditor
 			{
 				var index = list.SelectedIndex;
 				Thing.Set(selectedUIDs[0], Property.VISUAL_EFFECT, (Effect)index);
+			}
+			else if(list.Name == $"Prop{Property.TEXT_STYLE}")
+			{
+				var index = list.SelectedIndex;
+				Thing.Set(selectedUIDs[0], Property.TEXT_STYLE, (Text.Styles)index);
 			}
 		}
 		private void OnListThingDropDown(object? sender, EventArgs e)
@@ -2123,6 +2194,8 @@ namespace SMPLSceneEditor
 		{
 			try
 			{
+				if(File.Exists(file) == false)
+					return false;
 				if(Path.HasExtension(file) == false)
 				{
 					var dirs = Directory.GetDirectories(file);
@@ -2142,7 +2215,7 @@ namespace SMPLSceneEditor
 				using var stream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.None);
 				stream.Close();
 			}
-			catch(IOException)
+			catch(Exception)
 			{
 				//the file is unavailable because it is:
 				//still being written to

@@ -33,7 +33,6 @@
 			this.sceneValues = new System.Windows.Forms.Label();
 			this.sceneStatusPanel = new System.Windows.Forms.Panel();
 			this.sceneGroup = new System.Windows.Forms.GroupBox();
-			this.sceneName = new System.Windows.Forms.TextBox();
 			this.saveButton = new System.Windows.Forms.Button();
 			this.loadButton = new System.Windows.Forms.Button();
 			this.searchBox = new System.Windows.Forms.GroupBox();
@@ -48,14 +47,16 @@
 			this.sceneRightClickMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
 			this.sceneRightClickMenuCreate = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateSprite = new System.Windows.Forms.ToolStripMenuItem();
-			this.lightToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.cameraToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuCreateText = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuCreateNinePatch = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuCreateSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+			this.sceneRightClickMenuCreateLight = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuCreateCamera = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.sceneRightClickMenuResetView = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuUnselectAll = new System.Windows.Forms.ToolStripMenuItem();
 			this.rightTable = new System.Windows.Forms.TableLayoutPanel();
 			this.thingTypesTable = new System.Windows.Forms.TableLayoutPanel();
-			this.gameDir = new System.Windows.Forms.FolderBrowserDialog();
 			this.load = new System.Windows.Forms.OpenFileDialog();
 			this.pickColor = new System.Windows.Forms.ColorDialog();
 			this.pickAsset = new System.Windows.Forms.OpenFileDialog();
@@ -68,6 +69,7 @@
 			this.sceneRightClickMenuHitboxSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.sceneRightClickMenuHitboxResetView = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuDeselectAll = new System.Windows.Forms.ToolStripMenuItem();
+			this.save = new System.Windows.Forms.SaveFileDialog();
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).BeginInit();
 			this.windowSplit.Panel1.SuspendLayout();
 			this.windowSplit.Panel2.SuspendLayout();
@@ -133,7 +135,6 @@
 			// 
 			// sceneGroup
 			// 
-			this.sceneGroup.Controls.Add(this.sceneName);
 			this.sceneGroup.Controls.Add(this.saveButton);
 			this.sceneGroup.Controls.Add(this.loadButton);
 			this.sceneGroup.Dock = System.Windows.Forms.DockStyle.Right;
@@ -144,19 +145,6 @@
 			this.sceneGroup.TabIndex = 10;
 			this.sceneGroup.TabStop = false;
 			this.sceneGroup.Text = "Scene";
-			// 
-			// sceneName
-			// 
-			this.sceneName.BackColor = System.Drawing.Color.Black;
-			this.sceneName.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.sceneName.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.sceneName.ForeColor = System.Drawing.Color.White;
-			this.sceneName.Location = new System.Drawing.Point(3, 19);
-			this.sceneName.Name = "sceneName";
-			this.sceneName.PlaceholderText = "Name";
-			this.sceneName.Size = new System.Drawing.Size(131, 29);
-			this.sceneName.TabIndex = 9;
-			this.sceneName.TabStop = false;
 			// 
 			// saveButton
 			// 
@@ -351,8 +339,11 @@
 			// 
 			this.sceneRightClickMenuCreate.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.sceneRightClickMenuCreateSprite,
-            this.lightToolStripMenuItem,
-            this.cameraToolStripMenuItem});
+            this.sceneRightClickMenuCreateText,
+            this.sceneRightClickMenuCreateNinePatch,
+            this.sceneRightClickMenuCreateSeparator1,
+            this.sceneRightClickMenuCreateLight,
+            this.sceneRightClickMenuCreateCamera});
 			this.sceneRightClickMenuCreate.Name = "sceneRightClickMenuCreate";
 			this.sceneRightClickMenuCreate.Size = new System.Drawing.Size(135, 22);
 			this.sceneRightClickMenuCreate.Text = "Create";
@@ -360,23 +351,42 @@
 			// sceneRightClickMenuCreateSprite
 			// 
 			this.sceneRightClickMenuCreateSprite.Name = "sceneRightClickMenuCreateSprite";
-			this.sceneRightClickMenuCreateSprite.Size = new System.Drawing.Size(115, 22);
+			this.sceneRightClickMenuCreateSprite.Size = new System.Drawing.Size(132, 22);
 			this.sceneRightClickMenuCreateSprite.Text = "Sprite";
 			this.sceneRightClickMenuCreateSprite.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateSprite);
 			// 
-			// lightToolStripMenuItem
+			// sceneRightClickMenuCreateText
 			// 
-			this.lightToolStripMenuItem.Name = "lightToolStripMenuItem";
-			this.lightToolStripMenuItem.Size = new System.Drawing.Size(115, 22);
-			this.lightToolStripMenuItem.Text = "Light";
-			this.lightToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateLight);
+			this.sceneRightClickMenuCreateText.Name = "sceneRightClickMenuCreateText";
+			this.sceneRightClickMenuCreateText.Size = new System.Drawing.Size(132, 22);
+			this.sceneRightClickMenuCreateText.Text = "Text";
+			this.sceneRightClickMenuCreateText.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateText);
 			// 
-			// cameraToolStripMenuItem
+			// sceneRightClickMenuCreateNinePatch
 			// 
-			this.cameraToolStripMenuItem.Name = "cameraToolStripMenuItem";
-			this.cameraToolStripMenuItem.Size = new System.Drawing.Size(115, 22);
-			this.cameraToolStripMenuItem.Text = "Camera";
-			this.cameraToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateCamera);
+			this.sceneRightClickMenuCreateNinePatch.Name = "sceneRightClickMenuCreateNinePatch";
+			this.sceneRightClickMenuCreateNinePatch.Size = new System.Drawing.Size(132, 22);
+			this.sceneRightClickMenuCreateNinePatch.Text = "Nine Patch";
+			this.sceneRightClickMenuCreateNinePatch.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateNinePatch);
+			// 
+			// sceneRightClickMenuCreateSeparator1
+			// 
+			this.sceneRightClickMenuCreateSeparator1.Name = "sceneRightClickMenuCreateSeparator1";
+			this.sceneRightClickMenuCreateSeparator1.Size = new System.Drawing.Size(129, 6);
+			// 
+			// sceneRightClickMenuCreateLight
+			// 
+			this.sceneRightClickMenuCreateLight.Name = "sceneRightClickMenuCreateLight";
+			this.sceneRightClickMenuCreateLight.Size = new System.Drawing.Size(132, 22);
+			this.sceneRightClickMenuCreateLight.Text = "Light";
+			this.sceneRightClickMenuCreateLight.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateLight);
+			// 
+			// sceneRightClickMenuCreateCamera
+			// 
+			this.sceneRightClickMenuCreateCamera.Name = "sceneRightClickMenuCreateCamera";
+			this.sceneRightClickMenuCreateCamera.Size = new System.Drawing.Size(132, 22);
+			this.sceneRightClickMenuCreateCamera.Text = "Camera";
+			this.sceneRightClickMenuCreateCamera.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateCamera);
 			// 
 			// sceneRightClickMenuSeparator1
 			// 
@@ -425,11 +435,6 @@
 			this.thingTypesTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
 			this.thingTypesTable.Size = new System.Drawing.Size(339, 24);
 			this.thingTypesTable.TabIndex = 1;
-			// 
-			// gameDir
-			// 
-			this.gameDir.Description = "Select a Game Directory";
-			this.gameDir.UseDescriptionForTitle = true;
 			// 
 			// load
 			// 
@@ -512,6 +517,11 @@
 			this.sceneRightClickMenuDeselectAll.Text = "Deselect All";
 			this.sceneRightClickMenuDeselectAll.Click += new System.EventHandler(this.OnSceneRightClickMenuDeselect);
 			// 
+			// save
+			// 
+			this.save.Filter = "Scene|*.scene";
+			this.save.Title = "Save Scene";
+			// 
 			// FormWindow
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -533,7 +543,6 @@
 			this.windowSplit.ResumeLayout(false);
 			this.sceneStatusPanel.ResumeLayout(false);
 			this.sceneGroup.ResumeLayout(false);
-			this.sceneGroup.PerformLayout();
 			this.searchBox.ResumeLayout(false);
 			this.searchBox.PerformLayout();
 			this.editSelectionGroup.ResumeLayout(false);
@@ -569,17 +578,15 @@
 		private PictureBox windowPicture;
 		private GroupBox editSelectionGroup;
 		private Button loadButton;
-		private FolderBrowserDialog gameDir;
 		private OpenFileDialog load;
 		private GroupBox searchBox;
 		private TableLayoutPanel rightTable;
 		private TableLayoutPanel thingTypesTable;
 		private GroupBox sceneGroup;
-		private TextBox sceneName;
 		private TextBox searchScene;
-		private ToolStripMenuItem lightToolStripMenuItem;
+		private ToolStripMenuItem sceneRightClickMenuCreateLight;
 		private ToolStripMenuItem sceneRightClickMenuUnselectAll;
-		private ToolStripMenuItem cameraToolStripMenuItem;
+		private ToolStripMenuItem sceneRightClickMenuCreateCamera;
 		private ColorDialog pickColor;
 		private OpenFileDialog pickAsset;
 		private ContextMenuStrip thingsList;
@@ -591,5 +598,9 @@
 		private ToolStripMenuItem lineToolStripMenuItem;
 		private ToolStripMenuItem squareToolStripMenuItem;
 		private ToolStripMenuItem circleToolStripMenuItem;
+		private ToolStripMenuItem sceneRightClickMenuCreateText;
+		private ToolStripSeparator sceneRightClickMenuCreateSeparator1;
+		private ToolStripMenuItem sceneRightClickMenuCreateNinePatch;
+		private SaveFileDialog save;
 	}
 }
