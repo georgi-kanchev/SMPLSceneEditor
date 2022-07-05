@@ -4,10 +4,9 @@ global using SFML.Graphics;
 global using SFML.System;
 global using SFML.Window;
 global using SMPL;
-global using SMPL.Graphics;
 global using SMPL.Tools;
 global using Color = SFML.Graphics.Color;
-global using BlendMode = SMPL.Graphics.BlendMode;
+global using BlendMode = SMPL.Thing.BlendMode;
 global using Cursor = System.Windows.Forms.Cursor;
 
 namespace SMPLSceneEditor
@@ -17,7 +16,7 @@ namespace SMPLSceneEditor
 		#region Fields
 		private const string NO_ASSETS_MSG = "In order to use Assets, save this Scene or load another.\n\n" +
 			"Upon doing that, a Scene file, alongside an Asset folder will be present in the provided game directory. " +
-			"Fill that folder with Assets and come back here again.";
+			"Fill that folder with Assets and point the Things in the Scene toward them.";
 		private const string LOADING_ASSETS = "Processing assets...", LOADING_SCENE = "Loading Scene...";
 		private const float HITBOX_POINT_EDIT_MAX_DIST = 20;
 
@@ -41,13 +40,17 @@ namespace SMPLSceneEditor
 			{ "PropTypes", "(select to edit)                                     " },
 			{ "PropCameraUIDs", "(select to focus)                                     " },
 		};
-		private readonly Dictionary<string, Color> nonVisualTypeColors = new()
+		private readonly Dictionary<string, Color> typeColors = new()
 		{
 			{ "Camera", Color.Red },
 			{ "Light", Color.Yellow },
+			{ "Audio", Color.Magenta },
+			{ "Text", new(150, 150, 150) },
+			{ "Sprite", Color.White },
+			{ "NinePatch", Color.White },
 		};
 
-		private Color bgCol = Color.Black, bbCol = Color.White, selCol = new(0, 180, 255, 100), hitCol = new(0, 255, 0),
+		private Color bgCol = Color.Black, bbCol = Color.Cyan, selCol = new(0, 180, 255, 100), hitCol = new(0, 255, 0),
 			gridCol = new(50, 50, 50), gridCol0 = Color.Yellow, gridCol1000 = Color.White;
 		#endregion
 
@@ -56,8 +59,6 @@ namespace SMPLSceneEditor
 		{
 			InitializeComponent();
 			UpdateThingPanel();
-
-			DeleteCache();
 
 			WindowState = FormWindowState.Maximized;
 			window = new(windowPicture.Handle);
@@ -92,19 +93,21 @@ namespace SMPLSceneEditor
 			var camera = CreateDefaultTable("tableCamera");
 			var text = CreateDefaultTable("tableText");
 			var ninePatch = CreateDefaultTable("tableNinePatch");
+			var audio = CreateDefaultTable("tableAudio");
 			var types = thingTypesTable;
 
 			types.Hide();
-			AddThingProperty(types, "Types", Property.THING_TYPES, typeof(ReadOnlyCollection<string>));
+			AddThingProperty(types, "Types", Thing.Property.THING_TYPES, typeof(ReadOnlyCollection<string>));
 
 			AddPropsScene();
 			AddPropsThing();
 			AddPropsSprite();
 			AddPropsVisual();
-			AddPropsLight();
+			AddThingProperty(light, "Color", Thing.Property.LIGHT_COLOR, typeof(Color));
 			AddPropsCamera();
 			AddPropsText();
-			AddPropsNinePatch();
+			AddThingProperty(ninePatch, "Border Size", Thing.Property.NINE_PATCH_BORDER_SIZE, typeof(float));
+			AddPropsAudio();
 
 			editThingTableTypes[scene.Name] = scene;
 			editThingTableTypes[thing.Name] = thing;
@@ -114,6 +117,7 @@ namespace SMPLSceneEditor
 			editThingTableTypes[camera.Name] = camera;
 			editThingTableTypes[text.Name] = text;
 			editThingTableTypes[ninePatch.Name] = ninePatch;
+			editThingTableTypes[audio.Name] = audio;
 
 			TableLayoutPanel CreateDefaultTable(string name)
 			{
@@ -146,90 +150,99 @@ namespace SMPLSceneEditor
 				AddThingProperty(scene, "Bound Box", "SceneBoundingBoxColor", typeof(Color));
 				AddThingProperty(scene, "Select", "SceneSelectColor", typeof(Color));
 				AddSpace(scene);
+				AddThingProperty(scene, "Sprite", "SceneSpriteColor", typeof(Color));
+				AddThingProperty(scene, "NinePatch", "SceneNinePatchColor", typeof(Color));
+				AddThingProperty(scene, "Text", "SceneTextColor", typeof(Color));
 				AddThingProperty(scene, "Camera", "SceneCameraColor", typeof(Color));
 				AddThingProperty(scene, "Hitbox", "SceneHitboxColor", typeof(Color));
 				AddThingProperty(scene, "Light", "SceneLightColor", typeof(Color));
+				AddThingProperty(scene, "Audio", "SceneAudioColor", typeof(Color));
 			}
 			void AddPropsThing()
 			{
-				AddThingProperty(thing, "Self", rightLabel: true); AddThingProperty(thing, "Properties", null);
-				AddThingProperty(thing, "UID", Property.THING_UID, typeof(string));
-				AddThingProperty(thing, "Old UID", Property.THING_OLD_UID, typeof(string), readOnly: true);
-				AddThingProperty(thing, "Age", Property.THING_AGE_AS_TIMER, typeof(string), readOnly: true);
+				AddThingProperty(thing, "UID", Thing.Property.THING_UID, typeof(string));
+				AddThingProperty(thing, "Old UID", Thing.Property.THING_OLD_UID, typeof(string), readOnly: true);
+				AddThingProperty(thing, "Age (Seconds)", Thing.Property.THING_AGE, typeof(float), readOnly: true);
 				AddSpace(thing);
-				AddThingProperty(thing, "Position", Property.THING_POSITION, typeof(Vector2));
-				AddThingProperty(thing, "Angle", Property.THING_ANGLE, typeof(float));
-				AddThingProperty(thing, "Direction", Property.THING_DIRECTION, typeof(Vector2), readOnly: true, smallNumericStep: true);
-				AddThingProperty(thing, "Scale", Property.THING_SCALE, typeof(float), smallNumericStep: true);
+				AddThingProperty(thing, "Position", Thing.Property.THING_POSITION, typeof(Vector2));
+				AddThingProperty(thing, "Angle", Thing.Property.THING_ANGLE, typeof(float));
+				AddThingProperty(thing, "Direction", Thing.Property.THING_DIRECTION, typeof(Vector2), readOnly: true, smallNumericStep: true);
+				AddThingProperty(thing, "Scale", Thing.Property.THING_SCALE, typeof(float), smallNumericStep: true);
 				AddSpace(thing);
-				AddThingProperty(thing, "Parent", rightLabel: true); AddThingProperty(thing, "Properties");
-				AddThingProperty(thing, "Parent UID", Property.THING_PARENT_UID, typeof(string));
-				AddThingProperty(thing, "Parent Old UID", Property.THING_PARENT_OLD_UID, typeof(string), readOnly: true);
-				AddThingProperty(thing, "Children UIDs", Property.THING_CHILDREN_UIDS, typeof(ReadOnlyCollection<string>), thingList: true);
+				AddThingProperty(thing, "Parent UID", Thing.Property.THING_PARENT_UID, typeof(string));
+				AddThingProperty(thing, "Parent Old UID", Thing.Property.THING_PARENT_OLD_UID, typeof(string), readOnly: true);
+				AddThingProperty(thing, "Children UIDs", Thing.Property.THING_CHILDREN_UIDS, typeof(ReadOnlyCollection<string>), thingList: true);
 				AddSpace(thing);
-				AddThingProperty(thing, "Local Position", Property.THING_LOCAL_POSITION, typeof(Vector2));
-				AddThingProperty(thing, "Local Angle", Property.THING_LOCAL_ANGLE, typeof(float));
-				AddThingProperty(thing, "Local Direction", Property.THING_LOCAL_DIRECTION, typeof(Vector2), readOnly: true, smallNumericStep: true);
-				AddThingProperty(thing, "Local Scale", Property.THING_LOCAL_SCALE, typeof(float), smallNumericStep: true);
+				AddThingProperty(thing, "Local Position", Thing.Property.THING_LOCAL_POSITION, typeof(Vector2));
+				AddThingProperty(thing, "Local Angle", Thing.Property.THING_LOCAL_ANGLE, typeof(float));
+				AddThingProperty(thing, "Local Direction", Thing.Property.THING_LOCAL_DIRECTION, typeof(Vector2), readOnly: true, smallNumericStep: true);
+				AddThingProperty(thing, "Local Scale", Thing.Property.THING_LOCAL_SCALE, typeof(float), smallNumericStep: true);
 
 			}
 			void AddPropsSprite()
 			{
-				AddThingProperty(sprite, "Local Size", Property.SPRITE_LOCAL_SIZE, typeof(Vector2));
-				AddThingProperty(sprite, "Size", Property.SPRITE_SIZE, typeof(Vector2));
+				AddThingProperty(sprite, "Local Size", Thing.Property.SPRITE_LOCAL_SIZE, typeof(Vector2));
+				AddThingProperty(sprite, "Size", Thing.Property.SPRITE_SIZE, typeof(Vector2));
 				AddSpace(sprite);
-				AddThingProperty(sprite, "Origin Unit", Property.SPRITE_ORIGIN_UNIT, typeof(Vector2), smallNumericStep: true);
-				AddThingProperty(sprite, "Origin", Property.SPRITE_ORIGIN, typeof(Vector2));
+				AddThingProperty(sprite, "Origin Unit", Thing.Property.SPRITE_ORIGIN_UNIT, typeof(Vector2), smallNumericStep: true);
+				AddThingProperty(sprite, "Origin", Thing.Property.SPRITE_ORIGIN, typeof(Vector2));
 				AddSpace(sprite);
-				AddThingProperty(sprite, "Texture Coordinates Unit A", Property.SPRITE_TEX_COORD_UNIT_A, typeof(Vector2), labelSizeOffset: -3, smallNumericStep: true);
-				AddThingProperty(sprite, "Texture Coordinates Unit B", Property.SPRITE_TEX_COORD_UNIT_B, typeof(Vector2), labelSizeOffset: -3, smallNumericStep: true);
-				AddThingProperty(sprite, "Texture Coordinates A", Property.SPRITE_TEX_COORD_A, typeof(Vector2), labelSizeOffset: 0, smallNumericStep: true);
-				AddThingProperty(sprite, "Texture Coordinates B", Property.SPRITE_TEX_COORD_B, typeof(Vector2), labelSizeOffset: 0, smallNumericStep: true);
+				AddThingProperty(sprite, "Texture Coordinates Unit A", Thing.Property.SPRITE_TEX_COORD_UNIT_A, typeof(Vector2), labelSizeOffset: -3, smallNumericStep: true);
+				AddThingProperty(sprite, "Texture Coordinates Unit B", Thing.Property.SPRITE_TEX_COORD_UNIT_B, typeof(Vector2), labelSizeOffset: -3, smallNumericStep: true);
+				AddThingProperty(sprite, "Texture Coordinates A", Thing.Property.SPRITE_TEX_COORD_A, typeof(Vector2), labelSizeOffset: 0, smallNumericStep: true);
+				AddThingProperty(sprite, "Texture Coordinates B", Thing.Property.SPRITE_TEX_COORD_B, typeof(Vector2), labelSizeOffset: 0, smallNumericStep: true);
 			}
 			void AddPropsVisual()
 			{
-				AddThingProperty(visual, "Is Hidden", Property.VISUAL_IS_HIDDEN, typeof(bool));
-				AddThingProperty(visual, "Is Smooth", Property.VISUAL_IS_SMOOTH, typeof(bool));
-				AddThingProperty(visual, "Is Repeated", Property.VISUAL_IS_REPEATED, typeof(bool));
+				AddThingProperty(visual, "Texture Path", Thing.Property.VISUAL_TEXTURE_PATH, typeof(string));
+				AddThingProperty(visual, "Tint", Thing.Property.VISUAL_TINT, typeof(Color));
+				AddThingProperty(visual, "Depth", Thing.Property.VISUAL_DEPTH, typeof(int));
+				AddThingProperty(visual, "Hitbox", Thing.Property.THING_HITBOX, typeof(string), readOnly: true);
 				AddSpace(visual);
-				AddThingProperty(visual, "Texture Path", Property.VISUAL_TEXTURE_PATH, typeof(string));
-				AddThingProperty(visual, "Depth", Property.VISUAL_DEPTH, typeof(int));
-				AddThingProperty(visual, "Tint", Property.VISUAL_TINT, typeof(Color));
-				AddThingProperty(visual, "Effect", Property.VISUAL_EFFECT, typeof(Effect));
-				AddThingProperty(visual, "Blend Mode", Property.VISUAL_BLEND_MODE, typeof(BlendMode));
+				AddThingProperty(visual, "Is Hidden", Thing.Property.VISUAL_IS_HIDDEN, typeof(bool));
+				AddThingProperty(visual, "Is Repeated", Thing.Property.VISUAL_IS_REPEATED, typeof(bool));
+				AddThingProperty(visual, "Is Smooth", Thing.Property.VISUAL_IS_SMOOTH, typeof(bool));
 				AddSpace(visual);
-				AddThingProperty(visual, "Camera UIDs", Property.VISUAL_CAMERA_UIDS, typeof(List<string>), thingList: true);
+				AddThingProperty(visual, "Effect", Thing.Property.VISUAL_EFFECT, typeof(Thing.Effect));
+				AddThingProperty(visual, "Blend Mode", Thing.Property.VISUAL_BLEND_MODE, typeof(BlendMode));
 				AddSpace(visual);
-				AddThingProperty(visual, "Hitbox", Property.THING_HITBOX, typeof(string), readOnly: true);
-			}
-			void AddPropsLight()
-			{
-				AddThingProperty(light, "Color", Property.LIGHT_COLOR, typeof(Color));
+				AddThingProperty(visual, "Camera UIDs", Thing.Property.VISUAL_CAMERA_UIDS, typeof(List<string>), thingList: true);
 			}
 			void AddPropsCamera()
 			{
-				AddThingProperty(camera, "Is Smooth", Property.CAMERA_IS_SMOOTH, typeof(bool));
+				AddThingProperty(camera, "Resolution", Thing.Property.CAMERA_RESOLUTION, typeof(Vector2), readOnly: true);
 				AddSpace(camera);
-				AddThingProperty(camera, "Resolution", Property.CAMERA_RESOLUTION, typeof(Vector2), readOnly: true);
+				AddThingProperty(camera, "Is Smooth", Thing.Property.CAMERA_IS_SMOOTH, typeof(bool));
 			}
 			void AddPropsText()
 			{
-				AddThingProperty(text, "Font Path", Property.TEXT_FONT_PATH, typeof(string));
-				AddThingProperty(text, "Value", Property.TEXT_VALUE, typeof(string));
-				AddThingProperty(text, "Color", Property.TEXT_COLOR, typeof(Color));
-				AddThingProperty(text, "Style", Property.TEXT_STYLE, typeof(Text.Styles));
+				AddThingProperty(text, "Font Path", Thing.Property.TEXT_FONT_PATH, typeof(string));
+				AddThingProperty(text, "Value", Thing.Property.TEXT_VALUE, typeof(string));
+				AddThingProperty(text, "Color", Thing.Property.TEXT_COLOR, typeof(Color));
+				AddThingProperty(text, "Style", Thing.Property.TEXT_STYLE, typeof(Text.Styles));
 				AddSpace(text);
-				AddThingProperty(text, "Origin Unit", Property.TEXT_ORIGIN_UNIT, typeof(Vector2));
-				AddThingProperty(text, "Symbol Size", Property.TEXT_SYMBOL_SIZE, typeof(int));
-				AddThingProperty(text, "Symbol Space", Property.TEXT_SYMBOL_SPACE, typeof(float));
-				AddThingProperty(text, "Line Space", Property.TEXT_LINE_SPACE, typeof(float));
+				AddThingProperty(text, "Origin Unit", Thing.Property.TEXT_ORIGIN_UNIT, typeof(Vector2));
+				AddThingProperty(text, "Symbol Size", Thing.Property.TEXT_SYMBOL_SIZE, typeof(int));
+				AddThingProperty(text, "Symbol Space", Thing.Property.TEXT_SYMBOL_SPACE, typeof(float));
+				AddThingProperty(text, "Line Space", Thing.Property.TEXT_LINE_SPACE, typeof(float));
 				AddSpace(text);
-				AddThingProperty(text, "Outline Color", Property.TEXT_OUTLINE_COLOR, typeof(Color));
-				AddThingProperty(text, "Outline Size", Property.TEXT_OUTLINE_SIZE, typeof(float));
+				AddThingProperty(text, "Outline Color", Thing.Property.TEXT_OUTLINE_COLOR, typeof(Color));
+				AddThingProperty(text, "Outline Size", Thing.Property.TEXT_OUTLINE_SIZE, typeof(float));
 			}
-			void AddPropsNinePatch()
+			void AddPropsAudio()
 			{
-				AddThingProperty(ninePatch, "Border Size", Property.NINE_PATCH_BORDER_SIZE, typeof(float));
+				AddThingProperty(audio, "Path", Thing.Property.AUDIO_PATH, typeof(string));
+				AddSpace(audio);
+				AddThingProperty(audio, "Status", Thing.Property.AUDIO_STATUS, typeof(Thing.AudioStatus));
+				AddThingProperty(audio, "Duration", Thing.Property.AUDIO_DURATION, typeof(float), readOnly: true);
+				AddThingProperty(audio, "Progress (Seconds)", Thing.Property.AUDIO_PROGRESS, typeof(float));
+				AddThingProperty(audio, "Progress Unit", Thing.Property.AUDIO_PROGRESS_UNIT, typeof(float), smallNumericStep: true);
+				AddSpace(audio);
+				AddThingProperty(audio, "Volume Unit", Thing.Property.AUDIO_VOLUME_UNIT, typeof(float), smallNumericStep: true);
+				AddThingProperty(audio, "Is Looping", Thing.Property.AUDIO_IS_LOOPING, typeof(bool));
+				AddThingProperty(audio, "Is Global", Thing.Property.AUDIO_IS_GLOBAL, typeof(bool));
+				AddThingProperty(audio, "Pitch Unit", Thing.Property.AUDIO_PITCH_UNIT, typeof(float), smallNumericStep: true);
+				AddThingProperty(audio, "Distance Fade", Thing.Property.AUDIO_FADE, typeof(float));
 			}
 		}
 		private void AddThingProperty(TableLayoutPanel table, string label, string? propName = null, Type? valueType = null, bool readOnly = false,
@@ -294,7 +307,7 @@ namespace SMPLSceneEditor
 			if(valueType != typeof(Button))
 				table.Controls.Add(lab);
 
-			if(propName == Property.THING_HITBOX)
+			if(propName == Thing.Property.THING_HITBOX)
 			{
 				editHitbox = new CheckBox() { Text = "Edit", Dock = DockStyle.Left };
 				lab.TextAlign = ContentAlignment.MiddleRight;
@@ -312,7 +325,7 @@ namespace SMPLSceneEditor
 				lab.TextAlign = ContentAlignment.MiddleRight;
 				lab.Controls.Add(btn);
 			}
-			else if(valueType == typeof(string) && propName != Property.THING_UID && propName.Contains("UID"))
+			else if(valueType == typeof(string) && propName != Thing.Property.THING_UID && propName.Contains("UID"))
 			{
 				var btn = new Button() { Text = "Things", Dock = DockStyle.Left, Width = 80 };
 				btn.Click += PickThingList;
@@ -333,7 +346,7 @@ namespace SMPLSceneEditor
 				lab.TextAlign = ContentAlignment.MiddleRight;
 				lab.Controls.Add(btn);
 			}
-			else if(valueType == typeof(Effect))
+			else if(valueType == typeof(Thing.Effect))
 			{
 				var btn = new Button() { Text = "Uniforms", Dock = DockStyle.Left, Width = 100 };
 				btn.Click += SetUniform;
@@ -358,7 +371,7 @@ namespace SMPLSceneEditor
 
 				if(control.Parent.Name.StartsWith("Scene"))
 				{
-					var cols = nonVisualTypeColors;
+					var cols = typeColors;
 					switch(control.Parent.Name)
 					{
 						case "SceneBackgroundColor": bgCol = C(bgCol); break;
@@ -370,6 +383,7 @@ namespace SMPLSceneEditor
 						case "SceneGridColor": gridCol = C(gridCol); break;
 						case "SceneGrid0Color": gridCol0 = C(gridCol0); break;
 						case "SceneGrid1000Color": gridCol1000 = C(gridCol1000); break;
+						case "SceneAudioColor": cols["Audio"] = C(cols["Light"]); break;
 					}
 
 					TryResetThingPanel();
@@ -411,10 +425,10 @@ namespace SMPLSceneEditor
 			void SetUniform(object? sender, EventArgs e)
 			{
 				var uid = selectedUIDs[0];
-				var effect = (Effect)Thing.Get(uid, Property.VISUAL_EFFECT);
-				if(effect == Effect.None)
+				var effect = (Thing.Effect)Thing.Get(uid, Thing.Property.VISUAL_EFFECT);
+				if(effect == Thing.Effect.None)
 					return;
-				var code = (CodeGLSL)Thing.CallGet(selectedUIDs[0], "GetEffectCode", effect);
+				var code = (Thing.CodeGLSL)Thing.CallGet(selectedUIDs[0], "GetEffectCode", effect);
 				var frag = string.IsNullOrWhiteSpace(code.FragmentUniforms) ? "" : $"- Fragment Uniforms:{code.FragmentUniforms}";
 				var vert = string.IsNullOrWhiteSpace(code.VertexUniforms) ? "" : $"- Vertex Uniforms:{code.VertexUniforms}";
 
@@ -506,7 +520,7 @@ namespace SMPLSceneEditor
 			{
 				var list = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
 				list.DropDown += new EventHandler(OnListThingDropDown);
-				list.SelectedIndexChanged += new EventHandler(OnListSelectThing);
+				list.SelectedIndexChanged += new EventHandler(OnListSelectItem);
 				list.DropDownClosed += new EventHandler(OnListThingDropDownClose);
 				return list;
 			}
@@ -533,7 +547,7 @@ namespace SMPLSceneEditor
 
 			TrySelect();
 
-			Thing.DrawAllVisuals(window);
+			Game.UpdateEngine(window);
 			DrawAllNonVisuals();
 
 			TryDrawSelection();
@@ -549,7 +563,7 @@ namespace SMPLSceneEditor
 				return;
 
 			var uid = selectedUIDs[0];
-			var props = ThingInfo.GetProperties(uid);
+			var props = Thing.Info.GetProperties(uid);
 
 			for(int i = 0; i < props.Count; i++)
 			{
@@ -594,11 +608,13 @@ namespace SMPLSceneEditor
 					control.BackColor = System.Drawing.Color.FromArgb(255, col.R, col.G, col.B);
 				}
 				else if(type == "BlendMode")
-					ProcessEnumList((ComboBox)control, typeof(BlendMode), propName);
+					ProcessEnumList((ComboBox)control, typeof(Thing.BlendMode), propName);
 				else if(type == "Styles")
 					ProcessEnumList((ComboBox)control, typeof(Text.Styles), propName);
 				else if(type == "Effect")
-					ProcessEnumList((ComboBox)control, typeof(Effect), propName);
+					ProcessEnumList((ComboBox)control, typeof(Thing.Effect), propName);
+				else if(type == "AudioStatus")
+					ProcessEnumList((ComboBox)control, typeof(Thing.AudioStatus), propName);
 				else if(type == "Hitbox")
 					SetText((TextBox)control, $"{((Hitbox)Thing.Get(uid, propName)).Lines.Count} Lines", readOnly);
 
@@ -640,13 +656,13 @@ namespace SMPLSceneEditor
 			for(int i = 0; i < uids.Count; i++)
 			{
 				var uid = uids[i];
-				var type = ((ReadOnlyCollection<string>)Thing.Get(uid, Property.THING_TYPES))[0];
+				var type = ((ReadOnlyCollection<string>)Thing.Get(uid, Thing.Property.THING_TYPES))[0];
 
-				if(nonVisualTypeColors.ContainsKey(type) == false)
+				if(typeColors.ContainsKey(type) == false)
 					continue;
 
-				var boundingBox = (Hitbox)Thing.Get(uid, Property.THING_BOUNDING_BOX);
-				boundingBox.Draw(window, nonVisualTypeColors[type], sceneSc * 4);
+				var boundingBox = (Hitbox)Thing.Get(uid, Thing.Property.THING_BOUNDING_BOX);
+				boundingBox.Draw(window, typeColors[type], sceneSc * 4);
 			}
 		}
 		private void ProcessList<T>(ComboBox control, ICollection<T> list)
@@ -671,12 +687,12 @@ namespace SMPLSceneEditor
 		}
 		private void AddHitboxLine(string uid, List<Line> line)
 		{
-			var hitbox = (Hitbox)Thing.Get(uid, Property.THING_HITBOX);
+			var hitbox = (Hitbox)Thing.Get(uid, Thing.Property.THING_HITBOX);
 			for(int i = 0; i < line.Count; i++)
 				hitbox.LocalLines.Add(new Line(Local(line[i].A), Local(line[i].B)));
 			UpdateThingPanel();
 
-			Vector2 Local(Vector2 global) => (Vector2)Thing.CallGet(uid, Method.THING_GET_LOCAL_POSITION_FROM_SELF, global);
+			Vector2 Local(Vector2 global) => (Vector2)Thing.CallGet(uid, Thing.Method.THING_GET_LOCAL_POSITION_FROM_SELF, global);
 		}
 		private void TrySelectThing(string uid)
 		{
@@ -706,12 +722,16 @@ namespace SMPLSceneEditor
 				SetColor("PropSceneBackgroundColor", bgCol);
 				SetColor("PropSceneBoundingBoxColor", bbCol);
 				SetColor("PropSceneSelectColor", selCol);
-				SetColor("PropSceneCameraColor", nonVisualTypeColors["Camera"]);
+				SetColor("PropSceneCameraColor", typeColors["Camera"]);
 				SetColor("PropSceneHitboxColor", hitCol);
-				SetColor("PropSceneLightColor", nonVisualTypeColors["Light"]);
 				SetColor("PropSceneGridColor", gridCol);
 				SetColor("PropSceneGrid0Color", gridCol0);
 				SetColor("PropSceneGrid1000Color", gridCol1000);
+				SetColor("PropSceneLightColor", typeColors["Light"]);
+				SetColor("PropSceneAudioColor", typeColors["Audio"]);
+				SetColor("PropSceneTextColor", typeColors["Text"]);
+				SetColor("PropSceneSpriteColor", typeColors["Sprite"]);
+				SetColor("PropSceneNinePatchColor", typeColors["NinePatch"]);
 
 				void SetColor(string name, Color col)
 				{
@@ -823,7 +843,7 @@ namespace SMPLSceneEditor
 
 			if(editingHitbox)
 			{
-				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Property.THING_HITBOX);
+				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Thing.Property.THING_HITBOX);
 				if(hitbox == null)
 					return;
 
@@ -953,13 +973,13 @@ namespace SMPLSceneEditor
 				return;
 
 			for(int i = 0; i < selectedUIDs.Count; i++)
-				DrawBoundingBox((Hitbox)Thing.Get(selectedUIDs[i], Property.THING_BOUNDING_BOX));
+				DrawBoundingBox((Hitbox)Thing.Get(selectedUIDs[i], Thing.Property.THING_BOUNDING_BOX));
 
 			var ptsA = selectedHitboxPointIndexesA;
 			var ptsB = selectedHitboxPointIndexesB;
 			for(int i = 0; i < selectedUIDs.Count; i++)
 			{
-				var hitbox = (Hitbox)Thing.Get(selectedUIDs[i], Property.THING_HITBOX);
+				var hitbox = (Hitbox)Thing.Get(selectedUIDs[i], Thing.Property.THING_HITBOX);
 				for(int j = 0; j < hitbox.Lines.Count; j++)
 				{
 					var col = ptsA.Contains(j) || ptsB.Contains(j) ? hitboxSelectCol : hitboxDeselectedCol;
@@ -970,7 +990,7 @@ namespace SMPLSceneEditor
 			if(editHitbox == null || editHitbox.Checked == false)
 				return;
 
-			var lines = ((Hitbox)Thing.Get(selectedUIDs[0], Property.THING_HITBOX)).Lines;
+			var lines = ((Hitbox)Thing.Get(selectedUIDs[0], Thing.Property.THING_HITBOX)).Lines;
 			var sz = sceneSc * HITBOX_POINT_EDIT_MAX_DIST;
 
 			for(int j = 0; j < lines.Count; j++)
@@ -1014,7 +1034,7 @@ namespace SMPLSceneEditor
 
 				for(int i = 0; i < selectedUIDs.Count; i++)
 				{
-					var pos = (Vector2)Thing.Get(selectedUIDs[i], Property.THING_POSITION);
+					var pos = (Vector2)Thing.Get(selectedUIDs[i], Thing.Property.THING_POSITION);
 					pos.DrawPoint(window, Color.Red, sceneSc * 4);
 				}
 
@@ -1034,7 +1054,7 @@ namespace SMPLSceneEditor
 			if(editHitbox != null && editHitbox.Checked)
 			{
 				// work on copy lists since removing from the main list changes other indexes in the main list but not the selectedPts lists
-				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Property.THING_HITBOX);
+				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Thing.Property.THING_HITBOX);
 				var lines = new List<Line>(hitbox.LocalLines);
 				var ptsA = new List<int>(selectedHitboxPointIndexesA);
 				var ptsB = new List<int>(selectedHitboxPointIndexesB);
@@ -1060,7 +1080,7 @@ namespace SMPLSceneEditor
 			if(selectedUIDs.Count > 0)
 			{
 				loop.Stop();
-				var result = MessageBox.Show($"Also delete the children of the selected {{Things}}?", "Delete Selection", MessageBoxButtons.YesNoCancel);
+				var result = MessageBox.Show("Also delete the children of the selected Things?", "Delete Selection", MessageBoxButtons.YesNoCancel);
 				loop.Start();
 				var includeChildren = result == DialogResult.Yes;
 				if(result == DialogResult.Cancel)
@@ -1069,7 +1089,7 @@ namespace SMPLSceneEditor
 				var sel = new List<string>(selectedUIDs);
 				for(int i = 0; i < sel.Count; i++)
 				{
-					var uid = selectedUIDs[i];
+					var uid = sel[i];
 
 					selectedUIDs.Remove(uid);
 					Thing.Destroy(uid, includeChildren);
@@ -1108,9 +1128,9 @@ namespace SMPLSceneEditor
 			if(Thing.Exists(uid) == false)
 				return;
 
-			SetViewPosition((Vector2)Thing.Get(uid, Property.THING_POSITION));
+			SetViewPosition((Vector2)Thing.Get(uid, Thing.Property.THING_POSITION));
 
-			var bb = (Hitbox)Thing.Get(uid, Property.THING_BOUNDING_BOX);
+			var bb = (Hitbox)Thing.Get(uid, Thing.Property.THING_BOUNDING_BOX);
 			var dist1 = bb.Lines[0].A.DistanceBetweenPoints(bb.Lines[0].B);
 			var dist2 = bb.Lines[1].A.DistanceBetweenPoints(bb.Lines[1].B);
 			var scale = (dist1 > dist2 ? dist1 : dist2) / window.Size.X * 2f;
@@ -1120,7 +1140,7 @@ namespace SMPLSceneEditor
 		#region Get
 		private static Hitbox? GetBoundingBox(string uid)
 		{
-			return ThingInfo.HasGetter(uid, Property.THING_BOUNDING_BOX) == false ? default : (Hitbox)Thing.Get(uid, Property.THING_BOUNDING_BOX);
+			return Thing.Info.HasGetter(uid, Thing.Property.THING_BOUNDING_BOX) == false ? default : (Hitbox)Thing.Get(uid, Thing.Property.THING_BOUNDING_BOX);
 		}
 		private float GetGridSpacing()
 		{
@@ -1177,7 +1197,9 @@ namespace SMPLSceneEditor
 		private void Save()
 		{
 			scenePath = string.IsNullOrWhiteSpace(save.FileName) ? load.FileName : save.FileName;
+			Loading("Saving Scene...");
 			MainScene.SaveScene(scenePath);
+			Loading("");
 
 			TrackAssets();
 		}
@@ -1225,7 +1247,8 @@ namespace SMPLSceneEditor
 		}
 		private void CopyMirrorFiles(string path)
 		{
-			Thread.Sleep(500);
+			while(FileIsLocked(path))
+				Thread.Sleep(100);
 
 			var targetPath = GetMirrorAssetPath(path);
 			var targetDir = Path.GetDirectoryName(targetPath);
@@ -1271,7 +1294,9 @@ namespace SMPLSceneEditor
 		}
 		private void DeleteFiles(string path)
 		{
-			Thread.Sleep(500);
+			while(FileIsLocked(path))
+				Thread.Sleep(100);
+
 			if(Path.HasExtension(path))
 			{
 				File.Delete(path);
@@ -1393,6 +1418,7 @@ namespace SMPLSceneEditor
 		}
 		private void OnLoadClick(object sender, EventArgs e)
 		{
+			load.InitialDirectory = GetGameDirectory();
 			if(load.ShowDialog(this) != DialogResult.OK)
 				return;
 
@@ -1446,7 +1472,7 @@ namespace SMPLSceneEditor
 
 			if(editingHitbox)
 			{
-				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Property.THING_HITBOX);
+				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Thing.Property.THING_HITBOX);
 
 				for(int i = 0; i < ptsA.Count; i++)
 				{
@@ -1467,9 +1493,9 @@ namespace SMPLSceneEditor
 			for(int i = 0; i < selectedUIDs.Count; i++)
 			{
 				var uid = selectedUIDs[i];
-				var sc = (float)Thing.Get(uid, Property.THING_SCALE);
+				var sc = (float)Thing.Get(uid, Thing.Property.THING_SCALE);
 
-				Thing.Set(uid, Property.THING_SCALE, sc + delta);
+				Thing.Set(uid, Thing.Property.THING_SCALE, sc + delta);
 			}
 
 			UpdateThingPanel();
@@ -1505,8 +1531,8 @@ namespace SMPLSceneEditor
 				else if(editHitboxPts)
 				{
 					var uid = selectedUIDs[0];
-					var hitbox = (Hitbox)Thing.Get(uid, Property.THING_HITBOX);
-					var sc = (float)Thing.Get(uid, Property.THING_SCALE);
+					var hitbox = (Hitbox)Thing.Get(uid, Thing.Property.THING_HITBOX);
+					var sc = (float)Thing.Get(uid, Thing.Property.THING_SCALE);
 
 					if(ptsA.Count == 0 && ptsB.Count == 0)
 						return;
@@ -1545,7 +1571,7 @@ namespace SMPLSceneEditor
 					}
 					else if(editIndex == 1)
 					{
-						var thingPos = (Vector2)Thing.Get(uid, Property.THING_POSITION);
+						var thingPos = (Vector2)Thing.Get(uid, Thing.Property.THING_POSITION);
 						var a = thingPos.AngleBetweenPoints(GetMousePosition());
 						var ang = DragAngle(thingPos, a);
 
@@ -1573,14 +1599,14 @@ namespace SMPLSceneEditor
 					for(int i = 0; i < selectedUIDs.Count; i++)
 					{
 						var uid = selectedUIDs[i];
-						var pos = (Vector2)Thing.Get(uid, Property.THING_POSITION);
-						var ang = (float)Thing.Get(uid, Property.THING_ANGLE);
+						var pos = (Vector2)Thing.Get(uid, Thing.Property.THING_POSITION);
+						var ang = (float)Thing.Get(uid, Thing.Property.THING_ANGLE);
 
 
 						if(editIndex == 0)
-							Thing.Set(uid, Property.THING_POSITION, Drag(pos, false, true));
+							Thing.Set(uid, Thing.Property.THING_POSITION, Drag(pos, false, true));
 						else if(editIndex == 1)
-							Thing.Set(uid, Property.THING_ANGLE, DragAngle(pos, ang));
+							Thing.Set(uid, Thing.Property.THING_ANGLE, DragAngle(pos, ang));
 					}
 
 				Cursor.Current = editCursors[editIndex];
@@ -1625,12 +1651,12 @@ namespace SMPLSceneEditor
 		private void OnSceneRightClickMenuCreateSprite(object sender, EventArgs e)
 		{
 			var uid = Thing.CreateSprite("Sprite", null);
-			Thing.Set(uid, Property.THING_POSITION, rightClickPos);
+			Thing.Set(uid, Thing.Property.THING_POSITION, rightClickPos);
 		}
 		private void OnSceneRightClickMenuCreateLight(object sender, EventArgs e)
 		{
 			var uid = Thing.CreateLight("Light", Color.White);
-			Thing.Set(uid, Property.THING_POSITION, rightClickPos);
+			Thing.Set(uid, Thing.Property.THING_POSITION, rightClickPos);
 		}
 		private void OnSceneRightclickMenuCreateCamera(object sender, EventArgs e)
 		{
@@ -1653,7 +1679,7 @@ namespace SMPLSceneEditor
 			}
 
 			var uid = Thing.CreateCamera("Camera", res);
-			Thing.Set(uid, Property.THING_POSITION, rightClickPos);
+			Thing.Set(uid, Thing.Property.THING_POSITION, rightClickPos);
 
 			string GetInput()
 			{
@@ -1688,20 +1714,17 @@ namespace SMPLSceneEditor
 		{
 			var result = DialogResult.None;
 			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
-			{
 				MessageBox.Show(this, "This Text will be invisible without a Font.\n\n" + NO_ASSETS_MSG, "Create Text");
-				return;
-			}
 			else if(MessageBox.Show(this, "Pick a Font?", "Create Text", MessageBoxButtons.YesNo) == DialogResult.Yes)
 				result = pickAsset.ShowDialog();
 
 			var uid = Thing.CreateText("Text", result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName));
-			Thing.Set(uid, Property.THING_POSITION, rightClickPos);
+			Thing.Set(uid, Thing.Property.THING_POSITION, rightClickPos);
 		}
 		private void OnSceneRightclickMenuCreateNinePatch(object sender, EventArgs e)
 		{
 			var uid = Thing.CreateNinePatch("NinePatch", null);
-			Thing.Set(uid, Property.THING_POSITION, rightClickPos);
+			Thing.Set(uid, Thing.Property.THING_POSITION, rightClickPos);
 		}
 
 		private void OnSceneRightclickMenuCreateHitboxLine(object sender, EventArgs e)
@@ -1738,6 +1761,17 @@ namespace SMPLSceneEditor
 			}
 			AddHitboxLine(uid, lines);
 		}
+		private void OnSceneRightclickMenuCreateHitboxAudio(object sender, EventArgs e)
+		{
+			var result = DialogResult.None;
+			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
+				MessageBox.Show(this, "This Audio will be silent without an Audio file.\n\n" + NO_ASSETS_MSG, "Create Audio");
+			else if(MessageBox.Show(this, "Pick an Audio file?", "Create Audio", MessageBoxButtons.YesNo) == DialogResult.Yes)
+				result = pickAsset.ShowDialog();
+
+			var uid = Thing.CreateAudio("Audio", result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName));
+			Thing.Set(uid, Thing.Property.THING_POSITION, rightClickPos);
+		}
 
 		private void OnSceneRightClickMenuResetView(object sender, EventArgs e)
 		{
@@ -1759,7 +1793,7 @@ namespace SMPLSceneEditor
 		#endregion
 
 		#region EditThingPanel
-		private void OnListSelectThing(object? sender, EventArgs e)
+		private void OnListSelectItem(object? sender, EventArgs e)
 		{
 			if(sender == null)
 				return;
@@ -1787,7 +1821,7 @@ namespace SMPLSceneEditor
 				TryResetThingPanel();
 				UpdateThingPanel();
 			}
-			else if(list.Name == $"Prop{Property.THING_TYPES}")
+			else if(list.Name == $"Prop{Thing.Property.THING_TYPES}")
 			{
 				var table = editThingTableTypes[$"table{list.SelectedItem}"];
 
@@ -1800,20 +1834,25 @@ namespace SMPLSceneEditor
 
 				UpdateThingPanel();
 			}
-			else if(list.Name == $"Prop{Property.VISUAL_BLEND_MODE}")
+			else if(list.Name == $"Prop{Thing.Property.VISUAL_BLEND_MODE}")
 			{
 				var index = list.SelectedIndex;
-				Thing.Set(selectedUIDs[0], Property.VISUAL_BLEND_MODE, (BlendMode)index);
+				Thing.Set(selectedUIDs[0], Thing.Property.VISUAL_BLEND_MODE, (BlendMode)index);
 			}
-			else if(list.Name == $"Prop{Property.VISUAL_EFFECT}")
+			else if(list.Name == $"Prop{Thing.Property.VISUAL_EFFECT}")
 			{
 				var index = list.SelectedIndex;
-				Thing.Set(selectedUIDs[0], Property.VISUAL_EFFECT, (Effect)index);
+				Thing.Set(selectedUIDs[0], Thing.Property.VISUAL_EFFECT, (Thing.Effect)index);
 			}
-			else if(list.Name == $"Prop{Property.TEXT_STYLE}")
+			else if(list.Name == $"Prop{Thing.Property.TEXT_STYLE}")
 			{
 				var index = list.SelectedIndex;
-				Thing.Set(selectedUIDs[0], Property.TEXT_STYLE, (Text.Styles)index);
+				Thing.Set(selectedUIDs[0], Thing.Property.TEXT_STYLE, (Text.Styles)index);
+			}
+			else if(list.Name == $"Prop{Thing.Property.AUDIO_STATUS}")
+			{
+				var index = list.SelectedIndex;
+				Thing.Set(selectedUIDs[0], Thing.Property.AUDIO_STATUS, (Thing.AudioStatus)index);
 			}
 		}
 		private void OnListThingDropDown(object? sender, EventArgs e)
@@ -1856,7 +1895,7 @@ namespace SMPLSceneEditor
 			var propName = textBox.Name["Prop".Length..];
 			var uid = selectedUIDs[0];
 
-			var prop = ThingInfo.GetProperty(uid, propName);
+			var prop = Thing.Info.GetProperty(uid, propName);
 			if(prop.HasSetter)
 				Thing.Set(uid, propName, textBox.Text);
 
@@ -1878,7 +1917,7 @@ namespace SMPLSceneEditor
 			var propName = checkBox.Name["Prop".Length..];
 			var uid = selectedUIDs[0];
 
-			if(propName == Property.THING_HITBOX)
+			if(propName == Thing.Property.THING_HITBOX)
 			{
 
 			}
@@ -1905,20 +1944,24 @@ namespace SMPLSceneEditor
 			var valueFloat = (float)numeric.Value;
 			var valueInt = (int)numeric.Value;
 
-			if(numeric.Parent.Name.StartsWith("Scene"))
+			if(parName.StartsWith("PropScene"))
 			{
-				var cols = nonVisualTypeColors;
-				switch(numeric.Parent.Name)
+				var cols = typeColors;
+				switch(parName)
 				{
-					case "SceneBackgroundColor": bgCol = SetColor(bgCol); break;
-					case "SceneBoundingBoxColor": bbCol = SetColor(bbCol); break;
-					case "SceneSelectColor": selCol = SetColor(selCol); break;
-					case "SceneCameraColor": cols["Camera"] = SetColor(cols["Camera"]); break;
-					case "SceneHitboxColor": hitCol = SetColor(hitCol); break;
-					case "SceneLightColor": cols["Light"] = SetColor(cols["Light"]); break;
-					case "SceneGridColor": gridCol = SetColor(gridCol); break;
-					case "SceneGrid0Color": gridCol0 = SetColor(gridCol0); break;
-					case "SceneGrid1000Color": gridCol1000 = SetColor(gridCol1000); break;
+					case "PropSceneBackgroundColor": bgCol = SetColor(bgCol); break;
+					case "PropSceneBoundingBoxColor": bbCol = SetColor(bbCol); break;
+					case "PropSceneGridColor": gridCol = SetColor(gridCol); break;
+					case "PropSceneGrid0Color": gridCol0 = SetColor(gridCol0); break;
+					case "PropSceneGrid1000Color": gridCol1000 = SetColor(gridCol1000); break;
+					case "PropSceneSelectColor": selCol = SetColor(selCol); break;
+					case "PropSceneCameraColor": cols["Camera"] = SetColor(cols["Camera"]); break;
+					case "PropSceneHitboxColor": hitCol = SetColor(hitCol); break;
+					case "PropSceneLightColor": cols["Light"] = SetColor(cols["Light"]); break;
+					case "PropSceneAudioColor": cols["Audio"] = SetColor(cols["Audio"]); break;
+					case "PropSceneTextColor": cols["Text"] = SetColor(cols["Text"]); break;
+					case "PropSceneSpriteColor": cols["Sprite"] = SetColor(cols["Sprite"]); break;
+					case "PropSceneNinePatchColor": cols["NinePatch"] = SetColor(cols["NinePatch"]); break;
 				}
 
 				TryResetThingPanel();
@@ -1939,7 +1982,7 @@ namespace SMPLSceneEditor
 			}
 
 			var uid = selectedUIDs[0];
-			var propType = ThingInfo.GetProperty(uid, propName).Type;
+			var propType = Thing.Info.GetProperty(uid, propName).Type;
 
 			if(propType == "Vector2")
 			{
@@ -1981,10 +2024,9 @@ namespace SMPLSceneEditor
 		#region Assets
 		private void OnAssetRename(object sender, RenamedEventArgs e)
 		{
+			MainScene.UnloadAsset(GetMirrorAssetPath(e.OldFullPath));
 			DeleteMirrorFiles(e.OldFullPath);
 			CopyMirrorFiles(e.FullPath);
-
-			MainScene.UnloadAsset(GetMirrorAssetPath(e.OldFullPath));
 			MainScene.LoadAsset(GetMirrorAssetPath(e.FullPath));
 		}
 		private void OnAssetCreate(object sender, FileSystemEventArgs e)
@@ -2016,10 +2058,14 @@ namespace SMPLSceneEditor
 				return;
 			}
 			else if(result == DialogResult.Yes)
-			{
-				DeleteCache();
 				TrySave();
-			}
+
+			selectedUIDs.Clear();
+			Loading("Deleting cached assets...");
+			Thing.DestroyAll();
+			MainScene.UnloadAssets();
+			DeleteCache();
+			Loading("");
 		}
 		#endregion
 

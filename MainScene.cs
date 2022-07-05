@@ -10,6 +10,10 @@
 		{
 			((MainScene)CurrentScene).UnloadAssets(path);
 		}
+		public static void UnloadAssets()
+		{
+			((MainScene)CurrentScene).UnloadAllAssets();
+		}
 		public static bool SaveScene(string path)
 		{
 			return ((MainScene)CurrentScene).Save(path);
