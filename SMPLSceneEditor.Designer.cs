@@ -30,9 +30,11 @@
 		{
 			this.components = new System.ComponentModel.Container();
 			this.windowSplit = new System.Windows.Forms.SplitContainer();
+			this.loading = new System.Windows.Forms.Label();
 			this.sceneValues = new System.Windows.Forms.Label();
 			this.sceneStatusPanel = new System.Windows.Forms.Panel();
 			this.sceneGroup = new System.Windows.Forms.GroupBox();
+			this.saveAsButton = new System.Windows.Forms.Button();
 			this.saveButton = new System.Windows.Forms.Button();
 			this.loadButton = new System.Windows.Forms.Button();
 			this.searchBox = new System.Windows.Forms.GroupBox();
@@ -70,7 +72,6 @@
 			this.sceneRightClickMenuHitboxResetView = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuDeselectAll = new System.Windows.Forms.ToolStripMenuItem();
 			this.save = new System.Windows.Forms.SaveFileDialog();
-			this.saveAsButton = new System.Windows.Forms.Button();
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).BeginInit();
 			this.windowSplit.Panel1.SuspendLayout();
 			this.windowSplit.Panel2.SuspendLayout();
@@ -98,6 +99,7 @@
 			// 
 			// windowSplit.Panel1
 			// 
+			this.windowSplit.Panel1.Controls.Add(this.loading);
 			this.windowSplit.Panel1.Controls.Add(this.sceneValues);
 			this.windowSplit.Panel1.Controls.Add(this.sceneStatusPanel);
 			this.windowSplit.Panel1.Controls.Add(this.windowPicture);
@@ -109,6 +111,20 @@
 			this.windowSplit.SplitterDistance = 1205;
 			this.windowSplit.TabIndex = 0;
 			this.windowSplit.TabStop = false;
+			// 
+			// loading
+			// 
+			this.loading.BackColor = System.Drawing.Color.Transparent;
+			this.loading.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.loading.Font = new System.Drawing.Font("Segoe UI", 36F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.loading.ForeColor = System.Drawing.Color.White;
+			this.loading.Location = new System.Drawing.Point(0, 58);
+			this.loading.Name = "loading";
+			this.loading.Size = new System.Drawing.Size(1201, 699);
+			this.loading.TabIndex = 6;
+			this.loading.Text = "Loading...";
+			this.loading.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+			this.loading.Visible = false;
 			// 
 			// sceneValues
 			// 
@@ -147,6 +163,21 @@
 			this.sceneGroup.TabIndex = 10;
 			this.sceneGroup.TabStop = false;
 			this.sceneGroup.Text = "Scene";
+			// 
+			// saveAsButton
+			// 
+			this.saveAsButton.BackColor = System.Drawing.Color.Black;
+			this.saveAsButton.Dock = System.Windows.Forms.DockStyle.Right;
+			this.saveAsButton.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.saveAsButton.ForeColor = System.Drawing.Color.White;
+			this.saveAsButton.Location = new System.Drawing.Point(3, 19);
+			this.saveAsButton.Name = "saveAsButton";
+			this.saveAsButton.Size = new System.Drawing.Size(77, 32);
+			this.saveAsButton.TabIndex = 9;
+			this.saveAsButton.TabStop = false;
+			this.saveAsButton.Text = "Save As";
+			this.saveAsButton.UseVisualStyleBackColor = false;
+			this.saveAsButton.Click += new System.EventHandler(this.OnSaveAsClick);
 			// 
 			// saveButton
 			// 
@@ -524,21 +555,6 @@
 			this.save.Filter = "Scene|*.scene";
 			this.save.Title = "Save Scene";
 			// 
-			// saveAsButton
-			// 
-			this.saveAsButton.BackColor = System.Drawing.Color.Black;
-			this.saveAsButton.Dock = System.Windows.Forms.DockStyle.Right;
-			this.saveAsButton.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.saveAsButton.ForeColor = System.Drawing.Color.White;
-			this.saveAsButton.Location = new System.Drawing.Point(3, 19);
-			this.saveAsButton.Name = "saveAsButton";
-			this.saveAsButton.Size = new System.Drawing.Size(77, 32);
-			this.saveAsButton.TabIndex = 9;
-			this.saveAsButton.TabStop = false;
-			this.saveAsButton.Text = "Save As";
-			this.saveAsButton.UseVisualStyleBackColor = false;
-			this.saveAsButton.Click += new System.EventHandler(this.OnSaveAsClick);
-			// 
 			// FormWindow
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -620,5 +636,6 @@
 		private ToolStripMenuItem sceneRightClickMenuCreateNinePatch;
 		private SaveFileDialog save;
 		private Button saveAsButton;
+		private Label loading;
 	}
 }

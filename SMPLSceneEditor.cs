@@ -18,7 +18,9 @@ namespace SMPLSceneEditor
 		private const string NO_ASSETS_MSG = "In order to use Assets, save this Scene or load another.\n\n" +
 			"Upon doing that, a Scene file, alongside an Asset folder will be present in the provided game directory. " +
 			"Fill that folder with Assets and come back here again.";
+		private const string LOADING_ASSETS = "Processing assets...", LOADING_SCENE = "Loading Scene...";
 		private const float HITBOX_POINT_EDIT_MAX_DIST = 20;
+
 		private CheckBox? editHitbox;
 		private Control? waitingPickThingControl;
 		private readonly System.Windows.Forms.Timer loop;
@@ -30,8 +32,8 @@ namespace SMPLSceneEditor
 		private readonly List<string> selectedUIDs = new();
 		private readonly List<int> selectedHitboxPointIndexesA = new(), selectedHitboxPointIndexesB = new();
 		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
-		private readonly FileSystemWatcher assetsWatcher, assetsFolderWatcher;
-		private string pickThingProperty = "", scenePath = "";
+		private FileSystemWatcher? assetsWatcher, assetsFolderWatcher;
+		private string pickThingProperty = "", scenePath = "", loadingDescr = "";
 		private readonly Dictionary<string, TableLayoutPanel> editThingTableTypes = new();
 		private readonly Dictionary<string, string> listBoxPlaceholderTexts = new()
 		{
@@ -62,6 +64,8 @@ namespace SMPLSceneEditor
 			window.SetVerticalSyncEnabled(false);
 			windowPicture.MouseWheel += OnSceneScroll;
 
+			loading.Parent = this;
+
 			loop = new() { Interval = 1 };
 			loop.Tick += OnUpdate;
 			loop.Start();
@@ -71,21 +75,13 @@ namespace SMPLSceneEditor
 			editSelectionOptions.SelectedIndex = 0;
 			Scene.CurrentScene = new MainScene();
 
-			// these directories are changed upon updating the game dir
-			assetsWatcher = new("C:\\") { EnableRaisingEvents = true };
-			assetsFolderWatcher = new("C:\\") { EnableRaisingEvents = true };
-			assetsFolderWatcher.Renamed += OnAssetFolderRename;
-			assetsWatcher.Deleted += OnAssetDelete;
-			assetsWatcher.Created += OnAssetCreate;
-			assetsWatcher.Renamed += OnAssetRename;
-
 			InitTables();
+			TryResetThingPanel();
 			SetView();
 
 			var desktopRes = Screen.PrimaryScreen.Bounds.Size;
 			Thing.CreateCamera(Scene.MAIN_CAMERA_UID, new(desktopRes.Width, desktopRes.Height));
 		}
-
 		private void InitTables()
 		{
 			var scene = CreateDefaultTable("tableScene");
@@ -519,6 +515,10 @@ namespace SMPLSceneEditor
 		#region Update
 		private void OnUpdate(object? sender, EventArgs e)
 		{
+			loading.Visible = loadingDescr != "";
+			loading.Text = loadingDescr;
+			windowSplit.Visible = loading.Visible == false;
+
 			SMPL.Tools.Time.Update();
 
 			window.Size = new((uint)windowPicture.Width, (uint)windowPicture.Height);
@@ -1172,21 +1172,38 @@ namespace SMPLSceneEditor
 			if(save.ShowDialog(this) != DialogResult.OK)
 				return;
 
-			scenePath = save.FileName;
 			Save();
 		}
 		private void Save()
 		{
-			scenePath = save.FileName;
+			scenePath = string.IsNullOrWhiteSpace(save.FileName) ? load.FileName : save.FileName;
 			MainScene.SaveScene(scenePath);
 
+			TrackAssets();
+		}
+
+		private void TrackAssets()
+		{
 			var assetsPath = GetAssetsPath();
 			Directory.CreateDirectory(assetsPath);
+
+			if(assetsWatcher == null)
+			{
+				assetsWatcher = new(AppContext.BaseDirectory) { EnableRaisingEvents = true, IncludeSubdirectories = true };
+				assetsWatcher.Deleted += OnAssetDelete;
+				assetsWatcher.Created += OnAssetCreate;
+				assetsWatcher.Renamed += OnAssetRename;
+			}
+			if(assetsFolderWatcher == null)
+			{
+				assetsFolderWatcher = new(AppContext.BaseDirectory) { EnableRaisingEvents = true };
+				assetsFolderWatcher.Renamed += OnAssetFolderRename;
+			}
+
 			assetsFolderWatcher.Path = GetGameDirectory();
 			assetsFolderWatcher.Filter = Path.GetFileNameWithoutExtension(assetsPath);
 			assetsWatcher.Path = assetsPath;
 		}
-
 		private string GetAssetsPath()
 		{
 			var sceneName = Path.GetFileNameWithoutExtension(scenePath);
@@ -1208,6 +1225,8 @@ namespace SMPLSceneEditor
 		}
 		private void CopyMirrorFiles(string path)
 		{
+			Thread.Sleep(500);
+
 			var targetPath = GetMirrorAssetPath(path);
 			var targetDir = Path.GetDirectoryName(targetPath);
 
@@ -1216,15 +1235,16 @@ namespace SMPLSceneEditor
 
 			if(Path.HasExtension(path))
 			{
-				if(File.Exists(targetPath) && IsFileLocked(targetPath) == false)
+				if(File.Exists(targetPath) && FileIsLocked(targetPath) == false)
 					File.Delete(targetPath);
 
-				if(File.Exists(path))
+				if(File.Exists(path) && File.Exists(targetPath) == false)
 					File.Copy(path, targetPath);
 				return;
 			}
 
 			Directory.CreateDirectory(targetPath);
+			Directory.CreateDirectory(path);
 
 			var dirs = Directory.GetDirectories(path);
 			var files = Directory.GetFiles(path);
@@ -1251,6 +1271,7 @@ namespace SMPLSceneEditor
 		}
 		private void DeleteFiles(string path)
 		{
+			Thread.Sleep(500);
 			if(Path.HasExtension(path))
 			{
 				File.Delete(path);
@@ -1273,6 +1294,43 @@ namespace SMPLSceneEditor
 			for(int i = 0; i < dirs.Length; i++)
 				if(Path.GetFileName(dirs[i]) != "runtimes")
 					DeleteFiles(dirs[i]);
+		}
+		private static bool FileIsLocked(string file)
+		{
+			try
+			{
+				if(File.Exists(file) == false)
+					return false;
+				if(Path.HasExtension(file) == false)
+				{
+					var dirs = Directory.GetDirectories(file);
+					var files = Directory.GetFiles(file);
+
+					for(int i = 0; i < dirs.Length; i++)
+						if(FileIsLocked(dirs[i]))
+							return true;
+
+					for(int i = 0; i < files.Length; i++)
+						if(FileIsLocked(files[i]))
+							return true;
+
+					return false;
+				}
+
+				using var stream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.None);
+				stream.Close();
+			}
+			catch(Exception)
+			{
+				//the file is unavailable because it is:
+				//still being written to
+				//or being processed by another thread
+				//or does not exist (has already been processed)
+				return true;
+			}
+
+			//file is not locked
+			return false;
 		}
 		#endregion
 		#region Scene
@@ -1344,7 +1402,9 @@ namespace SMPLSceneEditor
 			scenePath = load.FileName;
 			var assetsPath = GetAssetsPath();
 
+			Loading(LOADING_ASSETS);
 			CopyMirrorFiles(assetsPath);
+			Loading(LOADING_SCENE);
 			Thing.DestroyAll();
 
 			var scene = Scene.Load<MainScene>(load.FileName);
@@ -1357,12 +1417,11 @@ namespace SMPLSceneEditor
 			Scene.CurrentScene = scene;
 			MainScene.LoadAsset(GetMirrorAssetPath(assetsPath));
 
-			assetsFolderWatcher.Filter = Path.GetFileNameWithoutExtension(assetsPath);
-			assetsFolderWatcher.Path = GetGameDirectory();
-			assetsWatcher.Path = assetsPath;
+			TrackAssets();
 
 			selectedUIDs.Clear();
 			SetView();
+			Loading();
 		}
 		private void OnSceneScroll(object? sender, MouseEventArgs e)
 		{
@@ -1827,6 +1886,7 @@ namespace SMPLSceneEditor
 				Thing.Set(uid, propName, checkBox.Checked);
 			UpdateThingPanel();
 		}
+
 		private void OnNumericChange(object? sender, EventArgs e)
 		{
 			if(sender == null || ((Control)sender).Focused == false) // ignore if it isn't the user changing the value
@@ -1929,16 +1989,17 @@ namespace SMPLSceneEditor
 		}
 		private void OnAssetCreate(object sender, FileSystemEventArgs e)
 		{
-			// bigger files need time to be created/copied/moved, this event triggers before the file is fully there, this prevents that
-			while(IsFileLocked(e.FullPath)) { }
-
+			Loading(LOADING_ASSETS);
 			CopyMirrorFiles(e.FullPath);
 			MainScene.LoadAsset(GetMirrorAssetPath(e.FullPath));
+			Loading();
 		}
 		private void OnAssetDelete(object sender, FileSystemEventArgs e)
 		{
-			DeleteMirrorFiles(e.FullPath);
+			Loading(LOADING_ASSETS);
 			MainScene.UnloadAsset(GetMirrorAssetPath(e.FullPath));
+			DeleteMirrorFiles(e.FullPath);
+			Loading();
 		}
 
 		private void OnAssetFolderRename(object sender, RenamedEventArgs e)
@@ -2150,43 +2211,6 @@ namespace SMPLSceneEditor
 			foreach(string item in listBox.Items)
 				list.Add(item);
 		}
-		private static bool IsFileLocked(string file)
-		{
-			try
-			{
-				if(File.Exists(file) == false)
-					return false;
-				if(Path.HasExtension(file) == false)
-				{
-					var dirs = Directory.GetDirectories(file);
-					var files = Directory.GetFiles(file);
-
-					for(int i = 0; i < dirs.Length; i++)
-						if(IsFileLocked(dirs[i]))
-							return true;
-
-					for(int i = 0; i < files.Length; i++)
-						if(IsFileLocked(files[i]))
-							return true;
-
-					return false;
-				}
-
-				using var stream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.None);
-				stream.Close();
-			}
-			catch(Exception)
-			{
-				//the file is unavailable because it is:
-				//still being written to
-				//or being processed by another thread
-				//or does not exist (has already been processed)
-				return true;
-			}
-
-			//file is not locked
-			return false;
-		}
 		private void PickThing(Control control, string property = "")
 		{
 			var uids = Thing.GetUIDs();
@@ -2202,6 +2226,11 @@ namespace SMPLSceneEditor
 			Show();
 
 			void Show() => thingsList.Show(this, control.PointToScreen(new(-thingsList.Width, -control.Height / 2)));
+		}
+		private void Loading(string description = "")
+		{
+			loadingDescr = description;
+			Application.DoEvents();
 		}
 		#endregion
 	}
