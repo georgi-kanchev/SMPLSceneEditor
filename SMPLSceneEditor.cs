@@ -94,6 +94,7 @@ namespace SMPLSceneEditor
 			var text = CreateDefaultTable("tableText");
 			var ninePatch = CreateDefaultTable("tableNinePatch");
 			var audio = CreateDefaultTable("tableAudio");
+			var tilemap = CreateDefaultTable("tableTilemap");
 			var types = thingTypesTable;
 
 			types.Hide();
@@ -108,6 +109,7 @@ namespace SMPLSceneEditor
 			AddPropsText();
 			AddThingProperty(ninePatch, "Border Size", Thing.Property.NINE_PATCH_BORDER_SIZE, typeof(float));
 			AddPropsAudio();
+			AddPropsTilemap();
 
 			editThingTableTypes[scene.Name] = scene;
 			editThingTableTypes[thing.Name] = thing;
@@ -118,6 +120,7 @@ namespace SMPLSceneEditor
 			editThingTableTypes[text.Name] = text;
 			editThingTableTypes[ninePatch.Name] = ninePatch;
 			editThingTableTypes[audio.Name] = audio;
+			editThingTableTypes[tilemap.Name] = tilemap;
 
 			TableLayoutPanel CreateDefaultTable(string name)
 			{
@@ -243,6 +246,11 @@ namespace SMPLSceneEditor
 				AddThingProperty(audio, "Is Global", Thing.Property.AUDIO_IS_GLOBAL, typeof(bool));
 				AddThingProperty(audio, "Pitch Unit", Thing.Property.AUDIO_PITCH_UNIT, typeof(float), smallNumericStep: true);
 				AddThingProperty(audio, "Distance Fade", Thing.Property.AUDIO_FADE, typeof(float));
+			}
+			void AddPropsTilemap()
+			{
+				AddThingProperty(tilemap, "Tile Size", Thing.Property.TILEMAP_TILE_SIZE, typeof(Vector2));
+				AddThingProperty(tilemap, "Tile Gap", Thing.Property.TILEMAP_TILE_GAP, typeof(Vector2));
 			}
 		}
 		private void AddThingProperty(TableLayoutPanel table, string label, string? propName = null, Type? valueType = null, bool readOnly = false,
@@ -1726,6 +1734,28 @@ namespace SMPLSceneEditor
 			var uid = Thing.CreateNinePatch("NinePatch", null);
 			Thing.Set(uid, Thing.Property.THING_POSITION, rightClickPos);
 		}
+		private void OnSceneRightclickMenuCreateTilemap(object sender, EventArgs e)
+		{
+			var uid = Thing.CreateTilemap("Tilemap", null);
+			Thing.Set(uid, Thing.Property.THING_POSITION, rightClickPos);
+
+			var palette = (List<Thing.Tile>)Thing.Get(uid, "TilePalette");
+			palette.Add(new(new(5, 13)));
+			Thing.CallVoid(uid, "SetTile", new Vector2(), 0);
+			Thing.CallVoid(uid, "SetTile", new Vector2(6, 12), 0);
+			Thing.CallVoid(uid, "RemoveTiles", new Vector2());
+		}
+		private void OnSceneRightclickMenuCreateAudio(object sender, EventArgs e)
+		{
+			var result = DialogResult.None;
+			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
+				MessageBox.Show(this, "This Audio will be silent without an Audio file.\n\n" + NO_ASSETS_MSG, "Create Audio");
+			else if(MessageBox.Show(this, "Pick an Audio file?", "Create Audio", MessageBoxButtons.YesNo) == DialogResult.Yes)
+				result = pickAsset.ShowDialog();
+
+			var uid = Thing.CreateAudio("Audio", result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName));
+			Thing.Set(uid, Thing.Property.THING_POSITION, rightClickPos);
+		}
 
 		private void OnSceneRightclickMenuCreateHitboxLine(object sender, EventArgs e)
 		{
@@ -1760,17 +1790,6 @@ namespace SMPLSceneEditor
 				lines.Add(new(p, p1));
 			}
 			AddHitboxLine(uid, lines);
-		}
-		private void OnSceneRightclickMenuCreateHitboxAudio(object sender, EventArgs e)
-		{
-			var result = DialogResult.None;
-			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
-				MessageBox.Show(this, "This Audio will be silent without an Audio file.\n\n" + NO_ASSETS_MSG, "Create Audio");
-			else if(MessageBox.Show(this, "Pick an Audio file?", "Create Audio", MessageBoxButtons.YesNo) == DialogResult.Yes)
-				result = pickAsset.ShowDialog();
-
-			var uid = Thing.CreateAudio("Audio", result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName));
-			Thing.Set(uid, Thing.Property.THING_POSITION, rightClickPos);
 		}
 
 		private void OnSceneRightClickMenuResetView(object sender, EventArgs e)
@@ -1925,7 +1944,6 @@ namespace SMPLSceneEditor
 				Thing.Set(uid, propName, checkBox.Checked);
 			UpdateThingPanel();
 		}
-
 		private void OnNumericChange(object? sender, EventArgs e)
 		{
 			if(sender == null || ((Control)sender).Focused == false) // ignore if it isn't the user changing the value
