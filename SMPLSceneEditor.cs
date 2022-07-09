@@ -20,7 +20,7 @@ namespace SMPLSceneEditor
 		private const string LOADING_ASSETS = "Processing assets...", LOADING_SCENE = "Loading Scene...";
 		private const float HITBOX_POINT_EDIT_MAX_DIST = 20;
 
-		private CheckBox? editHitbox;
+		private CheckBox? editHitbox, paintTile;
 		private Control? waitingPickThingControl;
 		private readonly System.Windows.Forms.Timer loop;
 		private readonly RenderWindow window;
@@ -48,6 +48,7 @@ namespace SMPLSceneEditor
 			{ "Text", new(150, 150, 150) },
 			{ "Sprite", Color.White },
 			{ "NinePatch", Color.White },
+			{ "Tilemap", new(100, 60, 20) },
 		};
 
 		private Color bgCol = Color.Black, bbCol = Color.Cyan, selCol = new(0, 180, 255, 100), hitCol = new(0, 255, 0),
@@ -156,6 +157,7 @@ namespace SMPLSceneEditor
 				AddThingProperty(scene, "Sprite", "SceneSpriteColor", typeof(Color));
 				AddThingProperty(scene, "NinePatch", "SceneNinePatchColor", typeof(Color));
 				AddThingProperty(scene, "Text", "SceneTextColor", typeof(Color));
+				AddThingProperty(scene, "Tilemap", "SceneTilemapColor", typeof(Color));
 				AddThingProperty(scene, "Camera", "SceneCameraColor", typeof(Color));
 				AddThingProperty(scene, "Hitbox", "SceneHitboxColor", typeof(Color));
 				AddThingProperty(scene, "Light", "SceneLightColor", typeof(Color));
@@ -251,10 +253,14 @@ namespace SMPLSceneEditor
 			{
 				AddThingProperty(tilemap, "Tile Size", Thing.Property.TILEMAP_TILE_SIZE, typeof(Vector2));
 				AddThingProperty(tilemap, "Tile Gap", Thing.Property.TILEMAP_TILE_GAP, typeof(Vector2));
+				AddSpace(tilemap);
+				AddThingProperty(tilemap, "Tile Brush", Thing.Property.TILEMAP_TILE_PALETTE, typeof(Dictionary<string, Thing.Tile>));
+				AddThingProperty(tilemap, "Tiles", Thing.Property.TILEMAP_TILE_COUNT, typeof(int), readOnly: true);
 			}
 		}
 		private void AddThingProperty(TableLayoutPanel table, string label, string? propName = null, Type? valueType = null, bool readOnly = false,
-			bool rightLabel = false, bool smallNumericStep = false, bool last = false, float labelSizeOffset = 3, bool thingList = false, bool uniqueList = true)
+			bool rightLabel = false, bool smallNumericStep = false, bool last = false, float labelSizeOffset = 3,
+			bool thingList = false, bool uniqueList = true)
 		{
 			const string FONT = "Segoe UI";
 			const float FONT_SIZE = 12f;
@@ -292,7 +298,8 @@ namespace SMPLSceneEditor
 				prop = new NumericUpDown();
 				SetDefaultNumeric((NumericUpDown)prop, false);
 			}
-			else if(valueType == typeof(List<string>) || valueType.IsEnum || valueType == typeof(ReadOnlyCollection<string>))
+			else if(valueType == typeof(List<string>) || valueType.IsEnum ||
+				valueType == typeof(ReadOnlyCollection<string>) || valueType == typeof(Dictionary<string, Thing.Tile>))
 				prop = CreateList();
 			else if(valueType == typeof(Button))
 				prop = new Button() { Text = label };
@@ -321,6 +328,15 @@ namespace SMPLSceneEditor
 				lab.TextAlign = ContentAlignment.MiddleRight;
 				lab.ForeColor = System.Drawing.Color.White;
 				lab.Controls.Add(editHitbox);
+			}
+
+			if(valueType == typeof(int) && propName == "TileCount")
+			{
+				paintTile = new CheckBox() { Text = "Paint", Dock = DockStyle.Left, Width = 75 };
+				paintTile.CheckedChanged += OnPaintTileCheck;
+				lab.TextAlign = ContentAlignment.MiddleRight;
+				lab.ForeColor = System.Drawing.Color.White;
+				lab.Controls.Add(paintTile);
 			}
 
 			if(propName == null || readOnly)
@@ -361,6 +377,13 @@ namespace SMPLSceneEditor
 				lab.TextAlign = ContentAlignment.MiddleRight;
 				lab.Controls.Add(btn);
 			}
+			else if(valueType == typeof(Dictionary<string, Thing.Tile>))
+			{
+				var btn = new Button() { Text = "Palette", Dock = DockStyle.Left, Width = 80 };
+				btn.Click += EditTilePalette;
+				lab.TextAlign = ContentAlignment.MiddleRight;
+				lab.Controls.Add(btn);
+			}
 
 			void PickThingList(object? sender, EventArgs e)
 			{
@@ -391,7 +414,8 @@ namespace SMPLSceneEditor
 						case "SceneGridColor": gridCol = C(gridCol); break;
 						case "SceneGrid0Color": gridCol0 = C(gridCol0); break;
 						case "SceneGrid1000Color": gridCol1000 = C(gridCol1000); break;
-						case "SceneAudioColor": cols["Audio"] = C(cols["Light"]); break;
+						case "SceneAudioColor": cols["Audio"] = C(cols["Audio"]); break;
+						case "SceneTilemapColor": cols["Tilemap"] = C(cols["Tilemap"]); break;
 					}
 
 					TryResetThingPanel();
@@ -474,6 +498,60 @@ namespace SMPLSceneEditor
 				else
 					MessageBox.Show(this, $"The {effect} uniform was not set due to invalid input.", $"Set {effect} Uniform Failed");
 			}
+			void EditTilePalette(object? sender, EventArgs e)
+			{
+				var sz = new Vector2i(W, H + 60);
+				var window = new Form()
+				{
+					Width = sz.X,
+					Height = sz.Y,
+					FormBorderStyle = FormBorderStyle.FixedToolWindow,
+					BackColor = System.Drawing.Color.Black,
+					ForeColor = System.Drawing.Color.White,
+					StartPosition = FormStartPosition.CenterScreen
+				};
+				var table = new TableLayoutPanel
+				{
+					ColumnCount = 2,
+					RowCount = 4,
+					Dock = DockStyle.Top,
+					Name = "EditTilePalette",
+					CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
+				};
+				var buttonOk = new Button()
+				{
+					Top = table.Height + SPACING_Y / 2,
+					Left = sz.X - BUTTON_W - SPACING_X,
+					Width = BUTTON_W,
+					Height = BUTTON_H,
+					Text = "OK",
+					DialogResult = DialogResult.OK
+				};
+				var textBox = new TextBox()
+				{
+					Left = SPACING_X,
+					Top = table.Height + SPACING_Y / 2,
+					Width = sz.X - BUTTON_W - SPACING_X * 3,
+					Height = TEXTBOX_H,
+					BackColor = System.Drawing.Color.Black,
+					ForeColor = System.Drawing.Color.White,
+				};
+				for(int i = 0; i < 2; i++)
+					table.ColumnStyles.Add(new(SizeType.Percent, 50));
+				for(int i = 0; i < 4; i++)
+					table.RowStyles.Add(new(SizeType.Percent, 100 / 24f));
+
+				window.Controls.Add(table);
+				window.Controls.Add(buttonOk);
+				window.Controls.Add(textBox);
+				window.ShowDialog(this);
+			}
+			void OnPaintTileCheck(object? sender, EventArgs e)
+			{
+				var palette = (Dictionary<string, Thing.Tile>)Thing.Get(selectedUIDs[0], "TilePalette");
+				if(paintTile.Checked && palette.Count == 0)
+					MessageBox.Show(this, "The Tile Palette is empty. Add tiles before painting.", "Paint Tile");
+			}
 
 			void SetDefault(Control control, float fontSize = FONT_SIZE, bool reverseColors = false)
 			{
@@ -554,6 +632,7 @@ namespace SMPLSceneEditor
 			UpdateSceneValues();
 
 			TrySelect();
+			TryPaintTile();
 
 			Game.UpdateEngine(window);
 			DrawAllNonVisuals();
@@ -710,54 +789,6 @@ namespace SMPLSceneEditor
 			selectedUIDs.Add(uid);
 			TryResetThingPanel();
 		}
-
-		private void TryResetThingPanel()
-		{
-			if(editHitbox != null && editHitbox.Checked)
-				return;
-
-			var table = editThingTableTypes[selectedUIDs.Count == 1 ? "tableThing" : "tableScene"];
-			if(rightTable.Controls.Contains(table) == false)
-			{
-				rightTable.Controls.Clear();
-				thingTypesTable.Visible = selectedUIDs.Count == 1;
-				rightTable.Controls.Add(thingTypesTable);
-				rightTable.Controls.Add(table, 0, 1);
-			}
-
-			if(selectedUIDs.Count == 0)
-			{
-				SetColor("PropSceneBackgroundColor", bgCol);
-				SetColor("PropSceneBoundingBoxColor", bbCol);
-				SetColor("PropSceneSelectColor", selCol);
-				SetColor("PropSceneCameraColor", typeColors["Camera"]);
-				SetColor("PropSceneHitboxColor", hitCol);
-				SetColor("PropSceneGridColor", gridCol);
-				SetColor("PropSceneGrid0Color", gridCol0);
-				SetColor("PropSceneGrid1000Color", gridCol1000);
-				SetColor("PropSceneLightColor", typeColors["Light"]);
-				SetColor("PropSceneAudioColor", typeColors["Audio"]);
-				SetColor("PropSceneTextColor", typeColors["Text"]);
-				SetColor("PropSceneSpriteColor", typeColors["Sprite"]);
-				SetColor("PropSceneNinePatchColor", typeColors["NinePatch"]);
-
-				void SetColor(string name, Color col)
-				{
-					var table = (TableLayoutPanel)editThingTableTypes["tableScene"].Controls.Find(name, true)[0];
-					SetNumber((NumericUpDown)table.Controls[0], col.R);
-					SetNumber((NumericUpDown)table.Controls[1], col.G);
-					SetNumber((NumericUpDown)table.Controls[2], col.B);
-					SetNumber((NumericUpDown)table.Controls[3], col.A);
-					table.BackColor = System.Drawing.Color.FromArgb(255, col.R, col.G, col.B);
-				}
-				void SetNumber(NumericUpDown number, float value, bool readOnly = false)
-				{
-					number.Enabled = readOnly == false;
-					number.Value = (decimal)value.Limit((float)number.Minimum, (float)number.Maximum);
-				}
-			}
-		}
-
 		private void UpdateSceneValues()
 		{
 			var gridSpacing = GetGridSpacing();
@@ -829,13 +860,73 @@ namespace SMPLSceneEditor
 				return coordinate == 0 || coordinate % 1000 == 0 ? specialCellVerts : cellVerts;
 			}
 		}
+		private void TryPaintTile()
+		{
+			if(paintTile == null || paintTile.Checked == false || selectedUIDs.Count == 0)
+				return;
 
+			var uid = selectedUIDs[0];
+			var tileIndecies = Thing.CallGet(uid, Thing.Method.TILEMAP_GET_TILE_INDECIES, GetMousePosition());
+
+			if(Mouse.IsButtonPressed(Mouse.Button.Left))
+			{
+
+			}
+		}
+		private void TryResetThingPanel()
+		{
+			if((editHitbox != null && editHitbox.Checked) ||
+				(paintTile != null && paintTile.Checked))
+				return;
+
+			var table = editThingTableTypes[selectedUIDs.Count == 1 ? "tableThing" : "tableScene"];
+			if(rightTable.Controls.Contains(table) == false)
+			{
+				rightTable.Controls.Clear();
+				thingTypesTable.Visible = selectedUIDs.Count == 1;
+				rightTable.Controls.Add(thingTypesTable);
+				rightTable.Controls.Add(table, 0, 1);
+			}
+
+			if(selectedUIDs.Count == 0)
+			{
+				SetColor("PropSceneBackgroundColor", bgCol);
+				SetColor("PropSceneBoundingBoxColor", bbCol);
+				SetColor("PropSceneSelectColor", selCol);
+				SetColor("PropSceneCameraColor", typeColors["Camera"]);
+				SetColor("PropSceneHitboxColor", hitCol);
+				SetColor("PropSceneGridColor", gridCol);
+				SetColor("PropSceneGrid0Color", gridCol0);
+				SetColor("PropSceneGrid1000Color", gridCol1000);
+				SetColor("PropSceneLightColor", typeColors["Light"]);
+				SetColor("PropSceneAudioColor", typeColors["Audio"]);
+				SetColor("PropSceneTextColor", typeColors["Text"]);
+				SetColor("PropSceneSpriteColor", typeColors["Sprite"]);
+				SetColor("PropSceneNinePatchColor", typeColors["NinePatch"]);
+				SetColor("PropSceneTilemapColor", typeColors["Tilemap"]);
+
+				void SetColor(string name, Color col)
+				{
+					var table = (TableLayoutPanel)editThingTableTypes["tableScene"].Controls.Find(name, true)[0];
+					SetNumber((NumericUpDown)table.Controls[0], col.R);
+					SetNumber((NumericUpDown)table.Controls[1], col.G);
+					SetNumber((NumericUpDown)table.Controls[2], col.B);
+					SetNumber((NumericUpDown)table.Controls[3], col.A);
+					table.BackColor = System.Drawing.Color.FromArgb(255, col.R, col.G, col.B);
+				}
+				void SetNumber(NumericUpDown number, float value, bool readOnly = false)
+				{
+					number.Enabled = readOnly == false;
+					number.Value = (decimal)value.Limit((float)number.Minimum, (float)number.Maximum);
+				}
+			}
+		}
 		private void TrySelect()
 		{
 			var left = Mouse.IsButtonPressed(Mouse.Button.Left);
 			var click = left.Once("leftClick");
 
-			if(isHoveringScene == false)
+			if(isHoveringScene == false || (paintTile != null && paintTile.Checked))
 				return;
 
 			var mousePos = GetMousePosition();
@@ -968,6 +1059,9 @@ namespace SMPLSceneEditor
 		}
 		private void TryDrawSelection()
 		{
+			if(paintTile != null && paintTile.Checked)
+				return;
+
 			var hitboxSelectCol = hitCol;
 			var r = hitCol.R / 2;
 			var g = hitCol.G / 2;
@@ -1051,7 +1145,7 @@ namespace SMPLSceneEditor
 		}
 		private void TryDestroy()
 		{
-			if(ActiveForm != this)
+			if(ActiveForm != this || (paintTile != null && paintTile.Checked))
 				return;
 
 			var delClick = Keyboard.IsKeyPressed(Keyboard.Key.Delete).Once("delete-selected-objects");
@@ -1369,7 +1463,8 @@ namespace SMPLSceneEditor
 		#region Scene
 		private void OnKeyDownObjectSearch(object sender, System.Windows.Forms.KeyEventArgs e)
 		{
-			if(e.KeyCode != Keys.Return || string.IsNullOrWhiteSpace(searchScene.Text) || (editHitbox != null && editHitbox.Checked))
+			if(e.KeyCode != Keys.Return || string.IsNullOrWhiteSpace(searchScene.Text) || (editHitbox != null && editHitbox.Checked) ||
+				(paintTile != null && paintTile.Checked))
 				return;
 
 			var prio = 0;
@@ -1467,7 +1562,8 @@ namespace SMPLSceneEditor
 			var ptsA = selectedHitboxPointIndexesA;
 			var ptsB = selectedHitboxPointIndexesB;
 
-			if(selectedUIDs.Count == 0 || (editingHitbox && ptsA.Count == 0 && ptsB.Count == 0))
+			if(selectedUIDs.Count == 0 || (editingHitbox && ptsA.Count == 0 && ptsB.Count == 0) ||
+				(paintTile != null && paintTile.Checked))
 			{
 				if(delta < 0)
 				{
@@ -1477,7 +1573,6 @@ namespace SMPLSceneEditor
 				SetViewScale(sceneSc + delta);
 				return;
 			}
-
 			if(editingHitbox)
 			{
 				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Thing.Property.THING_HITBOX);
@@ -1496,8 +1591,6 @@ namespace SMPLSceneEditor
 				}
 				return;
 			}
-
-
 			for(int i = 0; i < selectedUIDs.Count; i++)
 			{
 				var uid = selectedUIDs[i];
@@ -1526,7 +1619,8 @@ namespace SMPLSceneEditor
 				var ptsA = selectedHitboxPointIndexesA;
 				var ptsB = selectedHitboxPointIndexesB;
 
-				if(selectedUIDs.Count == 0 || (editHitboxPts && ptsA.Count == 0 && ptsB.Count == 0))
+				if(selectedUIDs.Count == 0 || (editHitboxPts && ptsA.Count == 0 && ptsB.Count == 0) ||
+					(paintTile != null && paintTile.Checked))
 				{
 					var view = window.GetView();
 					var pos = view.Center.ToSystem();
@@ -1647,7 +1741,12 @@ namespace SMPLSceneEditor
 			UpdateThingPanel();
 
 			if(e.Button == MouseButtons.Right)
+			{
 				rightClickPos = GetMousePosition();
+
+				if(paintTile != null && paintTile.Checked)
+					windowPicture.ContextMenuStrip.Hide();
+			}
 
 			if(e.Button != MouseButtons.Left && e.Button != MouseButtons.Right)
 				return;
@@ -1738,12 +1837,6 @@ namespace SMPLSceneEditor
 		{
 			var uid = Thing.CreateTilemap("Tilemap", null);
 			Thing.Set(uid, Thing.Property.THING_POSITION, rightClickPos);
-
-			var palette = (List<Thing.Tile>)Thing.Get(uid, "TilePalette");
-			palette.Add(new(new(5, 13)));
-			Thing.CallVoid(uid, "SetTile", new Vector2(), 0);
-			Thing.CallVoid(uid, "SetTile", new Vector2(6, 12), 0);
-			Thing.CallVoid(uid, "RemoveTiles", new Vector2());
 		}
 		private void OnSceneRightclickMenuCreateAudio(object sender, EventArgs e)
 		{
@@ -1980,6 +2073,7 @@ namespace SMPLSceneEditor
 					case "PropSceneTextColor": cols["Text"] = SetColor(cols["Text"]); break;
 					case "PropSceneSpriteColor": cols["Sprite"] = SetColor(cols["Sprite"]); break;
 					case "PropSceneNinePatchColor": cols["NinePatch"] = SetColor(cols["NinePatch"]); break;
+					case "PropSceneTilemapColor": cols["Tilemap"] = SetColor(cols["Tilemap"]); break;
 				}
 
 				TryResetThingPanel();
