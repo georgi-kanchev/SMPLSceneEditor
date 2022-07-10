@@ -27,7 +27,7 @@ namespace SMPLSceneEditor
 		private float sceneSc = 1f;
 		private int selectDepthIndex;
 		private bool isDragSelecting, isHoveringScene;
-		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos;
+		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos, tilePaintRightClickPos = new Vector2().NaN();
 		private readonly List<string> selectedUIDs = new();
 		private readonly List<int> selectedHitboxPointIndexesA = new(), selectedHitboxPointIndexesB = new();
 		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
@@ -651,7 +651,9 @@ namespace SMPLSceneEditor
 					SetControlNumber((NumericUpDown)size.Controls[1], tile.IndeciesSize.Y);
 
 					textBox.Text = uid;
-					tilePaletteUID = uid;
+
+					if(window.Visible)
+						tilePaletteUID = uid;
 				};
 
 				for(int i = 0; i < 2; i++)
@@ -752,7 +754,6 @@ namespace SMPLSceneEditor
 			UpdateSceneValues();
 
 			TrySelect();
-			TryPaintTile();
 
 			Game.UpdateEngine(window);
 			DrawAllNonVisuals();
@@ -798,7 +799,13 @@ namespace SMPLSceneEditor
 					case "Effect": ProcessEnumList((ComboBox)control, typeof(Thing.Effect), propName); break;
 					case "AudioStatus": ProcessEnumList((ComboBox)control, typeof(Thing.AudioStatus), propName); break;
 					case "Hitbox": SetText((TextBox)control, $"{((Hitbox)Thing.Get(uid, propName)).Lines.Count} Lines", readOnly); break;
-					case "Dictionary<String, Tile>": ProcessList((ComboBox)control, ((Dictionary<string, Thing.Tile>)Thing.Get(uid, Thing.Property.TILEMAP_TILE_PALETTE)).Keys); break;
+					case "Dictionary<String, Tile>":
+						{
+							var prevIndex = ((ComboBox)control).SelectedIndex;
+							ProcessList((ComboBox)control, ((Dictionary<string, Thing.Tile>)Thing.Get(uid, Thing.Property.TILEMAP_TILE_PALETTE)).Keys);
+							((ComboBox)control).SelectedIndex = prevIndex;
+							break;
+						}
 					case "Vector2":
 						{
 							var table = (TableLayoutPanel)control;
@@ -847,7 +854,7 @@ namespace SMPLSceneEditor
 				tick.BackColor = tick.Checked ? System.Drawing.Color.DarkGreen : System.Drawing.Color.DarkRed;
 			}
 		}
-		private void SetControlNumber(NumericUpDown number, float value, bool readOnly = false)
+		private static void SetControlNumber(NumericUpDown number, float value, bool readOnly = false)
 		{
 			number.Enabled = readOnly == false;
 			number.Value = (decimal)value.Limit((float)number.Minimum, (float)number.Maximum);
@@ -983,10 +990,22 @@ namespace SMPLSceneEditor
 
 			var uid = selectedUIDs[0];
 			var tileIndecies = Thing.CallGet(uid, Thing.Method.TILEMAP_GET_TILE_INDECIES, GetMousePosition());
+			var startRightTileInd = Thing.CallGet(uid, Thing.Method.TILEMAP_GET_TILE_INDECIES, tilePaintRightClickPos);
+			var alt = Keyboard.IsKeyPressed(Keyboard.Key.LAlt);
 
 			if(Mouse.IsButtonPressed(Mouse.Button.Left))
 			{
-
+				if(alt)
+					Thing.CallVoid(uid, Thing.Method.TILEMAP_REMOVE_TILES, tileIndecies);
+				else
+					Thing.CallVoid(uid, Thing.Method.TILEMAP_SET_TILE, tileIndecies, tilePaletteUID);
+			}
+			else if(Mouse.IsButtonPressed(Mouse.Button.Right) && tilePaintRightClickPos.IsNaN() == false)
+			{
+				if(alt)
+					Thing.CallVoid(uid, Thing.Method.TILEMAP_REMOVE_TILE_SQUARE, startRightTileInd, tileIndecies);
+				else
+					Thing.CallVoid(uid, Thing.Method.TILEMAP_SET_TILE_SQUARE, startRightTileInd, tileIndecies, tilePaletteUID);
 			}
 		}
 		private void TryResetThingPanel()
@@ -1728,6 +1747,7 @@ namespace SMPLSceneEditor
 		}
 		private void OnMouseMoveScene(object sender, MouseEventArgs e)
 		{
+			var uid = selectedUIDs.Count == 0 ? null : selectedUIDs[0];
 			if(e.Button == MouseButtons.Middle)
 			{
 				var editIndex = editSelectionOptions.SelectedIndex;
@@ -1748,7 +1768,6 @@ namespace SMPLSceneEditor
 				}
 				else if(editHitboxPts)
 				{
-					var uid = selectedUIDs[0];
 					var hitbox = (Hitbox)Thing.Get(uid, Thing.Property.THING_HITBOX);
 					var sc = (float)Thing.Get(uid, Thing.Property.THING_SCALE);
 
@@ -1816,7 +1835,6 @@ namespace SMPLSceneEditor
 				else
 					for(int i = 0; i < selectedUIDs.Count; i++)
 					{
-						var uid = selectedUIDs[i];
 						var pos = (Vector2)Thing.Get(uid, Thing.Property.THING_POSITION);
 						var ang = (float)Thing.Get(uid, Thing.Property.THING_ANGLE);
 
@@ -1834,13 +1852,22 @@ namespace SMPLSceneEditor
 			prevFormsMousePos = GetFormsMousePos();
 			prevMousePos = GetMousePosition();
 			prevFormsMousePosGrid = prevFormsMousePos.PointToGrid(gridSp) + gridSp * 0.5f;
+
+			TryPaintTile();
 		}
 		private void OnMouseDownScene(object sender, MouseEventArgs e)
 		{
 			searchBox.Select();
+			TryPaintTile();
 
 			if(e.Button == MouseButtons.Right)
+			{
+				tilePaintRightClickPos = GetMousePosition();
+
 				windowPicture.ContextMenuStrip = editHitbox != null && editHitbox.Checked ? sceneRightClickMenuHitbox : sceneRightClickMenu;
+				if(paintTile != null && paintTile.Checked)
+					windowPicture.ContextMenuStrip = null;
+			}
 
 			if(e.Button != MouseButtons.Left)
 				return;
@@ -1855,14 +1882,11 @@ namespace SMPLSceneEditor
 				TryResetThingPanel();
 
 			UpdateThingPanel();
+			TryPaintTile();
+			tilePaintRightClickPos = new Vector2().NaN();
 
 			if(e.Button == MouseButtons.Right)
-			{
 				rightClickPos = GetMousePosition();
-
-				if(paintTile != null && paintTile.Checked)
-					windowPicture.ContextMenuStrip.Hide();
-			}
 
 			if(e.Button != MouseButtons.Left && e.Button != MouseButtons.Right)
 				return;
@@ -2082,6 +2106,8 @@ namespace SMPLSceneEditor
 				var index = list.SelectedIndex;
 				Thing.Set(selectedUIDs[0], Thing.Property.AUDIO_STATUS, (Thing.AudioStatus)index);
 			}
+			else if(list.Name == $"Prop{Thing.Property.TILEMAP_TILE_PALETTE}")
+				tilePaletteUID = selectedItem;
 		}
 		private void OnListThingDropDown(object? sender, EventArgs e)
 		{
