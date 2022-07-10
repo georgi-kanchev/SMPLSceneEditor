@@ -21,7 +21,7 @@ namespace SMPLSceneEditor
 		private const float HITBOX_POINT_EDIT_MAX_DIST = 20;
 
 		private CheckBox? editHitbox, paintTile;
-		private Control? waitingPickThingControl;
+		private Control? waitingPickThingControl, tilePaletteCol;
 		private readonly System.Windows.Forms.Timer loop;
 		private readonly RenderWindow window;
 		private float sceneSc = 1f;
@@ -32,7 +32,7 @@ namespace SMPLSceneEditor
 		private readonly List<int> selectedHitboxPointIndexesA = new(), selectedHitboxPointIndexesB = new();
 		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
 		private FileSystemWatcher? assetsWatcher, assetsFolderWatcher;
-		private string pickThingProperty = "", scenePath = "", loadingDescr = "";
+		private string pickThingProperty = "", scenePath = "", loadingDescr = "", tilePaletteUID = "";
 		private readonly Dictionary<string, TableLayoutPanel> editThingTableTypes = new();
 		private readonly Dictionary<string, string> listBoxPlaceholderTexts = new()
 		{
@@ -399,29 +399,44 @@ namespace SMPLSceneEditor
 
 				var c = pickColor.Color;
 				var control = (Control)sender;
+				var parName = control.Parent.Name;
 
-				if(control.Parent.Name.StartsWith("Scene"))
+				if(parName.StartsWith("PropScene"))
 				{
 					var cols = typeColors;
-					switch(control.Parent.Name)
+					switch(parName)
 					{
-						case "SceneBackgroundColor": bgCol = C(bgCol); break;
-						case "SceneBoundingBoxColor": bbCol = C(bbCol); break;
-						case "SceneSelectColor": selCol = C(selCol); break;
-						case "SceneCameraColor": cols["Camera"] = C(cols["Camera"]); break;
-						case "SceneHitboxColor": hitCol = C(hitCol); break;
-						case "SceneLightColor": cols["Light"] = C(cols["Light"]); break;
-						case "SceneGridColor": gridCol = C(gridCol); break;
-						case "SceneGrid0Color": gridCol0 = C(gridCol0); break;
-						case "SceneGrid1000Color": gridCol1000 = C(gridCol1000); break;
-						case "SceneAudioColor": cols["Audio"] = C(cols["Audio"]); break;
-						case "SceneTilemapColor": cols["Tilemap"] = C(cols["Tilemap"]); break;
+						case "PropSceneBackgroundColor": bgCol = C(bgCol); break;
+						case "PropSceneBoundingBoxColor": bbCol = C(bbCol); break;
+						case "PropSceneSelectColor": selCol = C(selCol); break;
+						case "PropSceneCameraColor": cols["Camera"] = C(cols["Camera"]); break;
+						case "PropSceneHitboxColor": hitCol = C(hitCol); break;
+						case "PropSceneLightColor": cols["Light"] = C(cols["Light"]); break;
+						case "PropSceneSpriteColor": cols["Sprite"] = C(cols["Sprite"]); break;
+						case "PropSceneNinePatchColor": cols["NinePatch"] = C(cols["NinePatch"]); break;
+						case "PropSceneGridColor": gridCol = C(gridCol); break;
+						case "PropSceneGrid0Color": gridCol0 = C(gridCol0); break;
+						case "PropSceneGrid1000Color": gridCol1000 = C(gridCol1000); break;
+						case "PropSceneAudioColor": cols["Audio"] = C(cols["Audio"]); break;
+						case "PropSceneTilemapColor": cols["Tilemap"] = C(cols["Tilemap"]); break;
 					}
 
 					TryResetThingPanel();
 					return;
 
 					Color C(Color col) => new(c.R, c.G, c.B, col.A);
+				}
+				else if(parName.StartsWith("PropTilePalette"))
+				{
+					if(tilePaletteCol != null)
+					{
+						SetControlNumber((NumericUpDown)tilePaletteCol.Controls[0], c.R);
+						SetControlNumber((NumericUpDown)tilePaletteCol.Controls[1], c.G);
+						SetControlNumber((NumericUpDown)tilePaletteCol.Controls[2], c.B);
+						SetControlNumber((NumericUpDown)tilePaletteCol.Controls[3], c.A);
+						tilePaletteCol.BackColor = c;
+					}
+					return;
 				}
 
 				var uid = selectedUIDs[0];
@@ -500,9 +515,11 @@ namespace SMPLSceneEditor
 			}
 			void EditTilePalette(object? sender, EventArgs e)
 			{
-				var sz = new Vector2i(W, H + 60);
+				var palette = (Dictionary<string, Thing.Tile>)Thing.Get(selectedUIDs[0], Thing.Property.TILEMAP_TILE_PALETTE);
+				var sz = new Vector2i(W + 120, H + 350);
 				var window = new Form()
 				{
+					Text = "Edit Palette",
 					Width = sz.X,
 					Height = sz.Y,
 					FormBorderStyle = FormBorderStyle.FixedToolWindow,
@@ -510,40 +527,143 @@ namespace SMPLSceneEditor
 					ForeColor = System.Drawing.Color.White,
 					StartPosition = FormStartPosition.CenterScreen
 				};
+				var listBox = new ListBox()
+				{
+					Left = SPACING_X,
+					Top = SPACING_Y,
+					Width = sz.X - SPACING_X * 2,
+					Height = sz.Y / 3,
+					BackColor = System.Drawing.Color.Black,
+					ForeColor = System.Drawing.Color.White
+				};
 				var table = new TableLayoutPanel
 				{
+					Top = listBox.Height + SPACING_Y,
+					Left = SPACING_X,
+					Width = sz.X - SPACING_X * 2,
+					Height = 185,
 					ColumnCount = 2,
 					RowCount = 4,
-					Dock = DockStyle.Top,
-					Name = "EditTilePalette",
-					CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
-				};
-				var buttonOk = new Button()
-				{
-					Top = table.Height + SPACING_Y / 2,
-					Left = sz.X - BUTTON_W - SPACING_X,
-					Width = BUTTON_W,
-					Height = BUTTON_H,
-					Text = "OK",
-					DialogResult = DialogResult.OK
+					Name = "PropTilePalette",
 				};
 				var textBox = new TextBox()
 				{
 					Left = SPACING_X,
-					Top = table.Height + SPACING_Y / 2,
-					Width = sz.X - BUTTON_W - SPACING_X * 3,
+					Top = table.Height + listBox.Height + SPACING_Y * 2,
+					Width = sz.X - BUTTON_W * 2 - SPACING_X * 3,
 					Height = TEXTBOX_H,
 					BackColor = System.Drawing.Color.Black,
 					ForeColor = System.Drawing.Color.White,
 				};
+				var buttonSet = new Button()
+				{
+					Top = table.Height + listBox.Height + SPACING_Y * 2,
+					Left = sz.X - BUTTON_W * 2 - SPACING_X,
+					Width = BUTTON_W,
+					Height = BUTTON_H,
+					Text = "Set",
+				};
+				var buttonRemove = new Button()
+				{
+					Top = table.Height + listBox.Height + SPACING_Y * 2,
+					Left = sz.X - BUTTON_W - SPACING_X,
+					Width = BUTTON_W,
+					Height = BUTTON_H,
+					Text = "Remove",
+				};
+
+				AddThingProperty(table, "Tile", rightLabel: true); AddThingProperty(table, "Properties");
+				AddThingProperty(table, "Indecies Texture Coordinate", "TilePaletteTexCoord", valueType: typeof(Vector2), labelSizeOffset: -1);
+				AddThingProperty(table, "Color", "TilePaletteColor", valueType: typeof(Color));
+				AddThingProperty(table, "Depth", "TilePaletteDepth", valueType: typeof(int));
+				AddThingProperty(table, "Indecies Size", "TilePaletteSize", valueType: typeof(Vector2));
+
+				var texCoord = table.Controls[2];
+				var color = table.Controls[4];
+				var depth = table.Controls[6];
+				var size = table.Controls[8];
+				tilePaletteCol = color;
+
+				color.BackColor = System.Drawing.Color.White;
+				((NumericUpDown)color.Controls[0]).Value = 255;
+				((NumericUpDown)color.Controls[1]).Value = 255;
+				((NumericUpDown)color.Controls[2]).Value = 255;
+				((NumericUpDown)color.Controls[3]).Value = 255;
+				((NumericUpDown)size.Controls[0]).Value = 1;
+				((NumericUpDown)size.Controls[1]).Value = 1;
+
+				foreach(var kvp in palette)
+					listBox.Items.Add(kvp.Key);
+
+				if(palette.Count > 0 && prop != null)
+					listBox.SelectedIndex = ((ComboBox)prop).SelectedIndex;
+
+				window.FormClosed += (sender, e) =>
+				{
+					UpdateThingPanel();
+					if(prop != null)
+						((ComboBox)prop).SelectedIndex = listBox.SelectedIndex;
+				};
+				buttonSet.Click += (sender, e) =>
+				{
+					if(string.IsNullOrWhiteSpace(textBox.Text) != false)
+						return;
+
+					if(listBox.Items.Contains(textBox.Text) == false)
+						listBox.Items.Add(textBox.Text);
+
+					palette[textBox.Text] = new(
+						new((float)((NumericUpDown)texCoord.Controls[0]).Value, (float)((NumericUpDown)texCoord.Controls[1]).Value),
+						(int)((NumericUpDown)depth).Value,
+						(float)((NumericUpDown)size.Controls[0]).Value,
+						(float)((NumericUpDown)size.Controls[1]).Value,
+						(byte)((NumericUpDown)color.Controls[0]).Value,
+						(byte)((NumericUpDown)color.Controls[1]).Value,
+						(byte)((NumericUpDown)color.Controls[2]).Value,
+						(byte)((NumericUpDown)color.Controls[3]).Value);
+					listBox.SelectedItem = textBox.Text;
+				};
+				buttonRemove.Click += (sender, e) =>
+				{
+					palette.Remove((string)listBox.SelectedItem);
+					listBox.Items.Remove(listBox.SelectedItem);
+					listBox.SelectedIndex = listBox.Items.Count == 0 ? -1 : 0;
+				};
+				listBox.SelectedIndexChanged += (sender, e) =>
+				{
+					if(listBox.SelectedIndex == -1)
+						return;
+
+					var uid = (string)listBox.SelectedItem;
+					var tile = palette[uid];
+					var texCoord = table.Controls[2];
+					var color = table.Controls[4];
+					var size = table.Controls[8];
+					SetControlNumber((NumericUpDown)texCoord.Controls[0], tile.IndeciesTexCoord.X);
+					SetControlNumber((NumericUpDown)texCoord.Controls[1], tile.IndeciesTexCoord.Y);
+					SetControlNumber((NumericUpDown)color.Controls[0], tile.Color.R);
+					SetControlNumber((NumericUpDown)color.Controls[1], tile.Color.G);
+					SetControlNumber((NumericUpDown)color.Controls[2], tile.Color.B);
+					SetControlNumber((NumericUpDown)color.Controls[3], tile.Color.A);
+					SetControlNumber((NumericUpDown)depth, tile.Depth);
+					color.BackColor = System.Drawing.Color.FromArgb(255, tile.Color.R, tile.Color.G, tile.Color.B);
+					SetControlNumber((NumericUpDown)size.Controls[0], tile.IndeciesSize.X);
+					SetControlNumber((NumericUpDown)size.Controls[1], tile.IndeciesSize.Y);
+
+					textBox.Text = uid;
+					tilePaletteUID = uid;
+				};
+
 				for(int i = 0; i < 2; i++)
 					table.ColumnStyles.Add(new(SizeType.Percent, 50));
-				for(int i = 0; i < 4; i++)
+				for(int i = 0; i < 5; i++)
 					table.RowStyles.Add(new(SizeType.Percent, 100 / 24f));
 
 				window.Controls.Add(table);
-				window.Controls.Add(buttonOk);
+				window.Controls.Add(listBox);
 				window.Controls.Add(textBox);
+				window.Controls.Add(buttonSet);
+				window.Controls.Add(buttonRemove);
 				window.ShowDialog(this);
 			}
 			void OnPaintTileCheck(object? sender, EventArgs e)
@@ -665,45 +785,40 @@ namespace SMPLSceneEditor
 				var control = c[0];
 				var readOnly = props[i].HasSetter == false;
 
-				if(type == "String")
-					SetText((TextBox)control, (string)Get(), readOnly);
-				else if(type == "Int32")
-					SetNumber((NumericUpDown)control, (int)Get(), readOnly);
-				else if(type == "Boolean")
-					SetTick((CheckBox)control, (bool)Get(), readOnly);
-				else if(type == "Single")
-					SetNumber((NumericUpDown)control, (float)Get(), readOnly);
-				else if(type == "List<String>")
-					ProcessList((ComboBox)control, (List<string>)Thing.Get(uid, propName));
-				else if(type == "ReadOnlyCollection<String>")
-					ProcessList((ComboBox)control, (ReadOnlyCollection<string>)Thing.Get(uid, propName));
-				else if(type == "Vector2")
+				switch(type)
 				{
-					var table = (TableLayoutPanel)control;
-					var vec = (Vector2)Get();
-					SetNumber((NumericUpDown)table.Controls[0], vec.X);
-					SetNumber((NumericUpDown)table.Controls[1], vec.Y);
+					case "String": SetText((TextBox)control, (string)Get(), readOnly); break;
+					case "Int32": SetControlNumber((NumericUpDown)control, (int)Get(), readOnly); break;
+					case "Boolean": SetTick((CheckBox)control, (bool)Get(), readOnly); break;
+					case "Single": SetControlNumber((NumericUpDown)control, (float)Get(), readOnly); break;
+					case "List<String>": ProcessList((ComboBox)control, (List<string>)Thing.Get(uid, propName)); break;
+					case "ReadOnlyCollection<String>": ProcessList((ComboBox)control, (ReadOnlyCollection<string>)Thing.Get(uid, propName)); break;
+					case "BlendMode": ProcessEnumList((ComboBox)control, typeof(Thing.BlendMode), propName); break;
+					case "Styles": ProcessEnumList((ComboBox)control, typeof(Text.Styles), propName); break;
+					case "Effect": ProcessEnumList((ComboBox)control, typeof(Thing.Effect), propName); break;
+					case "AudioStatus": ProcessEnumList((ComboBox)control, typeof(Thing.AudioStatus), propName); break;
+					case "Hitbox": SetText((TextBox)control, $"{((Hitbox)Thing.Get(uid, propName)).Lines.Count} Lines", readOnly); break;
+					case "Dictionary<String, Tile>": ProcessList((ComboBox)control, ((Dictionary<string, Thing.Tile>)Thing.Get(uid, Thing.Property.TILEMAP_TILE_PALETTE)).Keys); break;
+					case "Vector2":
+						{
+							var table = (TableLayoutPanel)control;
+							var vec = (Vector2)Get();
+							SetControlNumber((NumericUpDown)table.Controls[0], vec.X);
+							SetControlNumber((NumericUpDown)table.Controls[1], vec.Y);
+							break;
+						}
+					case "Color":
+						{
+							var table = (TableLayoutPanel)control;
+							var col = (Color)Get();
+							SetControlNumber((NumericUpDown)table.Controls[0], col.R);
+							SetControlNumber((NumericUpDown)table.Controls[1], col.G);
+							SetControlNumber((NumericUpDown)table.Controls[2], col.B);
+							SetControlNumber((NumericUpDown)table.Controls[3], col.A);
+							control.BackColor = System.Drawing.Color.FromArgb(255, col.R, col.G, col.B);
+							break;
+						}
 				}
-				else if(type == "Color")
-				{
-					var table = (TableLayoutPanel)control;
-					var col = (Color)Get();
-					SetNumber((NumericUpDown)table.Controls[0], col.R);
-					SetNumber((NumericUpDown)table.Controls[1], col.G);
-					SetNumber((NumericUpDown)table.Controls[2], col.B);
-					SetNumber((NumericUpDown)table.Controls[3], col.A);
-					control.BackColor = System.Drawing.Color.FromArgb(255, col.R, col.G, col.B);
-				}
-				else if(type == "BlendMode")
-					ProcessEnumList((ComboBox)control, typeof(Thing.BlendMode), propName);
-				else if(type == "Styles")
-					ProcessEnumList((ComboBox)control, typeof(Text.Styles), propName);
-				else if(type == "Effect")
-					ProcessEnumList((ComboBox)control, typeof(Thing.Effect), propName);
-				else if(type == "AudioStatus")
-					ProcessEnumList((ComboBox)control, typeof(Thing.AudioStatus), propName);
-				else if(type == "Hitbox")
-					SetText((TextBox)control, $"{((Hitbox)Thing.Get(uid, propName)).Lines.Count} Lines", readOnly);
 
 				object Get() => Thing.Get(uid, propName);
 			}
@@ -725,11 +840,6 @@ namespace SMPLSceneEditor
 				text.Enabled = readOnly == false;
 				text.Text = value;
 			}
-			void SetNumber(NumericUpDown number, float value, bool readOnly = false)
-			{
-				number.Enabled = readOnly == false;
-				number.Value = (decimal)value.Limit((float)number.Minimum, (float)number.Maximum);
-			}
 			void SetTick(CheckBox tick, bool value, bool readOnly = false)
 			{
 				tick.Enabled = readOnly == false;
@@ -737,6 +847,12 @@ namespace SMPLSceneEditor
 				tick.BackColor = tick.Checked ? System.Drawing.Color.DarkGreen : System.Drawing.Color.DarkRed;
 			}
 		}
+		private void SetControlNumber(NumericUpDown number, float value, bool readOnly = false)
+		{
+			number.Enabled = readOnly == false;
+			number.Value = (decimal)value.Limit((float)number.Minimum, (float)number.Maximum);
+		}
+
 		private void DrawAllNonVisuals()
 		{
 			var uids = Thing.GetUIDs();
@@ -2091,6 +2207,25 @@ namespace SMPLSceneEditor
 						col.A = (byte)valueInt;
 					return col;
 				}
+			}
+
+			if(parName.StartsWith("PropTilePalette"))
+			{
+				if(tilePaletteCol != null)
+				{
+					var r = (NumericUpDown)tilePaletteCol.Controls[0];
+					var g = (NumericUpDown)tilePaletteCol.Controls[1];
+					var b = (NumericUpDown)tilePaletteCol.Controls[2];
+					var a = (NumericUpDown)tilePaletteCol.Controls[3];
+
+					r.Value = ((int)r.Value).Limit(0, 256, Extensions.Limitation.Overflow);
+					g.Value = ((int)g.Value).Limit(0, 256, Extensions.Limitation.Overflow);
+					b.Value = ((int)b.Value).Limit(0, 256, Extensions.Limitation.Overflow);
+					a.Value = ((int)a.Value).Limit(0, 256, Extensions.Limitation.Overflow);
+
+					tilePaletteCol.BackColor = System.Drawing.Color.FromArgb(255, (int)r.Value, (int)g.Value, (int)b.Value);
+				}
+				return;
 			}
 
 			var uid = selectedUIDs[0];
