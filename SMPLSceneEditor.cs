@@ -756,7 +756,7 @@ namespace SMPLSceneEditor
 			TrySelect();
 
 			Game.UpdateEngine(window);
-			DrawAllNonVisuals();
+			TryDrawAllNonVisuals();
 
 			TryDrawSelection();
 
@@ -860,7 +860,7 @@ namespace SMPLSceneEditor
 			number.Value = (decimal)value.Limit((float)number.Minimum, (float)number.Maximum);
 		}
 
-		private void DrawAllNonVisuals()
+		private void TryDrawAllNonVisuals()
 		{
 			var uids = Thing.GetUIDs();
 			for(int i = 0; i < uids.Count; i++)
@@ -868,7 +868,8 @@ namespace SMPLSceneEditor
 				var uid = uids[i];
 				var type = ((ReadOnlyCollection<string>)Thing.Get(uid, Thing.Property.THING_TYPES))[0];
 
-				if(typeColors.ContainsKey(type) == false)
+				if(typeColors.ContainsKey(type) == false ||
+					(type == "Tilemap" && paintTile != null && paintTile.Checked))
 					continue;
 
 				var boundingBox = (Hitbox)Thing.Get(uid, Thing.Property.THING_BOUNDING_BOX);
