@@ -11,7 +11,6 @@ global using SMPL.Tools;
 global using Color = SFML.Graphics.Color;
 global using BlendMode = SMPL.Thing.BlendMode;
 global using Cursor = System.Windows.Forms.Cursor;
-using Time = SMPL.Tools.Time;
 
 namespace SMPLSceneEditor
 {
@@ -1552,9 +1551,12 @@ namespace SMPLSceneEditor
 		}
 		private void DeleteFiles(string path)
 		{
-			var time = Time.Clock;
-			while(FileIsLocked(path) && Time.Clock < time + 4)
+			var time = new Clock();
+			while(FileIsLocked(path) && time.ElapsedTime.AsSeconds() > 3)
 				Thread.Sleep(100);
+
+			if(time.ElapsedTime.AsSeconds() > 3) // takes too long, forget it
+				return;
 
 			if(Path.HasExtension(path))
 			{
