@@ -1446,10 +1446,9 @@ namespace SMPLSceneEditor
 		private void Save()
 		{
 			scenePath = string.IsNullOrWhiteSpace(save.FileName) ? load.FileName : save.FileName;
-			Scene.CurrentScene.Name = Path.GetFileNameWithoutExtension(save.FileName);
+			Scene.CurrentScene.Name = Path.GetFileNameWithoutExtension(scenePath);
 			Loading("Saving Scene...");
 			Scene.CurrentScene.Save(Path.GetDirectoryName(scenePath));
-			Loading("");
 
 			TrackAssets();
 		}
@@ -1552,11 +1551,13 @@ namespace SMPLSceneEditor
 		private void DeleteFiles(string path)
 		{
 			var time = new Clock();
-			while(FileIsLocked(path) && time.ElapsedTime.AsSeconds() > 3)
-				Thread.Sleep(100);
+			while(FileIsLocked(path))
+			{
+				if(time.ElapsedTime.AsSeconds() > 3)
+					return; // takes too long, forget it
 
-			if(time.ElapsedTime.AsSeconds() > 3) // takes too long, forget it
-				return;
+				Thread.Sleep(100);
+			}
 
 			if(Path.HasExtension(path))
 			{
@@ -1572,14 +1573,17 @@ namespace SMPLSceneEditor
 			for(int i = 0; i < files?.Length; i++)
 				DeleteFiles(files[i]);
 
-			Directory.Delete(path);
+			if(Directory.GetFiles(path).Length == 0)
+				Directory.Delete(path);
 		}
 		private void DeleteCache()
 		{
+			Loading("Deleting cached assets...");
 			var dirs = Directory.GetDirectories(AppContext.BaseDirectory);
 			for(int i = 0; i < dirs.Length; i++)
 				if(Path.GetFileName(dirs[i]) != "runtimes")
 					DeleteFiles(dirs[i]);
+			Loading();
 		}
 		private static bool FileIsLocked(string file)
 		{
@@ -2123,7 +2127,7 @@ namespace SMPLSceneEditor
 			else if(list.Name == $"Prop{Thing.Property.TEXT_STYLE}")
 			{
 				var index = list.SelectedIndex;
-				Thing.Set(selectedUIDs[0], Thing.Property.TEXT_STYLE, (Text.Styles)index);
+				Thing.Set(selectedUIDs[0], Thing.Property.TEXT_STYLE, (Text.Styles)(index * 2));
 			}
 			else if(list.Name == $"Prop{Thing.Property.AUDIO_STATUS}")
 			{
@@ -2358,10 +2362,8 @@ namespace SMPLSceneEditor
 				TrySave();
 
 			selectedUIDs.Clear();
-			Loading("Deleting cached assets...");
 			Scene.CurrentScene.UnloadAssets();
 			DeleteCache();
-			Loading("");
 		}
 		#endregion
 
