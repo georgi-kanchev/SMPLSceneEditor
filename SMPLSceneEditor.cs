@@ -230,7 +230,7 @@ namespace SMPLSceneEditor
 				AddThingProperty(text, "Font Path", Thing.Property.TEXT_FONT_PATH, typeof(string));
 				AddThingProperty(text, "Value", Thing.Property.TEXT_VALUE, typeof(string));
 				AddThingProperty(text, "Color", Thing.Property.TEXT_COLOR, typeof(Color));
-				AddThingProperty(text, "Style", Thing.Property.TEXT_STYLE, typeof(Text.Styles));
+				AddThingProperty(text, "Style", Thing.Property.TEXT_STYLE, typeof(Text.Styles), readOnly: true);
 				AddSpace(text);
 				AddThingProperty(text, "Origin Unit", Thing.Property.TEXT_ORIGIN_UNIT, typeof(Vector2));
 				AddThingProperty(text, "Symbol Size", Thing.Property.TEXT_SYMBOL_SIZE, typeof(int));
@@ -284,7 +284,8 @@ namespace SMPLSceneEditor
 				return;
 			}
 
-			if(valueType == typeof(string))
+			var valueTypeIsFlag = valueType.IsDefined(typeof(FlagsAttribute), false);
+			if(valueType == typeof(string) || (valueType.IsEnum && valueTypeIsFlag))
 			{
 				prop = new TextBox();
 				prop.TextChanged += OnTextBoxChange;
@@ -304,7 +305,7 @@ namespace SMPLSceneEditor
 				prop = new NumericUpDown();
 				SetDefaultNumeric((NumericUpDown)prop, false);
 			}
-			else if(valueType == typeof(List<string>) || valueType.IsEnum ||
+			else if(valueType == typeof(List<string>) || (valueType.IsEnum && valueTypeIsFlag == false) ||
 				valueType == typeof(ReadOnlyCollection<string>) || valueType == typeof(Dictionary<string, Thing.Tile>))
 				prop = CreateList();
 			else if(valueType == typeof(Button))
@@ -335,8 +336,7 @@ namespace SMPLSceneEditor
 				lab.ForeColor = System.Drawing.Color.White;
 				lab.Controls.Add(editHitbox);
 			}
-
-			if(valueType == typeof(int) && propName == "TileCount")
+			else if(valueType == typeof(int) && propName == "TileCount")
 			{
 				paintTile = new CheckBox() { Text = "Paint", Dock = DockStyle.Left, Width = 75 };
 				paintTile.CheckedChanged += OnPaintTileCheck;
@@ -344,53 +344,73 @@ namespace SMPLSceneEditor
 				lab.ForeColor = System.Drawing.Color.White;
 				lab.Controls.Add(paintTile);
 			}
+			else if(valueType.IsEnum && valueType.IsDefined(typeof(FlagsAttribute), false))
+			{
+				CreateButton("Options", SelectFlagsEnum, 90);
+				lab.ForeColor = System.Drawing.Color.White;
+			}
 
 			if(propName == null || readOnly)
 				return;
 
 			if(propName.Contains("Path"))
-			{
-				var btn = new Button() { Text = "Assets", Dock = DockStyle.Left };
-				btn.Click += PickAsset;
-				lab.TextAlign = ContentAlignment.MiddleRight;
-				lab.Controls.Add(btn);
-			}
+				CreateButton("Assets", PickAsset);
 			else if(valueType == typeof(string) && propName != Thing.Property.UID && propName.Contains("UID"))
-			{
-				var btn = new Button() { Text = "Things", Dock = DockStyle.Left, Width = 80 };
-				btn.Click += PickThingList;
-				lab.TextAlign = ContentAlignment.MiddleRight;
-				lab.Controls.Add(btn);
-			}
+				CreateButton("Things", PickThingList);
 			else if(valueType == typeof(Color))
-			{
-				var btn = new Button() { Text = "Colors", Dock = DockStyle.Left, Width = 80 };
-				btn.Click += PickColor;
-				lab.TextAlign = ContentAlignment.MiddleRight;
-				lab.Controls.Add(btn);
-			}
+				CreateButton("Colors", PickColor);
 			else if(valueType == typeof(List<string>))
-			{
-				var btn = new Button() { Text = "Items", Dock = DockStyle.Left, Width = 70 };
-				btn.Click += EditTextList;
-				lab.TextAlign = ContentAlignment.MiddleRight;
-				lab.Controls.Add(btn);
-			}
+				CreateButton("Items", EditTextList);
 			else if(valueType == typeof(Thing.Effect))
-			{
-				var btn = new Button() { Text = "Uniforms", Dock = DockStyle.Left, Width = 100 };
-				btn.Click += SetUniform;
-				lab.TextAlign = ContentAlignment.MiddleRight;
-				lab.Controls.Add(btn);
-			}
+				CreateButton("Uniforms", SetUniform, 100);
 			else if(valueType == typeof(Dictionary<string, Thing.Tile>))
+				CreateButton("Palette", EditTilePalette);
+
+			void CreateButton(string text, EventHandler clickMethod, int width = 80)
 			{
-				var btn = new Button() { Text = "Palette", Dock = DockStyle.Left, Width = 80 };
-				btn.Click += EditTilePalette;
+				var btn = new Button() { Text = text, Dock = DockStyle.Left, Width = width };
+				btn.Click += clickMethod;
 				lab.TextAlign = ContentAlignment.MiddleRight;
 				lab.Controls.Add(btn);
 			}
+			void SelectFlagsEnum(object? sender, EventArgs e)
+			{
+				var list = new ListBox()
+				{
+					Left = SPACING_X,
+					Width = W - (int)(SPACING_X * 2.5f),
+					Height = H - SPACING_Y * 2,
+					Top = SPACING_Y,
+					SelectionMode = SelectionMode.MultiSimple
+				};
+				var sz = new Vector2i(W, H);
+				var window = new Form()
+				{
+					Width = sz.X,
+					Height = list.Height + SPACING_Y * 4,
+					FormBorderStyle = FormBorderStyle.FixedToolWindow,
+					Text = "Select One or Multiple Options",
+					BackColor = System.Drawing.Color.Black,
+					ForeColor = System.Drawing.Color.White,
+					StartPosition = FormStartPosition.CenterScreen
+				};
+				window.Controls.Add(list);
 
+				var names = Enum.GetNames(valueType);
+				for(int i = 0; i < names.Length; i++)
+					list.Items.Add(names[i]);
+
+				window.ShowDialog();
+
+				var items = list.SelectedItems;
+				var values = new List<int>();
+				for(int i = 0; i < items.Count; i++)
+					values.Add((int)Enum.Parse(valueType, (string)items[i]));
+				var sum = values.Sum();
+
+				var result = Enum.ToObject(valueType, sum);
+				Thing.Set(selectedUIDs[0], propName, result);
+			}
 			void PickThingList(object? sender, EventArgs e)
 			{
 				if(sender == null)
@@ -806,7 +826,7 @@ namespace SMPLSceneEditor
 					case "List<String>": ProcessList((ComboBox)control, (List<string>)Thing.Get(uid, propName)); break;
 					case "ReadOnlyCollection<String>": ProcessList((ComboBox)control, (ReadOnlyCollection<string>)Thing.Get(uid, propName)); break;
 					case "BlendMode": ProcessEnumList((ComboBox)control, typeof(Thing.BlendMode), propName); break;
-					case "Styles": ProcessEnumList((ComboBox)control, typeof(Text.Styles), propName); break;
+					case "Styles": ProcessEnumFlagList((TextBox)control, typeof(Text.Styles), propName); break;
 					case "Effect": ProcessEnumList((ComboBox)control, typeof(Thing.Effect), propName); break;
 					case "AudioStatus": ProcessEnumList((ComboBox)control, typeof(Thing.AudioStatus), propName); break;
 					case "Hitbox": SetText((TextBox)control, $"{((Hitbox)Thing.Get(uid, propName)).Lines.Count} Lines", readOnly); break;
@@ -852,6 +872,14 @@ namespace SMPLSceneEditor
 					list.Items.Add(names[i]);
 
 				list.SelectedIndex = (int)Thing.Get(uid, propName);
+			}
+			void ProcessEnumFlagList(TextBox count, Type enumType, string propName)
+			{
+				if(enumType.IsEnum == false || enumType.IsDefined(typeof(FlagsAttribute), false) == false)
+					return;
+
+				var names = Enum.GetNames(enumType);
+				count.Text = $"{names.Length} Options";
 			}
 			void SetText(TextBox text, string value, bool readOnly = false)
 			{
