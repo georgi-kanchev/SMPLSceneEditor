@@ -546,7 +546,7 @@ namespace SMPLSceneEditor
 				var window = new Form()
 				{
 					Text = "Edit Palette",
-					Width = sz.X,
+					Width = sz.X * 2,
 					Height = sz.Y,
 					FormBorderStyle = FormBorderStyle.FixedToolWindow,
 					BackColor = System.Drawing.Color.Black,
@@ -567,7 +567,7 @@ namespace SMPLSceneEditor
 					Top = listBox.Height + SPACING_Y,
 					Left = SPACING_X,
 					Width = sz.X - SPACING_X * 2,
-					Height = 185,
+					Height = 155,
 					ColumnCount = 2,
 					RowCount = 4,
 					Name = "PropTilePalette",
@@ -597,17 +597,27 @@ namespace SMPLSceneEditor
 					Height = BUTTON_H,
 					Text = "Remove",
 				};
+				var image = new PictureBox()
+				{
+					Width = window.Size.Width / 2 + SPACING_X * 2,
+					Height = window.Size.Height + SPACING_Y * 2,
+					Top = SPACING_Y,
+					Left = window.Size.Width / 2
+				};
+				var tileWindow = new RenderWindow(image.Handle) { Size = new((uint)sz.X - (uint)(SPACING_X * 1.5f), (uint)sz.Y - SPACING_Y * 4) };
+				var view = tileWindow.GetView();
+				var zoom = 1f;
+				var windowSize = new Vector2(tileWindow.Size.X, tileWindow.Size.Y);
+				tileWindow.MouseWheelScrolled += OnScroll;
 
 				AddThingProperty(table, "Tile", rightLabel: true); AddThingProperty(table, "Properties");
 				AddThingProperty(table, "Indecies Texture Coordinate", "TilePaletteTexCoord", valueType: typeof(Vector2), labelSizeOffset: -1);
 				AddThingProperty(table, "Color", "TilePaletteColor", valueType: typeof(Color));
-				AddThingProperty(table, "Depth", "TilePaletteDepth", valueType: typeof(int));
 				AddThingProperty(table, "Indecies Size", "TilePaletteSize", valueType: typeof(Vector2));
 
 				var texCoord = table.Controls[2];
 				var color = table.Controls[4];
-				var depth = table.Controls[6];
-				var size = table.Controls[8];
+				var size = table.Controls[6];
 				tilePaletteCol = color;
 
 				color.BackColor = System.Drawing.Color.White;
@@ -640,7 +650,6 @@ namespace SMPLSceneEditor
 
 					palette[textBox.Text] = new(
 						new((float)((NumericUpDown)texCoord.Controls[0]).Value, (float)((NumericUpDown)texCoord.Controls[1]).Value),
-						(int)((NumericUpDown)depth).Value,
 						(float)((NumericUpDown)size.Controls[0]).Value,
 						(float)((NumericUpDown)size.Controls[1]).Value,
 						(byte)((NumericUpDown)color.Controls[0]).Value,
@@ -671,7 +680,6 @@ namespace SMPLSceneEditor
 					SetControlNumber((NumericUpDown)color.Controls[1], tile.Color.G);
 					SetControlNumber((NumericUpDown)color.Controls[2], tile.Color.B);
 					SetControlNumber((NumericUpDown)color.Controls[3], tile.Color.A);
-					SetControlNumber((NumericUpDown)depth, tile.Depth);
 					color.BackColor = System.Drawing.Color.FromArgb(255, tile.Color.R, tile.Color.G, tile.Color.B);
 					SetControlNumber((NumericUpDown)size.Controls[0], tile.IndexesSize.X);
 					SetControlNumber((NumericUpDown)size.Controls[1], tile.IndexesSize.Y);
@@ -685,14 +693,64 @@ namespace SMPLSceneEditor
 				for(int i = 0; i < 2; i++)
 					table.ColumnStyles.Add(new(SizeType.Percent, 50));
 				for(int i = 0; i < 5; i++)
-					table.RowStyles.Add(new(SizeType.Percent, 100 / 24f));
+					table.RowStyles.Add(new(SizeType.Percent, 50));
 
-				window.Controls.Add(table);
-				window.Controls.Add(listBox);
-				window.Controls.Add(textBox);
-				window.Controls.Add(buttonSet);
-				window.Controls.Add(buttonRemove);
+				window.Controls.AddRange(new Control[] { table, listBox, textBox, buttonSet, buttonRemove, image });
+
+				var running = true;
+				var thread = new Thread(UpdateWindow) { Name = "TileSelectWindow" };
+				thread.Start();
+
 				window.ShowDialog(this);
+				running = false;
+
+				tileWindow.Close();
+				tileWindow.Dispose();
+
+				void UpdateWindow()
+				{
+					var path = (string)Thing.Get(selectedUIDs[0], Thing.Property.VISUAL_TEXTURE_PATH);
+					if(path == null)
+						return;
+
+					var texture = new Texture(path);
+					var sz = texture.Size;
+					var verts = new Vertex[]
+					{
+						new(new(0, 0), Color.White, new(0, 0)),
+						new(new(sz.X, 0), Color.White, new(sz.X, 0)),
+						new(new(sz.X, sz.Y), Color.White, new(sz.X, sz.Y)),
+						new(new(0, sz.Y), Color.White, new(0, sz.Y)),
+					};
+					var prevMousePos = new Vector2i();
+					while(running)
+					{
+						tileWindow.DispatchEvents();
+						tileWindow.Clear();
+
+						var mousePos = Mouse.GetPosition();
+						if(Mouse.IsButtonPressed(Mouse.Button.Middle))
+						{
+							var delta = prevMousePos - mousePos;
+							view.Center += new Vector2f(delta.X * zoom, delta.Y * zoom);
+						}
+						view.Center = new Vector2f(view.Center.X.Limit(0, texture.Size.X), view.Center.Y.Limit(0, texture.Size.Y));
+						view.Size = (windowSize * zoom).ToSFML();
+						tileWindow.SetView(view);
+
+						tileWindow.Draw(verts, PrimitiveType.Quads, new(SFML.Graphics.BlendMode.Alpha, Transform.Identity, texture, null));
+						tileWindow.Display();
+						prevMousePos = mousePos;
+					}
+					texture.Dispose();
+				}
+				void OnScroll(object? sender, MouseWheelScrollEventArgs e)
+				{
+					var way = e.Delta < 0 ? 1f : -1f;
+					zoom += zoom * 0.05f * way;
+					var pos = view.Center.ToSystem();
+					view.Center = pos.PointPercentTowardPoint(tileWindow.MapPixelToCoords(Mouse.GetPosition(tileWindow), view).ToSystem(), new(5)).ToSFML();
+				}
 			}
 			void OnPaintTileCheck(object? sender, EventArgs e)
 			{
@@ -1745,7 +1803,7 @@ namespace SMPLSceneEditor
 		}
 		private void OnSceneScroll(object? sender, MouseEventArgs e)
 		{
-			var delta = e.Delta / 1200f * -1f;
+			var delta = e.Delta > 0 ? -0.05f : 0.05f;
 			var pos = window.GetView().Center.ToSystem();
 			var mousePos = GetMousePosition();
 			var dist = pos.DistanceBetweenPoints(mousePos);
@@ -1758,7 +1816,7 @@ namespace SMPLSceneEditor
 			{
 				if(delta < 0)
 				{
-					pos = pos.PointMoveTowardPoint(mousePos, -dist * delta * 0.7f, false);
+					pos = pos.PointPercentTowardPoint(mousePos, new(5));
 					SetViewPosition(pos);
 				}
 				SetViewScale(sceneSc + delta);
