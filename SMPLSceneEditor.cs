@@ -23,6 +23,7 @@ namespace SMPLSceneEditor
 		private const string LOADING_ASSETS = "Processing assets...", LOADING_SCENE = "Loading Scene...";
 		private const float HITBOX_POINT_EDIT_MAX_DIST = 20;
 
+		private Label tilePaletteHoveredIndexesLabel;
 		private CheckBox? editHitbox, paintTile;
 		private Control? waitingPickThingControl, tilePaletteCol;
 		private readonly System.Windows.Forms.Timer loop;
@@ -35,7 +36,7 @@ namespace SMPLSceneEditor
 		private readonly List<int> selectedHitboxPointIndexesA = new(), selectedHitboxPointIndexesB = new();
 		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
 		private FileSystemWatcher? assetsWatcher, assetsFolderWatcher;
-		private string pickThingProperty = "", scenePath = "", loadingDescr = "", tilePaletteUID = "";
+		private string pickThingProperty = "", scenePath = "", loadingDescr = "", tilePaletteUID = "", tilePaletteHoveredIndexes = "";
 		private readonly Dictionary<string, TableLayoutPanel> editThingTableTypes = new();
 		private readonly Dictionary<string, string> listBoxPlaceholderTexts = new()
 		{
@@ -88,6 +89,8 @@ namespace SMPLSceneEditor
 
 			var desktopRes = Screen.PrimaryScreen.Bounds.Size;
 			Thing.CreateCamera(Scene.MAIN_CAMERA_UID, new(desktopRes.Width, desktopRes.Height));
+
+			tilePaletteHoveredIndexesLabel = new();
 		}
 
 		private void InitTables()
@@ -542,7 +545,7 @@ namespace SMPLSceneEditor
 			void EditTilePalette(object? sender, EventArgs e)
 			{
 				var palette = (Dictionary<string, Thing.Tile>)Thing.Get(selectedUIDs[0], Thing.Property.TILEMAP_TILE_PALETTE);
-				var sz = new Vector2i(W + 120, H + 350);
+				var sz = new Vector2i(W + 120, H + 375);
 				var window = new Form()
 				{
 					Text = "Edit Palette",
@@ -558,7 +561,7 @@ namespace SMPLSceneEditor
 					Left = SPACING_X,
 					Top = SPACING_Y,
 					Width = sz.X - SPACING_X * 2,
-					Height = sz.Y / 3,
+					Height = sz.Y / 2,
 					BackColor = System.Drawing.Color.Black,
 					ForeColor = System.Drawing.Color.White
 				};
@@ -567,7 +570,7 @@ namespace SMPLSceneEditor
 					Top = listBox.Height + SPACING_Y,
 					Left = SPACING_X,
 					Width = sz.X - SPACING_X * 2,
-					Height = 155,
+					Height = 115,
 					ColumnCount = 2,
 					RowCount = 4,
 					Name = "PropTilePalette",
@@ -599,25 +602,32 @@ namespace SMPLSceneEditor
 				};
 				var image = new PictureBox()
 				{
-					Width = window.Size.Width / 2 + SPACING_X * 2,
-					Height = window.Size.Height + SPACING_Y * 2,
-					Top = SPACING_Y,
-					Left = window.Size.Width / 2
+					Width = 0,
+					Height = 0,
+					Top = SPACING_Y * 2,
+					Left = window.Size.Width / 2,
+					BorderStyle = BorderStyle.Fixed3D
 				};
-				var tileWindow = new RenderWindow(image.Handle) { Size = new((uint)sz.X - (uint)(SPACING_X * 1.5f), (uint)sz.Y - SPACING_Y * 4) };
+				var tileWindow = new RenderWindow(image.Handle) { Size = new((uint)sz.X - (uint)(SPACING_X * 1.5f), (uint)(sz.Y - SPACING_Y * 5.5f)) };
 				var view = tileWindow.GetView();
 				var zoom = 1f;
 				var windowSize = new Vector2(tileWindow.Size.X, tileWindow.Size.Y);
+				var tileSz = (Vector2)Thing.Get(selectedUIDs[0], Thing.Property.TILEMAP_TILE_SIZE);
+				var tileGap = (Vector2)Thing.Get(selectedUIDs[0], Thing.Property.TILEMAP_TILE_GAP);
+
+				tilePaletteHoveredIndexesLabel.AutoSize = true;
+				tilePaletteHoveredIndexesLabel.Dock = DockStyle.Right;
+				tilePaletteHoveredIndexesLabel.TextAlign = ContentAlignment.TopRight;
+				tilePaletteHoveredIndexesLabel.Font = new System.Drawing.Font("Arial", 24);
+
 				tileWindow.MouseWheelScrolled += OnScroll;
 
 				AddThingProperty(table, "Tile", rightLabel: true); AddThingProperty(table, "Properties");
-				AddThingProperty(table, "Indecies Texture Coordinate", "TilePaletteTexCoord", valueType: typeof(Vector2), labelSizeOffset: -1);
+				AddThingProperty(table, "Indecies", "TilePaletteTexCoord", valueType: typeof(Vector2));
 				AddThingProperty(table, "Color", "TilePaletteColor", valueType: typeof(Color));
-				AddThingProperty(table, "Indecies Size", "TilePaletteSize", valueType: typeof(Vector2));
 
 				var texCoord = table.Controls[2];
 				var color = table.Controls[4];
-				var size = table.Controls[6];
 				tilePaletteCol = color;
 
 				color.BackColor = System.Drawing.Color.White;
@@ -625,8 +635,6 @@ namespace SMPLSceneEditor
 				((NumericUpDown)color.Controls[1]).Value = 255;
 				((NumericUpDown)color.Controls[2]).Value = 255;
 				((NumericUpDown)color.Controls[3]).Value = 255;
-				((NumericUpDown)size.Controls[0]).Value = 1;
-				((NumericUpDown)size.Controls[1]).Value = 1;
 
 				foreach(var kvp in palette)
 					listBox.Items.Add(kvp.Key);
@@ -650,8 +658,6 @@ namespace SMPLSceneEditor
 
 					palette[textBox.Text] = new(
 						new((float)((NumericUpDown)texCoord.Controls[0]).Value, (float)((NumericUpDown)texCoord.Controls[1]).Value),
-						(float)((NumericUpDown)size.Controls[0]).Value,
-						(float)((NumericUpDown)size.Controls[1]).Value,
 						(byte)((NumericUpDown)color.Controls[0]).Value,
 						(byte)((NumericUpDown)color.Controls[1]).Value,
 						(byte)((NumericUpDown)color.Controls[2]).Value,
@@ -673,16 +679,13 @@ namespace SMPLSceneEditor
 					var tile = palette[uid];
 					var texCoord = table.Controls[2];
 					var color = table.Controls[4];
-					var size = table.Controls[8];
-					SetControlNumber((NumericUpDown)texCoord.Controls[0], tile.IndexesTexCoord.X);
-					SetControlNumber((NumericUpDown)texCoord.Controls[1], tile.IndexesTexCoord.Y);
+					SetControlNumber((NumericUpDown)texCoord.Controls[0], tile.Indexes.X);
+					SetControlNumber((NumericUpDown)texCoord.Controls[1], tile.Indexes.Y);
 					SetControlNumber((NumericUpDown)color.Controls[0], tile.Color.R);
 					SetControlNumber((NumericUpDown)color.Controls[1], tile.Color.G);
 					SetControlNumber((NumericUpDown)color.Controls[2], tile.Color.B);
 					SetControlNumber((NumericUpDown)color.Controls[3], tile.Color.A);
 					color.BackColor = System.Drawing.Color.FromArgb(255, tile.Color.R, tile.Color.G, tile.Color.B);
-					SetControlNumber((NumericUpDown)size.Controls[0], tile.IndexesSize.X);
-					SetControlNumber((NumericUpDown)size.Controls[1], tile.IndexesSize.Y);
 
 					textBox.Text = uid;
 
@@ -692,10 +695,10 @@ namespace SMPLSceneEditor
 
 				for(int i = 0; i < 2; i++)
 					table.ColumnStyles.Add(new(SizeType.Percent, 50));
-				for(int i = 0; i < 5; i++)
+				for(int i = 0; i < 3; i++)
 					table.RowStyles.Add(new(SizeType.Percent, 50));
 
-				window.Controls.AddRange(new Control[] { table, listBox, textBox, buttonSet, buttonRemove, image });
+				window.Controls.AddRange(new Control[] { table, listBox, textBox, buttonSet, buttonRemove, image, tilePaletteHoveredIndexesLabel });
 
 				var running = true;
 				var thread = new Thread(UpdateWindow) { Name = "TileSelectWindow" };
@@ -726,9 +729,26 @@ namespace SMPLSceneEditor
 					while(running)
 					{
 						tileWindow.DispatchEvents();
-						tileWindow.Clear();
+						tileWindow.Clear(bgCol);
 
 						var mousePos = Mouse.GetPosition();
+						var indexPos = (tileWindow.MapPixelToCoords(Mouse.GetPosition(tileWindow), view).ToSystem()).PointToGrid(tileSz + tileGap).ToSFML();
+						var hoveredIndexes = (indexPos.ToSystem() / (tileSz + tileGap));
+						tilePaletteHoveredIndexes = $"X:{hoveredIndexes.X} Y:{hoveredIndexes.Y}";
+
+						var lines = new List<Line> { new Line(indexPos.ToSystem(), new(indexPos.X + tileSz.X, indexPos.Y)) };
+						lines.Add(new Line(lines[0].B, indexPos.ToSystem() + tileSz));
+						lines.Add(new Line(lines[1].B, new(indexPos.X, indexPos.Y + tileSz.Y)));
+						lines.Add(new Line(lines[2].B, lines[0].A));
+
+						var hoveredTileVerts = new Vertex[]
+						{
+							new(indexPos, selCol),
+							new(new(indexPos.X + tileSz.X, indexPos.Y), selCol),
+							new(indexPos + tileSz.ToSFML(), selCol),
+							new(new(indexPos.X, indexPos.Y + tileSz.Y), selCol),
+						};
+
 						if(Mouse.IsButtonPressed(Mouse.Button.Middle))
 						{
 							var delta = prevMousePos - mousePos;
@@ -736,9 +756,14 @@ namespace SMPLSceneEditor
 						}
 						view.Center = new Vector2f(view.Center.X.Limit(0, texture.Size.X), view.Center.Y.Limit(0, texture.Size.Y));
 						view.Size = (windowSize * zoom).ToSFML();
+
+						if(running == false)
+							return;
 						tileWindow.SetView(view);
 
 						tileWindow.Draw(verts, PrimitiveType.Quads, new(SFML.Graphics.BlendMode.Alpha, Transform.Identity, texture, null));
+						lines.Draw(tileWindow, bbCol, zoom * 4);
+						tileWindow.Draw(hoveredTileVerts, PrimitiveType.Quads);
 						tileWindow.Display();
 						prevMousePos = mousePos;
 					}
@@ -748,12 +773,16 @@ namespace SMPLSceneEditor
 				{
 					var way = e.Delta < 0 ? 1f : -1f;
 					zoom += zoom * 0.05f * way;
+					zoom = zoom.Limit(0.05f, 3f);
 					var pos = view.Center.ToSystem();
 					view.Center = pos.PointPercentTowardPoint(tileWindow.MapPixelToCoords(Mouse.GetPosition(tileWindow), view).ToSystem(), new(5)).ToSFML();
 				}
 			}
 			void OnPaintTileCheck(object? sender, EventArgs e)
 			{
+				if(selectedUIDs.Count == 0)
+					return;
+
 				var palette = (Dictionary<string, Thing.Tile>)Thing.Get(selectedUIDs[0], "TilePalette");
 				if(paintTile.Checked && palette.Count == 0)
 					MessageBox.Show(this, "The Tile Palette is empty. Add tiles before painting.", "Paint Tile");
@@ -817,10 +846,17 @@ namespace SMPLSceneEditor
 				return list;
 			}
 		}
+
 		#endregion
 		#region Update
 		private void OnUpdate(object? sender, EventArgs e)
 		{
+			// forms can't be accessed from a separate thread
+			// the tile palette edit preview creates a window and a thread but can't access any of the forms
+			// so it sets a string which updates the form here
+			if(tilePaletteHoveredIndexesLabel != null)
+				tilePaletteHoveredIndexesLabel.Text = tilePaletteHoveredIndexes;
+
 			loading.Visible = loadingDescr != "";
 			loading.Text = loadingDescr;
 			windowSplit.Visible = loading.Visible == false;
@@ -891,8 +927,9 @@ namespace SMPLSceneEditor
 					case "Dictionary<String, Tile>":
 						{
 							var prevIndex = ((ComboBox)control).SelectedIndex;
-							ProcessList((ComboBox)control, ((Dictionary<string, Thing.Tile>)Thing.Get(uid, Thing.Property.TILEMAP_TILE_PALETTE)).Keys);
-							((ComboBox)control).SelectedIndex = prevIndex;
+							var palette = (Dictionary<string, Thing.Tile>)Thing.Get(uid, Thing.Property.TILEMAP_TILE_PALETTE);
+							ProcessList((ComboBox)control, palette.Keys);
+							((ComboBox)control).SelectedIndex = prevIndex == -1 && palette.Count > 0 ? 0 : prevIndex;
 							break;
 						}
 					case "Vector2":
@@ -1766,6 +1803,12 @@ namespace SMPLSceneEditor
 		}
 		private void OnSaveClick(object sender, EventArgs e)
 		{
+			if(paintTile != null)
+				paintTile.Checked = false;
+			if(editHitbox != null)
+				editHitbox.Checked = false;
+
+			TryResetThingPanel();
 			TrySave();
 		}
 		private void OnLoadClick(object sender, EventArgs e)
