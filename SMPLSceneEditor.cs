@@ -176,6 +176,7 @@ namespace SMPLSceneEditor
 			{
 				AddThingProperty(thing, "UID", Thing.Property.UID, typeof(string));
 				AddThingProperty(thing, "Old UID", Thing.Property.OLD_UID, typeof(string), readOnly: true);
+				AddThingProperty(thing, "Numeric UID", Thing.Property.NUMERIC_UID, typeof(int), readOnly: true);
 				AddThingProperty(thing, "Age (Seconds)", Thing.Property.AGE, typeof(float), readOnly: true);
 				AddSpace(thing);
 				AddThingProperty(thing, "Position", Thing.Property.POSITION, typeof(Vector2));
