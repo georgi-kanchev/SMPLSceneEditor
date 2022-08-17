@@ -17,12 +17,15 @@ namespace SMPLSceneEditor
 	public partial class FormWindow : Form
 	{
 		#region Fields
+		const string FONT = "Segoe UI";
+		const float FONT_SIZE = 12f;
 		private const string NO_ASSETS_MSG = "In order to use Assets, save this Scene or load another.\n\n" +
 			"Upon doing that, a Scene file, alongside an Asset folder will be present in the provided game directory. " +
 			"Fill that folder with Assets and point the Things in the Scene toward them.";
 		private const string LOADING_ASSETS = "Processing assets...", LOADING_SCENE = "Loading Scene...";
 		private const float HITBOX_POINT_EDIT_MAX_DIST = 20;
 
+		private TextBox? spriteStackCreateTexPath, spriteStackCreateObjPath;
 		private Label tilePaletteHoveredIndexesLabel;
 		private CheckBox? editHitbox, paintTile;
 		private Control? waitingPickThingControl, tilePaletteCol;
@@ -30,7 +33,7 @@ namespace SMPLSceneEditor
 		private readonly RenderWindow window;
 		private float sceneSc = 1f;
 		private int selectDepthIndex;
-		private bool isDragSelecting, isHoveringScene;
+		private bool isDragSelecting, isHoveringScene, isSpriteStackCreationOpen;
 		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos, tilePaintRightClickPos = new Vector2().NaN();
 		private readonly List<string> selectedUIDs = new();
 		private readonly List<int> selectedHitboxPointIndexesA = new(), selectedHitboxPointIndexesB = new();
@@ -105,6 +108,9 @@ namespace SMPLSceneEditor
 			var ninePatch = CreateDefaultTable("tableNinePatch");
 			var audio = CreateDefaultTable("tableAudio");
 			var tilemap = CreateDefaultTable("tableTilemap");
+			var cloth = CreateDefaultTable("tableCloth");
+			var pseudo3D = CreateDefaultTable("tablePseudo3D");
+			var spriteStack = CreateDefaultTable("tableSpriteStack");
 			var types = thingTypesTable;
 
 			types.Hide();
@@ -120,6 +126,9 @@ namespace SMPLSceneEditor
 			AddThingProperty(ninePatch, "Border Size", Thing.Property.NINE_PATCH_BORDER_SIZE, typeof(float));
 			AddPropsAudio();
 			AddPropsTilemap();
+			AddPropsCloth();
+			AddPropsPseudo3D();
+			AddPropsSpriteStack();
 
 			editThingTableTypes[scene.Name] = scene;
 			editThingTableTypes[thing.Name] = thing;
@@ -131,6 +140,9 @@ namespace SMPLSceneEditor
 			editThingTableTypes[ninePatch.Name] = ninePatch;
 			editThingTableTypes[audio.Name] = audio;
 			editThingTableTypes[tilemap.Name] = tilemap;
+			editThingTableTypes[cloth.Name] = cloth;
+			editThingTableTypes[pseudo3D.Name] = pseudo3D;
+			editThingTableTypes[spriteStack.Name] = spriteStack;
 
 			TableLayoutPanel CreateDefaultTable(string name)
 			{
@@ -148,10 +160,6 @@ namespace SMPLSceneEditor
 
 				return result;
 			}
-			void AddSpace(TableLayoutPanel table)
-			{
-				AddThingProperty(table, ""); AddThingProperty(table, "");
-			}
 			void AddPropsScene()
 			{
 				AddThingProperty(scene, "SMPL Scene", rightLabel: true); AddThingProperty(scene, "Editor Colors");
@@ -160,8 +168,8 @@ namespace SMPLSceneEditor
 				AddThingProperty(scene, "Grid 0", "SceneGrid0Color", typeof(Color));
 				AddThingProperty(scene, "Grid 1000", "SceneGrid1000Color", typeof(Color));
 				AddSpace(scene);
-				AddThingProperty(scene, "Bound Box", "SceneBoundingBoxColor", typeof(Color));
-				AddThingProperty(scene, "Select", "SceneSelectColor", typeof(Color));
+				AddThingProperty(scene, "Bounding Box", "SceneBoundingBoxColor", typeof(Color), labelSizeOffset: 1);
+				AddThingProperty(scene, "Selection", "SceneSelectColor", typeof(Color));
 				AddSpace(scene);
 				AddThingProperty(scene, "Sprite", "SceneSpriteColor", typeof(Color));
 				AddThingProperty(scene, "NinePatch", "SceneNinePatchColor", typeof(Color));
@@ -203,16 +211,16 @@ namespace SMPLSceneEditor
 				AddThingProperty(sprite, "Origin Unit", Thing.Property.SPRITE_ORIGIN_UNIT, typeof(Vector2), smallNumericStep: true);
 				AddThingProperty(sprite, "Origin", Thing.Property.SPRITE_ORIGIN, typeof(Vector2));
 				AddSpace(sprite);
-				AddThingProperty(sprite, "Texture Coordinates Unit A", Thing.Property.SPRITE_TEX_COORD_UNIT_A, typeof(Vector2), labelSizeOffset: -3, smallNumericStep: true);
-				AddThingProperty(sprite, "Texture Coordinates Unit B", Thing.Property.SPRITE_TEX_COORD_UNIT_B, typeof(Vector2), labelSizeOffset: -3, smallNumericStep: true);
-				AddThingProperty(sprite, "Texture Coordinates A", Thing.Property.SPRITE_TEX_COORD_A, typeof(Vector2), labelSizeOffset: 0, smallNumericStep: true);
-				AddThingProperty(sprite, "Texture Coordinates B", Thing.Property.SPRITE_TEX_COORD_B, typeof(Vector2), labelSizeOffset: 0, smallNumericStep: true);
+				AddThingProperty(sprite, "Texture Coordinate Unit A", Thing.Property.SPRITE_TEX_COORD_UNIT_A, typeof(Vector2), labelSizeOffset: -1, smallNumericStep: true);
+				AddThingProperty(sprite, "Texture Coordinate Unit B", Thing.Property.SPRITE_TEX_COORD_UNIT_B, typeof(Vector2), labelSizeOffset: -1, smallNumericStep: true);
+				AddThingProperty(sprite, "Texture Coordinate A", Thing.Property.SPRITE_TEX_COORD_A, typeof(Vector2), labelSizeOffset: 1, smallNumericStep: true);
+				AddThingProperty(sprite, "Texture Coordinate B", Thing.Property.SPRITE_TEX_COORD_B, typeof(Vector2), labelSizeOffset: 1, smallNumericStep: true);
 			}
 			void AddPropsVisual()
 			{
 				AddThingProperty(visual, "Texture Path", Thing.Property.VISUAL_TEXTURE_PATH, typeof(string));
 				AddThingProperty(visual, "Tint", Thing.Property.VISUAL_TINT, typeof(Color));
-				AddThingProperty(visual, "Depth", Thing.Property.VISUAL_DEPTH, typeof(int));
+				AddThingProperty(visual, "Order", Thing.Property.VISUAL_ORDER, typeof(int));
 				AddSpace(visual);
 				AddThingProperty(visual, "Is Hidden", Thing.Property.VISUAL_IS_HIDDEN, typeof(bool));
 				AddThingProperty(visual, "Is Repeated", Thing.Property.VISUAL_IS_REPEATED, typeof(bool));
@@ -267,14 +275,65 @@ namespace SMPLSceneEditor
 				AddThingProperty(tilemap, "Tile Brush", Thing.Property.TILEMAP_TILE_PALETTE, typeof(Dictionary<string, Thing.Tile>));
 				AddThingProperty(tilemap, "Tiles", Thing.Property.TILEMAP_TILE_COUNT, typeof(int), readOnly: true);
 			}
+			void AddPropsCloth()
+			{
+				AddThingProperty(cloth, "Is Simulating", Thing.Property.CLOTH_IS_SIMULATING, typeof(bool));
+				AddThingProperty(cloth, "Has Threads", Thing.Property.CLOTH_HAS_THREADS, typeof(bool));
+				AddSpace(cloth);
+				AddThingProperty(cloth, "Break Threshold", Thing.Property.CLOTH_BREAK_THRESHOLD, typeof(float));
+				AddThingProperty(cloth, "Gravity", Thing.Property.CLOTH_GRAVITY, typeof(Vector2));
+				AddThingProperty(cloth, "Force", Thing.Property.CLOTH_FORCE, typeof(Vector2));
+				AddSpace(cloth);
+				AddThingProperty(cloth, "Texture Coordinate Unit A", Thing.Property.CLOTH_TEX_COORD_UNIT_A, typeof(Vector2), labelSizeOffset: -1, smallNumericStep: true);
+				AddThingProperty(cloth, "Texture Coordinate Unit B", Thing.Property.CLOTH_TEX_COORD_UNIT_B, typeof(Vector2), labelSizeOffset: -1, smallNumericStep: true);
+				AddThingProperty(cloth, "Texture Coordinate A", Thing.Property.CLOTH_TEX_COORD_A, typeof(Vector2), labelSizeOffset: 1, smallNumericStep: true);
+				AddThingProperty(cloth, "Texture Coordinate B", Thing.Property.CLOTH_TEX_COORD_B, typeof(Vector2), labelSizeOffset: 1, smallNumericStep: true);
+				AddSpace(cloth);
+				AddButton(cloth, "Add Pin", Pin);
+				AddButton(cloth, "Remove Pin", Unpin);
+
+				void Pin(object? sender, EventArgs e)
+				{
+					var index = GetVector2("Add Pin", "Provide the indexes to be pinned.", 0, int.MaxValue, 0, int.MaxValue);
+					Thing.CallVoid(selectedUIDs[0], Thing.Method.CLOTH_PIN, index, true);
+				}
+				void Unpin(object? sender, EventArgs e)
+				{
+					var index = GetVector2("Remove Pin", "Provide the indexes to be unpinned.", 0, int.MaxValue, 0, int.MaxValue);
+					Thing.CallVoid(selectedUIDs[0], Thing.Method.CLOTH_PIN, index, false);
+				}
+			}
+			void AddPropsPseudo3D()
+			{
+				AddThingProperty(pseudo3D, "Depth", Thing.Property.PSEUDO_3D_DEPTH, typeof(float));
+				AddThingProperty(pseudo3D, "Tilt", Thing.Property.PSEUDO_3D_TILT, typeof(float));
+				AddThingProperty(pseudo3D, "Perspective Unit", Thing.Property.PSEUDO_3D_PERSPECTIVE_UNIT, typeof(float), labelSizeOffset: 2);
+			}
+			void AddPropsSpriteStack()
+			{
+				AddThingProperty(spriteStack, "Texture Paths", Thing.Property.SPRITE_STACK_TEXTURE_PATHS, typeof(List<string>));
+			}
+
+			void AddSpace(TableLayoutPanel table)
+			{
+				AddThingProperty(table, ""); AddThingProperty(table, "");
+			}
+			void AddButton(TableLayoutPanel table, string text, EventHandler clickMethod)
+			{
+				var btn = new Button()
+				{
+					Text = text,
+					Dock = DockStyle.Fill,
+					ForeColor = System.Drawing.Color.White,
+					Font = new System.Drawing.Font(FONT, FONT_SIZE, FontStyle.Regular, GraphicsUnit.Point)
+				};
+				btn.Click += clickMethod;
+				table.Controls.Add(btn);
+			}
 		}
 		private void AddThingProperty(TableLayoutPanel table, string label, string? propName = null, Type? valueType = null, bool readOnly = false,
-			bool rightLabel = false, bool smallNumericStep = false, bool last = false, float labelSizeOffset = 3,
-			bool thingList = false, bool uniqueList = true)
+			bool rightLabel = false, bool smallNumericStep = false, bool last = false, float labelSizeOffset = 3, bool thingList = false, bool uniqueList = true)
 		{
-			const string FONT = "Segoe UI";
-			const float FONT_SIZE = 12f;
-
 			var prop = default(Control);
 			var lab = new Label() { Text = label };
 			SetDefault(lab, FONT_SIZE + labelSizeOffset, reverseColors: true);
@@ -316,6 +375,8 @@ namespace SMPLSceneEditor
 				prop = new Button() { Text = label };
 			else if(valueType == typeof(Vector2))
 				prop = CreateMultipleValuesTable(2, false);
+			else if(valueType == typeof(Vector3))
+				prop = CreateMultipleValuesTable(3, false);
 			else if(valueType == typeof(Color))
 				prop = CreateMultipleValuesTable(4, true);
 
@@ -357,7 +418,7 @@ namespace SMPLSceneEditor
 			if(propName == null || readOnly)
 				return;
 
-			if(propName.Contains("Path"))
+			if(propName.Contains("Path") && propName.Contains("Paths") == false)
 				CreateButton("Assets", PickAsset);
 			else if(valueType == typeof(string) && propName != Thing.Property.UID && propName.Contains("UID"))
 				CreateButton("Things", PickThingList);
@@ -488,9 +549,18 @@ namespace SMPLSceneEditor
 				if(pickAsset.ShowDialog() != DialogResult.OK)
 					return;
 
-				var asset = pickAsset.FileName;
-				var uid = selectedUIDs[0];
+				var asset = GetMirrorAssetPath(pickAsset.FileName);
+				if(isSpriteStackCreationOpen)
+				{
+					if(propName == "SpriteStackTexturePath" && spriteStackCreateTexPath != null)
+						spriteStackCreateTexPath.Text = asset;
+					else if(propName == "SpriteStackObjPath" && spriteStackCreateObjPath != null)
+						spriteStackCreateObjPath.Text = asset;
 
+					return;
+				}
+
+				var uid = selectedUIDs[0];
 				Thing.Set(uid, propName, GetMirrorAssetPath(asset));
 				UpdateThingPanel();
 			}
@@ -573,7 +643,7 @@ namespace SMPLSceneEditor
 					Width = sz.X - SPACING_X * 2,
 					Height = 115,
 					ColumnCount = 2,
-					RowCount = 4,
+					RowCount = 3,
 					Name = "PropTilePalette",
 				};
 				var textBox = new TextBox()
@@ -847,7 +917,6 @@ namespace SMPLSceneEditor
 				return list;
 			}
 		}
-
 		#endregion
 		#region Update
 		private void OnUpdate(object? sender, EventArgs e)
@@ -1467,7 +1536,7 @@ namespace SMPLSceneEditor
 					selectedUIDs.Remove(uid);
 					Thing.Destroy(uid, includeChildren);
 				}
-				UpdateThingPanel();
+				TryResetThingPanel();
 			}
 		}
 		#endregion
@@ -2051,6 +2120,98 @@ namespace SMPLSceneEditor
 
 			isDragSelecting = false;
 		}
+		private void OnCreateTextureStack(object sender, EventArgs e)
+		{
+			const int TABLE_HEIGHT = 230;
+			var sz = new Vector2i(W + SPACING_X * 4, H + TABLE_HEIGHT);
+			var window = new Form()
+			{
+				Width = sz.X,
+				Height = sz.Y,
+				FormBorderStyle = FormBorderStyle.FixedToolWindow,
+				Text = "Generate Sprite Stack",
+				BackColor = System.Drawing.Color.Black,
+				ForeColor = System.Drawing.Color.White,
+				StartPosition = FormStartPosition.CenterScreen
+			};
+			var table = new TableLayoutPanel
+			{
+				Top = SPACING_Y,
+				Left = SPACING_X,
+				Width = sz.X - SPACING_X * 2 - SPACING_X / 2,
+				Height = TABLE_HEIGHT,
+				ColumnCount = 2,
+				RowCount = 6,
+				Name = "PropSpriteStackCreate"
+			};
+			var button = new Button()
+			{
+				Text = "OK",
+				Top = table.Height + SPACING_Y * 2,
+				Left = sz.X - BUTTON_W - SPACING_X - SPACING_X / 4,
+				Width = BUTTON_W,
+				Height = BUTTON_H,
+				DialogResult = DialogResult.OK
+			};
+			button.Click += (sender, e) => { window.Close(); };
+			window.Controls.Add(table);
+			window.Controls.Add(button);
+			window.AcceptButton = button;
+
+			for(int i = 0; i < 2; i++)
+				table.ColumnStyles.Add(new(SizeType.Percent, 50));
+			for(int i = 0; i < 6; i++)
+				table.RowStyles.Add(new(SizeType.Percent, 50));
+
+			AddThingProperty(table, "Obj Path", "SpriteStackObjPath", valueType: typeof(string));
+			AddThingProperty(table, "Texture Path", "SpriteStackTexturePath", valueType: typeof(string));
+			AddThingProperty(table, "Model Scale", "SpriteStackScale", valueType: typeof(Vector3));
+			AddThingProperty(table, "Model Rotation", "SpriteStackRotation", valueType: typeof(Vector3));
+			AddThingProperty(table, "Stack Count", "SpriteStackCount", valueType: typeof(int));
+			AddThingProperty(table, "Stack Detail", "SpriteStackDetail", valueType: typeof(float));
+
+			var obj = (TextBox)table.Controls[0];
+			var tex = (TextBox)table.Controls[2];
+			var scale = table.Controls[4];
+			var rotation = table.Controls[6];
+			var count = (NumericUpDown)table.Controls[8];
+			var detail = (NumericUpDown)table.Controls[10];
+			((NumericUpDown)scale.Controls[0]).Value = 1;
+			((NumericUpDown)scale.Controls[1]).Value = 1;
+			((NumericUpDown)scale.Controls[2]).Value = 1;
+			count.Value = 20;
+			detail.Value = 10;
+
+			isSpriteStackCreationOpen = true;
+			spriteStackCreateTexPath = tex;
+			spriteStackCreateObjPath = obj;
+
+			if(window.ShowDialog() != DialogResult.OK)
+				return;
+
+			var sc = new Vector3(
+				(float)((NumericUpDown)scale.Controls[0]).Value,
+				(float)((NumericUpDown)scale.Controls[1]).Value,
+				(float)((NumericUpDown)scale.Controls[2]).Value);
+			var rot = new Vector3(
+				(float)((NumericUpDown)rotation.Controls[0]).Value,
+				(float)((NumericUpDown)rotation.Controls[1]).Value,
+				(float)((NumericUpDown)rotation.Controls[2]).Value);
+
+			Scene.CurrentScene.LoadSpriteStack(obj.Text, tex.Text, sc, rot, (int)count.Value, (float)detail.Value);
+			isSpriteStackCreationOpen = false;
+		}
+		private void OnUnloadTextureStack(object sender, EventArgs e)
+		{
+			var name = GetInput("Unload Texture Stack", "Provide the Texture Stack's name. The name comes from the .obj file upon generating a Texture Stack.");
+			var count = GetNumber("Unload Texture Stack", "Provide the Texture Stack's count. The count was provided upon generating a Texture Stack.");
+
+			for(int i = 0; i < (int)count; i++)
+			{
+				var id = $"{name}-{i}";
+				Scene.CurrentScene.UnloadAssets(id);
+			}
+		}
 		#endregion
 		#region SceneRightClick
 		private void OnSceneRightClickMenuCreateSprite(object sender, EventArgs e)
@@ -2065,55 +2226,9 @@ namespace SMPLSceneEditor
 		}
 		private void OnSceneRightclickMenuCreateCamera(object sender, EventArgs e)
 		{
-			var res = new Vector2();
-			var minRes = new Vector2(1, 1);
-			var maxRes = new Vector2(7680, 4320);
-			var input = GetInput();
-
-			while(InputIsInvalid(input, out res))
-				input = GetInput();
-
-			if(input == "")
-				return;
-
-			if(res.X.IsBetween(minRes.X, maxRes.X) == false ||
-				res.Y.IsBetween(minRes.Y, maxRes.Y) == false)
-			{
-				Error();
-				return;
-			}
-
+			var res = GetVector2("Create Camera", "Provide the Camera resolution.", 1, 7680, 1, 4320, new(1000));
 			var uid = Thing.CreateCamera("Camera", res);
 			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
-
-			string GetInput()
-			{
-				return FormWindow.GetInput(
-					"Camera Resolution",
-					"Provide the desired Camera resolution.\nExample: '1920 1080', '600 600'",
-					"1000 1000");
-			}
-			bool InputIsInvalid(string input, out Vector2 resolution)
-			{
-				resolution = new();
-				if(string.IsNullOrWhiteSpace(input))
-					return false;
-
-				var split = input.Split(' ');
-				if(split.Length != 2 || split[0].IsNumber() == false || split[1].IsNumber() == false)
-				{
-					Error();
-					return true;
-				}
-
-				resolution = new(split[0].ToNumber(), split[1].ToNumber());
-				return false;
-			}
-			void Error()
-			{
-				MessageBox.Show($"The provided Camera resolution is invalid.\n" +
-					$"A valid resolution is between [{minRes.X} {minRes.Y}] and [{maxRes.X} {maxRes.Y}].");
-			}
 		}
 		private void OnSceneRightclickMenuCreateText(object sender, EventArgs e)
 		{
@@ -2145,6 +2260,19 @@ namespace SMPLSceneEditor
 				result = pickAsset.ShowDialog();
 
 			var uid = Thing.CreateAudio("Audio", result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName));
+			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
+		}
+		private void OnSceneRightClickMenuCreateCloth(object sender, EventArgs e)
+		{
+			var size = GetVector2("Create Cloth", "Provide a constant size for the Cloth.", 1, int.MaxValue, 1, int.MaxValue, new(300));
+			if(size == default)
+				return;
+			var fragmentAmount = GetVector2("Create Cloth", "Provide the amount of fragments the Cloth is made of (in the range [1-10]). " +
+				"Or in other words - the detail.", 1, 10, 1, 10, new(5, 5));
+			if(fragmentAmount == default)
+				return;
+
+			var uid = Thing.CreateCloth("Cloth", null, size.X, size.Y, (int)fragmentAmount.X, (int)fragmentAmount.Y);
 			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
 		}
 
@@ -2199,7 +2327,6 @@ namespace SMPLSceneEditor
 			selectedUIDs.Clear();
 			TryResetThingPanel();
 		}
-
 		#endregion
 
 		#region EditThingPanel
@@ -2233,7 +2360,14 @@ namespace SMPLSceneEditor
 			}
 			else if(list.Name == $"Prop{Thing.Property.TYPES}")
 			{
-				var table = editThingTableTypes[$"table{list.SelectedItem}"];
+				var tableID = $"table{list.SelectedItem}";
+				if(editThingTableTypes.ContainsKey(tableID) == false) // implemented in engine but not in editor, prevent crash
+				{
+					TryResetThingPanel();
+					return;
+				}
+
+				var table = editThingTableTypes[tableID];
 
 				TryAddPlaceholderToList(list);
 				list.SelectedItem = placeholder;
@@ -2392,8 +2526,7 @@ namespace SMPLSceneEditor
 					return col;
 				}
 			}
-
-			if(parName.StartsWith("PropTilePalette"))
+			else if(parName.StartsWith("PropTilePalette"))
 			{
 				if(tilePaletteCol != null)
 				{
@@ -2409,6 +2542,10 @@ namespace SMPLSceneEditor
 
 					tilePaletteCol.BackColor = System.Drawing.Color.FromArgb(255, (int)r.Value, (int)g.Value, (int)b.Value);
 				}
+				return;
+			}
+			else if(parName.StartsWith("PropSpriteStack"))
+			{
 				return;
 			}
 
@@ -2581,6 +2718,135 @@ namespace SMPLSceneEditor
 			window.AcceptButton = button;
 
 			return window.ShowDialog() == DialogResult.OK ? textBox.Text : "";
+		}
+		private static float GetNumber(string title, string text, float defaultValue = 0f)
+		{
+			var sz = new Vector2i(W, H + text.Split('\n').Length * 15);
+			var window = new Form()
+			{
+				Width = sz.X,
+				Height = sz.Y,
+				FormBorderStyle = FormBorderStyle.FixedToolWindow,
+				Text = title,
+				BackColor = System.Drawing.Color.Black,
+				ForeColor = System.Drawing.Color.White,
+				StartPosition = FormStartPosition.CenterScreen
+			};
+			var textLabel = new Label()
+			{
+				Left = SPACING_X,
+				Top = SPACING_Y,
+				Text = text,
+				Width = sz.X - SPACING_X * 2 - SPACING_X / 4,
+				Height = sz.Y - BUTTON_H - SPACING_Y * 4
+			};
+			var numeric = new NumericUpDown()
+			{
+				Left = SPACING_X,
+				Top = SPACING_Y + textLabel.Height,
+				Width = sz.X - BUTTON_W - SPACING_X * 3,
+				Height = TEXTBOX_H,
+				Value = (decimal)defaultValue,
+				BackColor = System.Drawing.Color.Black,
+				ForeColor = System.Drawing.Color.White
+			};
+			var button = new Button()
+			{
+				Text = "OK",
+				Left = sz.X - BUTTON_W - SPACING_X - SPACING_X / 4,
+				Width = BUTTON_W,
+				Height = BUTTON_H,
+				Top = SPACING_Y + textLabel.Height,
+				DialogResult = DialogResult.OK
+			};
+			button.Click += (sender, e) => { window.Close(); };
+			window.Controls.Add(numeric);
+			window.Controls.Add(button);
+			window.Controls.Add(textLabel);
+			window.AcceptButton = button;
+
+			return window.ShowDialog() == DialogResult.OK ? (float)numeric.Value : float.NaN;
+		}
+		private static Vector2 GetVector2(string title, string text, float minX, float maxX, float minY, float maxY, Vector2 placeholder = default)
+		{
+			var sz = new Vector2i(W, H + text.Split('\n').Length * 15);
+			var window = new Form()
+			{
+				Width = sz.X,
+				Height = sz.Y,
+				FormBorderStyle = FormBorderStyle.FixedToolWindow,
+				Text = title,
+				BackColor = System.Drawing.Color.Black,
+				ForeColor = System.Drawing.Color.White,
+				StartPosition = FormStartPosition.CenterScreen
+			};
+			var textLabel = new Label()
+			{
+				Left = SPACING_X,
+				Top = SPACING_Y,
+				Text = text,
+				Width = sz.X - SPACING_X * 2 - SPACING_X / 4,
+				Height = sz.Y - BUTTON_H - SPACING_Y * 4
+			};
+			var numberXLabel = new Label()
+			{
+				Left = SPACING_X,
+				Top = SPACING_Y + textLabel.Height + TEXTBOX_H / 8,
+				Text = "X:",
+				Width = 20,
+				Height = TEXTBOX_H
+			};
+			var numberX = new NumericUpDown()
+			{
+				Left = SPACING_X + numberXLabel.Width,
+				Top = SPACING_Y + textLabel.Height,
+				Width = 50,
+				Height = TEXTBOX_H,
+				BackColor = System.Drawing.Color.Black,
+				ForeColor = System.Drawing.Color.White,
+				Minimum = (decimal)minX,
+				Maximum = (decimal)maxX,
+				Value = (decimal)placeholder.X
+			};
+			var numberYLabel = new Label()
+			{
+				Left = SPACING_X + numberXLabel.Width + numberX.Width + SPACING_X / 2,
+				Top = SPACING_Y + textLabel.Height + TEXTBOX_H / 8,
+				Text = "Y:",
+				Width = 20,
+				Height = TEXTBOX_H
+			};
+			var numberY = new NumericUpDown()
+			{
+				Left = SPACING_X + numberXLabel.Width + numberX.Width + SPACING_X / 2 + numberYLabel.Width,
+				Top = SPACING_Y + textLabel.Height,
+				Width = 50,
+				Height = TEXTBOX_H,
+				BackColor = System.Drawing.Color.Black,
+				ForeColor = System.Drawing.Color.White,
+				Minimum = (decimal)minY,
+				Maximum = (decimal)maxY,
+				Value = (decimal)placeholder.Y
+			};
+			var button = new Button()
+			{
+				Text = "OK",
+				Left = sz.X - BUTTON_W - SPACING_X - SPACING_X / 4,
+				Width = BUTTON_W,
+				Height = BUTTON_H,
+				Top = SPACING_Y + textLabel.Height,
+				DialogResult = DialogResult.OK
+			};
+			button.Click += (sender, e) => { window.Close(); };
+			window.Controls.Add(numberX);
+			window.Controls.Add(numberY);
+			window.Controls.Add(button);
+			window.Controls.Add(textLabel);
+			window.Controls.Add(numberXLabel);
+			window.Controls.Add(numberYLabel);
+			window.AcceptButton = button;
+
+			return window.ShowDialog() != DialogResult.OK ? default : (new((float)numberX.Value, (float)numberY.Value));
 		}
 		private void EditList(string title, List<string> list, bool thingList, bool unique)
 		{

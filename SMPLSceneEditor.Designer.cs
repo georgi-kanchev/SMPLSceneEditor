@@ -33,6 +33,9 @@
 			this.loading = new System.Windows.Forms.Label();
 			this.sceneValues = new System.Windows.Forms.Label();
 			this.sceneStatusPanel = new System.Windows.Forms.Panel();
+			this.loadTextureStackGroup = new System.Windows.Forms.GroupBox();
+			this.unloadSpriteStack = new System.Windows.Forms.Button();
+			this.generateSpriteStack = new System.Windows.Forms.Button();
 			this.sceneGroup = new System.Windows.Forms.GroupBox();
 			this.saveAsButton = new System.Windows.Forms.Button();
 			this.saveButton = new System.Windows.Forms.Button();
@@ -50,11 +53,12 @@
 			this.sceneRightClickMenuCreate = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateSprite = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateText = new System.Windows.Forms.ToolStripMenuItem();
-			this.sceneRightClickMenuCreateNinePatch = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+			this.sceneRightClickMenuCreateCamera = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateTileMap = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateLight = new System.Windows.Forms.ToolStripMenuItem();
-			this.sceneRightClickMenuCreateCamera = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuCreateCloth = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuCreateNinePatch = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateSeparator2 = new System.Windows.Forms.ToolStripSeparator();
 			this.sceneRightClickMenuCreateAudio = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuSeparator1 = new System.Windows.Forms.ToolStripSeparator();
@@ -80,6 +84,7 @@
 			this.windowSplit.Panel2.SuspendLayout();
 			this.windowSplit.SuspendLayout();
 			this.sceneStatusPanel.SuspendLayout();
+			this.loadTextureStackGroup.SuspendLayout();
 			this.sceneGroup.SuspendLayout();
 			this.searchBox.SuspendLayout();
 			this.editSelectionGroup.SuspendLayout();
@@ -143,6 +148,7 @@
 			// sceneStatusPanel
 			// 
 			this.sceneStatusPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+			this.sceneStatusPanel.Controls.Add(this.loadTextureStackGroup);
 			this.sceneStatusPanel.Controls.Add(this.sceneGroup);
 			this.sceneStatusPanel.Controls.Add(this.searchBox);
 			this.sceneStatusPanel.Controls.Add(this.editSelectionGroup);
@@ -152,6 +158,49 @@
 			this.sceneStatusPanel.Name = "sceneStatusPanel";
 			this.sceneStatusPanel.Size = new System.Drawing.Size(1201, 58);
 			this.sceneStatusPanel.TabIndex = 2;
+			// 
+			// loadTextureStackGroup
+			// 
+			this.loadTextureStackGroup.Controls.Add(this.unloadSpriteStack);
+			this.loadTextureStackGroup.Controls.Add(this.generateSpriteStack);
+			this.loadTextureStackGroup.Dock = System.Windows.Forms.DockStyle.Right;
+			this.loadTextureStackGroup.ForeColor = System.Drawing.Color.White;
+			this.loadTextureStackGroup.Location = new System.Drawing.Point(735, 0);
+			this.loadTextureStackGroup.Name = "loadTextureStackGroup";
+			this.loadTextureStackGroup.Size = new System.Drawing.Size(225, 54);
+			this.loadTextureStackGroup.TabIndex = 11;
+			this.loadTextureStackGroup.TabStop = false;
+			this.loadTextureStackGroup.Text = "Texture Stack";
+			// 
+			// unloadSpriteStack
+			// 
+			this.unloadSpriteStack.BackColor = System.Drawing.Color.Black;
+			this.unloadSpriteStack.Dock = System.Windows.Forms.DockStyle.Right;
+			this.unloadSpriteStack.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.unloadSpriteStack.ForeColor = System.Drawing.Color.White;
+			this.unloadSpriteStack.Location = new System.Drawing.Point(139, 19);
+			this.unloadSpriteStack.Name = "unloadSpriteStack";
+			this.unloadSpriteStack.Size = new System.Drawing.Size(83, 32);
+			this.unloadSpriteStack.TabIndex = 9;
+			this.unloadSpriteStack.TabStop = false;
+			this.unloadSpriteStack.Text = "Unload";
+			this.unloadSpriteStack.UseVisualStyleBackColor = false;
+			this.unloadSpriteStack.Click += new System.EventHandler(this.OnUnloadTextureStack);
+			// 
+			// generateSpriteStack
+			// 
+			this.generateSpriteStack.BackColor = System.Drawing.Color.Black;
+			this.generateSpriteStack.Dock = System.Windows.Forms.DockStyle.Left;
+			this.generateSpriteStack.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.generateSpriteStack.ForeColor = System.Drawing.Color.White;
+			this.generateSpriteStack.Location = new System.Drawing.Point(3, 19);
+			this.generateSpriteStack.Name = "generateSpriteStack";
+			this.generateSpriteStack.Size = new System.Drawing.Size(136, 32);
+			this.generateSpriteStack.TabIndex = 8;
+			this.generateSpriteStack.TabStop = false;
+			this.generateSpriteStack.Text = "Generate + Load";
+			this.generateSpriteStack.UseVisualStyleBackColor = false;
+			this.generateSpriteStack.Click += new System.EventHandler(this.OnCreateTextureStack);
 			// 
 			// sceneGroup
 			// 
@@ -376,11 +425,12 @@
 			this.sceneRightClickMenuCreate.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.sceneRightClickMenuCreateSprite,
             this.sceneRightClickMenuCreateText,
-            this.sceneRightClickMenuCreateNinePatch,
             this.sceneRightClickMenuCreateSeparator1,
+            this.sceneRightClickMenuCreateCamera,
             this.sceneRightClickMenuCreateTileMap,
             this.sceneRightClickMenuCreateLight,
-            this.sceneRightClickMenuCreateCamera,
+            this.sceneRightClickMenuCreateCloth,
+            this.sceneRightClickMenuCreateNinePatch,
             this.sceneRightClickMenuCreateSeparator2,
             this.sceneRightClickMenuCreateAudio});
 			this.sceneRightClickMenuCreate.Name = "sceneRightClickMenuCreate";
@@ -401,17 +451,17 @@
 			this.sceneRightClickMenuCreateText.Text = "Text";
 			this.sceneRightClickMenuCreateText.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateText);
 			// 
-			// sceneRightClickMenuCreateNinePatch
-			// 
-			this.sceneRightClickMenuCreateNinePatch.Name = "sceneRightClickMenuCreateNinePatch";
-			this.sceneRightClickMenuCreateNinePatch.Size = new System.Drawing.Size(132, 22);
-			this.sceneRightClickMenuCreateNinePatch.Text = "Nine Patch";
-			this.sceneRightClickMenuCreateNinePatch.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateNinePatch);
-			// 
 			// sceneRightClickMenuCreateSeparator1
 			// 
 			this.sceneRightClickMenuCreateSeparator1.Name = "sceneRightClickMenuCreateSeparator1";
 			this.sceneRightClickMenuCreateSeparator1.Size = new System.Drawing.Size(129, 6);
+			// 
+			// sceneRightClickMenuCreateCamera
+			// 
+			this.sceneRightClickMenuCreateCamera.Name = "sceneRightClickMenuCreateCamera";
+			this.sceneRightClickMenuCreateCamera.Size = new System.Drawing.Size(132, 22);
+			this.sceneRightClickMenuCreateCamera.Text = "Camera";
+			this.sceneRightClickMenuCreateCamera.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateCamera);
 			// 
 			// sceneRightClickMenuCreateTileMap
 			// 
@@ -427,12 +477,19 @@
 			this.sceneRightClickMenuCreateLight.Text = "Light";
 			this.sceneRightClickMenuCreateLight.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateLight);
 			// 
-			// sceneRightClickMenuCreateCamera
+			// sceneRightClickMenuCreateCloth
 			// 
-			this.sceneRightClickMenuCreateCamera.Name = "sceneRightClickMenuCreateCamera";
-			this.sceneRightClickMenuCreateCamera.Size = new System.Drawing.Size(132, 22);
-			this.sceneRightClickMenuCreateCamera.Text = "Camera";
-			this.sceneRightClickMenuCreateCamera.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateCamera);
+			this.sceneRightClickMenuCreateCloth.Name = "sceneRightClickMenuCreateCloth";
+			this.sceneRightClickMenuCreateCloth.Size = new System.Drawing.Size(132, 22);
+			this.sceneRightClickMenuCreateCloth.Text = "Cloth";
+			this.sceneRightClickMenuCreateCloth.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateCloth);
+			// 
+			// sceneRightClickMenuCreateNinePatch
+			// 
+			this.sceneRightClickMenuCreateNinePatch.Name = "sceneRightClickMenuCreateNinePatch";
+			this.sceneRightClickMenuCreateNinePatch.Size = new System.Drawing.Size(132, 22);
+			this.sceneRightClickMenuCreateNinePatch.Text = "Nine Patch";
+			this.sceneRightClickMenuCreateNinePatch.Click += new System.EventHandler(this.OnSceneRightclickMenuCreateNinePatch);
 			// 
 			// sceneRightClickMenuCreateSeparator2
 			// 
@@ -601,6 +658,7 @@
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).EndInit();
 			this.windowSplit.ResumeLayout(false);
 			this.sceneStatusPanel.ResumeLayout(false);
+			this.loadTextureStackGroup.ResumeLayout(false);
 			this.sceneGroup.ResumeLayout(false);
 			this.searchBox.ResumeLayout(false);
 			this.searchBox.PerformLayout();
@@ -666,5 +724,9 @@
 		private ToolStripMenuItem sceneRightClickMenuCreateAudio;
 		private ToolStripMenuItem sceneRightClickMenuCreateTileMap;
 		private SaveFileDialog save;
+		private ToolStripMenuItem sceneRightClickMenuCreateCloth;
+		private GroupBox loadTextureStackGroup;
+		private Button generateSpriteStack;
+		private Button unloadSpriteStack;
 	}
 }
