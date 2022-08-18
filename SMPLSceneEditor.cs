@@ -115,7 +115,6 @@ namespace SMPLSceneEditor
 			var tilemap = CreateDefaultTable("tableTilemap");
 			var cloth = CreateDefaultTable("tableCloth");
 			var pseudo3D = CreateDefaultTable("tablePseudo3D");
-			var spriteStack = CreateDefaultTable("tableSpriteStack");
 			var cube = CreateDefaultTable("tableCube");
 			var types = thingTypesTable;
 
@@ -134,7 +133,6 @@ namespace SMPLSceneEditor
 			AddPropsTilemap();
 			AddPropsCloth();
 			AddPropsPseudo3D();
-			AddPropsSpriteStack();
 			AddPropsCube();
 
 			editThingTableTypes[scene.Name] = scene;
@@ -149,7 +147,6 @@ namespace SMPLSceneEditor
 			editThingTableTypes[tilemap.Name] = tilemap;
 			editThingTableTypes[cloth.Name] = cloth;
 			editThingTableTypes[pseudo3D.Name] = pseudo3D;
-			editThingTableTypes[spriteStack.Name] = spriteStack;
 			editThingTableTypes[cube.Name] = cube;
 
 			TableLayoutPanel CreateDefaultTable(string name)
@@ -316,26 +313,18 @@ namespace SMPLSceneEditor
 			}
 			void AddPropsPseudo3D()
 			{
-				AddThingProperty(pseudo3D, "Depth", Thing.Property.PSEUDO_3D_DEPTH, typeof(float));
 				AddThingProperty(pseudo3D, "Tilt", Thing.Property.PSEUDO_3D_TILT, typeof(float));
-			}
-			void AddPropsSpriteStack()
-			{
-				AddThingProperty(spriteStack, "LocalSize", Thing.Property.SPRITE_STACK_LOCAL_SIZE, typeof(Vector2));
-				AddThingProperty(spriteStack, "Size", Thing.Property.SPRITE_STACK_SIZE, typeof(Vector2));
-				AddSpace(spriteStack);
-				AddThingProperty(spriteStack, "OriginUnit", Thing.Property.SPRITE_STACK_ORIGIN_UNIT, typeof(Vector2), smallNumericStep: true);
-				AddThingProperty(spriteStack, "Origin", Thing.Property.SPRITE_STACK_ORIGIN, typeof(Vector2));
+				AddThingProperty(pseudo3D, "Depth", Thing.Property.PSEUDO_3D_DEPTH, typeof(float));
+				AddSpace(pseudo3D);
+				AddThingProperty(pseudo3D, "Local Size", Thing.Property.PSEUDO_3D_LOCAL_SIZE, typeof(Vector2));
+				AddThingProperty(pseudo3D, "Size", Thing.Property.PSEUDO_3D_SIZE, typeof(Vector2));
+				AddSpace(pseudo3D);
+				AddThingProperty(pseudo3D, "Origin Unit", Thing.Property.PSEUDO_3D_ORIGIN_UNIT, typeof(Vector2), smallNumericStep: true);
+				AddThingProperty(pseudo3D, "Origin", Thing.Property.PSEUDO_3D_ORIGIN, typeof(Vector2));
 			}
 			void AddPropsCube()
 			{
 				AddThingProperty(cube, "Perspective Unit", Thing.Property.CUBE_PERSPECTIVE_UNIT, typeof(float), smallNumericStep: true);
-				AddSpace(cube);
-				AddThingProperty(cube, "Local Size", Thing.Property.CUBE_LOCAL_SIZE, typeof(Vector2));
-				AddThingProperty(cube, "Size", Thing.Property.CUBE_SIZE, typeof(Vector2));
-				AddSpace(cube);
-				AddThingProperty(cube, "Origin Unit", Thing.Property.CUBE_ORIGIN_UNIT, typeof(Vector2), smallNumericStep: true);
-				AddThingProperty(cube, "Origin", Thing.Property.CUBE_ORIGIN, typeof(Vector2));
 				AddSpace(cube);
 				AddThingProperty(cube, "Side Far", Thing.Property.CUBE_SIDE_FAR, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
 				AddThingProperty(cube, "Side Top", Thing.Property.CUBE_SIDE_TOP, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
@@ -2253,84 +2242,7 @@ namespace SMPLSceneEditor
 		}
 		private void OnCreateTextureStack(object sender, EventArgs e)
 		{
-			const int TABLE_HEIGHT = 230;
-			var sz = new Vector2i(W + SPACING_X * 4, H + TABLE_HEIGHT);
-			var window = new Form()
-			{
-				Width = sz.X,
-				Height = sz.Y,
-				FormBorderStyle = FormBorderStyle.FixedToolWindow,
-				Text = "Generate Sprite Stack",
-				BackColor = System.Drawing.Color.Black,
-				ForeColor = System.Drawing.Color.White,
-				StartPosition = FormStartPosition.CenterScreen
-			};
-			var table = new TableLayoutPanel
-			{
-				Top = SPACING_Y,
-				Left = SPACING_X,
-				Width = sz.X - SPACING_X * 2 - SPACING_X / 2,
-				Height = TABLE_HEIGHT,
-				ColumnCount = 2,
-				RowCount = 6,
-				Name = "PropSpriteStackCreate"
-			};
-			var button = new Button()
-			{
-				Text = "OK",
-				Top = table.Height + SPACING_Y * 2,
-				Left = sz.X - BUTTON_W - SPACING_X - SPACING_X / 4,
-				Width = BUTTON_W,
-				Height = BUTTON_H,
-				DialogResult = DialogResult.OK
-			};
-			button.Click += (sender, e) => { window.Close(); };
-			window.Controls.Add(table);
-			window.Controls.Add(button);
-			window.AcceptButton = button;
-
-			for(int i = 0; i < 2; i++)
-				table.ColumnStyles.Add(new(SizeType.Percent, 50));
-			for(int i = 0; i < 6; i++)
-				table.RowStyles.Add(new(SizeType.Percent, 50));
-
-			AddThingProperty(table, "Obj Path", "SpriteStackObjPath", valueType: typeof(string));
-			AddThingProperty(table, "Texture Path", "SpriteStackTexturePath", valueType: typeof(string));
-			AddThingProperty(table, "Model Scale", "SpriteStackScale", valueType: typeof(Vector3));
-			AddThingProperty(table, "Model Rotation", "SpriteStackRotation", valueType: typeof(Vector3));
-			AddThingProperty(table, "Stack Count", "SpriteStackCount", valueType: typeof(int));
-			AddThingProperty(table, "Stack Detail", "SpriteStackDetail", valueType: typeof(float));
-
-			var obj = (TextBox)table.Controls[0];
-			var tex = (TextBox)table.Controls[2];
-			var scale = table.Controls[4];
-			var rotation = table.Controls[6];
-			var count = (NumericUpDown)table.Controls[8];
-			var detail = (NumericUpDown)table.Controls[10];
-			((NumericUpDown)scale.Controls[0]).Value = 1;
-			((NumericUpDown)scale.Controls[1]).Value = 1;
-			((NumericUpDown)scale.Controls[2]).Value = 1;
-			count.Value = 20;
-			detail.Value = 10;
-
-			isSpriteStackCreationOpen = true;
-			spriteStackCreateTexPath = tex;
-			spriteStackCreateObjPath = obj;
-
-			if(window.ShowDialog() != DialogResult.OK)
-				return;
-
-			var sc = new Vector3(
-				(float)((NumericUpDown)scale.Controls[0]).Value,
-				(float)((NumericUpDown)scale.Controls[1]).Value,
-				(float)((NumericUpDown)scale.Controls[2]).Value);
-			var rot = new Vector3(
-				(float)((NumericUpDown)rotation.Controls[0]).Value,
-				(float)((NumericUpDown)rotation.Controls[1]).Value,
-				(float)((NumericUpDown)rotation.Controls[2]).Value);
-
-			Scene.CurrentScene.LoadTextureStack(obj.Text, tex.Text, sc, rot, (int)count.Value, (float)detail.Value);
-			isSpriteStackCreationOpen = false;
+			TryCreateTextureStack();
 		}
 		private void OnUnloadTextureStack(object sender, EventArgs e)
 		{
@@ -2355,13 +2267,13 @@ namespace SMPLSceneEditor
 			var uid = Thing.CreateLight("Light", Color.White);
 			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
 		}
-		private void OnSceneRightclickMenuCreateCamera(object sender, EventArgs e)
+		private void OnSceneRightClickMenuCreateCamera(object sender, EventArgs e)
 		{
 			var res = GetVector2("Create Camera", "Provide the Camera resolution.", 1, 7680, 1, 4320, new(1000));
 			var uid = Thing.CreateCamera("Camera", res);
 			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
 		}
-		private void OnSceneRightclickMenuCreateText(object sender, EventArgs e)
+		private void OnSceneRightClickMenuCreateText(object sender, EventArgs e)
 		{
 			var result = DialogResult.None;
 			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
@@ -2372,17 +2284,17 @@ namespace SMPLSceneEditor
 			var uid = Thing.CreateText("Text", result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName));
 			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
 		}
-		private void OnSceneRightclickMenuCreateNinePatch(object sender, EventArgs e)
+		private void OnSceneRightClickMenuCreateNinePatch(object sender, EventArgs e)
 		{
 			var uid = Thing.CreateNinePatch("NinePatch", null);
 			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
 		}
-		private void OnSceneRightclickMenuCreateTilemap(object sender, EventArgs e)
+		private void OnSceneRightClickMenuCreateTilemap(object sender, EventArgs e)
 		{
 			var uid = Thing.CreateTilemap("Tilemap", null);
 			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
 		}
-		private void OnSceneRightclickMenuCreateAudio(object sender, EventArgs e)
+		private void OnSceneRightClickMenuCreateAudio(object sender, EventArgs e)
 		{
 			var result = DialogResult.None;
 			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
@@ -2408,16 +2320,27 @@ namespace SMPLSceneEditor
 		}
 		private void OnSceneRightClickMenuCreateSpriteStack(object sender, EventArgs e)
 		{
-			var uid = Thing.CreateSpriteStack("SpriteStack", null);
+			var texStackName = default(string);
+			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
+				MessageBox.Show(this, "This Sprite Stack will be invisible without a Texture Stack.\n\n" + NO_ASSETS_MSG, "Create Sprite Stack");
+			else if(MessageBox.Show(this, "Generate & Load a Texture Stack?", "Create Sprite Stack", MessageBoxButtons.YesNo) == DialogResult.Yes)
+				texStackName = TryCreateTextureStack();
+
+			var uid = Thing.CreateSpriteStack("Text", texStackName);
+			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
+		}
+		private void OnSceneRightClickMenuCreateCube(object sender, EventArgs e)
+		{
+			var uid = Thing.CreateCube("Sprite", null);
 			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
 		}
 
-		private void OnSceneRightclickMenuCreateHitboxLine(object sender, EventArgs e)
+		private void OnSceneRightClickMenuCreateHitboxLine(object sender, EventArgs e)
 		{
 			var off = new Vector2(50f * sceneSc, 0);
 			AddHitboxLine(selectedUIDs[0], new List<Line>() { new(rightClickPos - off, rightClickPos + off) });
 		}
-		private void OnSceneRightclickMenuCreateHitboxSquare(object sender, EventArgs e)
+		private void OnSceneRightClickMenuCreateHitboxSquare(object sender, EventArgs e)
 		{
 			var off = new Vector2(50f) * sceneSc;
 			var uid = selectedUIDs[0];
@@ -2431,7 +2354,7 @@ namespace SMPLSceneEditor
 			};
 			AddHitboxLine(uid, lines);
 		}
-		private void OnSceneRightclickMenuCreateHitboxCircle(object sender, EventArgs e)
+		private void OnSceneRightClickMenuCreateHitboxCircle(object sender, EventArgs e)
 		{
 			var uid = selectedUIDs[0];
 			var radius = 50f * sceneSc;
@@ -2447,6 +2370,26 @@ namespace SMPLSceneEditor
 			AddHitboxLine(uid, lines);
 		}
 
+		private void OnSceneRightClickMenu(object sender, EventArgs e)
+		{
+			var rightClickItems = sceneRightClickMenu.Items.Find("sceneRightClickMenuDuplicate", false);
+			if(rightClickItems == null || rightClickItems.Length == 0)
+				return;
+
+			rightClickItems[0].Enabled = selectedUIDs.Count == 1;
+		}
+		private void OnSceneRightClickMenuDuplicate(object sender, EventArgs e)
+		{
+			if(selectedUIDs.Count == 0)
+				return;
+
+			var uid = selectedUIDs[0];
+			var dupUID = Thing.GetFreeUID(uid);
+			var pos = (Vector2)Thing.Get(uid, Thing.Property.POSITION);
+			var sc = (float)Thing.Get(uid, Thing.Property.SCALE);
+			Thing.Duplicate(selectedUIDs[0], dupUID);
+			Thing.Set(dupUID, Thing.Property.POSITION, pos.PointMoveAtAngle(45, sc * 10, false));
+		}
 		private void OnSceneRightClickMenuResetView(object sender, EventArgs e)
 		{
 			SetView();
@@ -2736,6 +2679,91 @@ namespace SMPLSceneEditor
 		}
 		#endregion
 		#region Assets
+		private string? TryCreateTextureStack()
+		{
+			const int TABLE_HEIGHT = 230;
+			var sz = new Vector2i(W + SPACING_X * 4, H + TABLE_HEIGHT);
+			var window = new Form()
+			{
+				Width = sz.X,
+				Height = sz.Y,
+				FormBorderStyle = FormBorderStyle.FixedToolWindow,
+				Text = "Generate Sprite Stack",
+				BackColor = System.Drawing.Color.Black,
+				ForeColor = System.Drawing.Color.White,
+				StartPosition = FormStartPosition.CenterScreen
+			};
+			var table = new TableLayoutPanel
+			{
+				Top = SPACING_Y,
+				Left = SPACING_X,
+				Width = sz.X - SPACING_X * 2 - SPACING_X / 2,
+				Height = TABLE_HEIGHT,
+				ColumnCount = 2,
+				RowCount = 6,
+				Name = "PropSpriteStackCreate"
+			};
+			var button = new Button()
+			{
+				Text = "OK",
+				Top = table.Height + SPACING_Y * 2,
+				Left = sz.X - BUTTON_W - SPACING_X - SPACING_X / 4,
+				Width = BUTTON_W,
+				Height = BUTTON_H,
+				DialogResult = DialogResult.OK
+			};
+			button.Click += (sender, e) => { window.Close(); };
+			window.Controls.Add(table);
+			window.Controls.Add(button);
+			window.AcceptButton = button;
+
+			for(int i = 0; i < 2; i++)
+				table.ColumnStyles.Add(new(SizeType.Percent, 50));
+			for(int i = 0; i < 6; i++)
+				table.RowStyles.Add(new(SizeType.Percent, 50));
+
+			AddThingProperty(table, "Obj Path", "SpriteStackObjPath", valueType: typeof(string));
+			AddThingProperty(table, "Texture Path", "SpriteStackTexturePath", valueType: typeof(string));
+			AddThingProperty(table, "Model Scale", "SpriteStackScale", valueType: typeof(Vector3));
+			AddThingProperty(table, "Model Rotation", "SpriteStackRotation", valueType: typeof(Vector3));
+			AddThingProperty(table, "Stack Count", "SpriteStackCount", valueType: typeof(int));
+			AddThingProperty(table, "Stack Detail", "SpriteStackDetail", valueType: typeof(float));
+
+			var obj = (TextBox)table.Controls[0];
+			var tex = (TextBox)table.Controls[2];
+			var scale = table.Controls[4];
+			var rotation = table.Controls[6];
+			var count = (NumericUpDown)table.Controls[8];
+			var detail = (NumericUpDown)table.Controls[10];
+			((NumericUpDown)scale.Controls[0]).Value = 1;
+			((NumericUpDown)scale.Controls[1]).Value = 1;
+			((NumericUpDown)scale.Controls[2]).Value = 1;
+			count.Value = 20;
+			detail.Value = 10;
+
+			isSpriteStackCreationOpen = true;
+			spriteStackCreateTexPath = tex;
+			spriteStackCreateObjPath = obj;
+
+			if(window.ShowDialog() != DialogResult.OK)
+				return default;
+
+			var sc = new Vector3(
+				(float)((NumericUpDown)scale.Controls[0]).Value,
+				(float)((NumericUpDown)scale.Controls[1]).Value,
+				(float)((NumericUpDown)scale.Controls[2]).Value);
+			var rot = new Vector3(
+				(float)((NumericUpDown)rotation.Controls[0]).Value,
+				(float)((NumericUpDown)rotation.Controls[1]).Value,
+				(float)((NumericUpDown)rotation.Controls[2]).Value);
+
+			var name = Path.GetFileNameWithoutExtension(obj.Text);
+			Scene.CurrentScene.LoadTextureStack(obj.Text, tex.Text, sc, rot, (int)count.Value, (float)detail.Value);
+			isSpriteStackCreationOpen = false;
+
+			return name;
+		}
+
 		private void OnAssetRename(object sender, RenamedEventArgs e)
 		{
 			Scene.CurrentScene.UnloadAssets(GetMirrorAssetPath(e.OldFullPath));
@@ -2760,8 +2788,8 @@ namespace SMPLSceneEditor
 
 		private void OnAssetFolderRename(object sender, RenamedEventArgs e)
 		{
-			//if(e.FullPath != assetsPath)
-			//	Directory.Move(e.FullPath, assetsPath);
+			if(e.FullPath != GetAssetsPath()) // prevents renaming
+				Directory.Move(e.FullPath, GetAssetsPath());
 		}
 		private void OnAppQuitting(object? sender, FormClosingEventArgs e)
 		{
