@@ -12,6 +12,8 @@ global using Color = SFML.Graphics.Color;
 global using BlendMode = SMPL.Thing.BlendMode;
 global using Cursor = System.Windows.Forms.Cursor;
 
+using Extensions = SMPL.Tools.Extensions;
+
 namespace SMPLSceneEditor
 {
 	public partial class FormWindow : Form
@@ -25,7 +27,7 @@ namespace SMPLSceneEditor
 		private const string LOADING_ASSETS = "Processing assets...", LOADING_SCENE = "Loading Scene...";
 		private const float HITBOX_POINT_EDIT_MAX_DIST = 20;
 
-		private TextBox? spriteStackCreateTexPath, spriteStackCreateObjPath;
+		private TextBox? spriteStackCreateTexPath, spriteStackCreateObjPath, cubeSideTexPath;
 		private Label tilePaletteHoveredIndexesLabel;
 		private CheckBox? editHitbox, paintTile;
 		private Control? waitingPickThingControl, tilePaletteCol;
@@ -56,6 +58,9 @@ namespace SMPLSceneEditor
 			{ "Sprite", Color.White },
 			{ "NinePatch", Color.White },
 			{ "Tilemap", new(100, 60, 20) },
+			{ "SpriteStack", new(255, 150, 60) },
+			{ "Cloth", Color.Blue },
+			{ "Cube", new(50, 150, 180) },
 		};
 
 		private Color bgCol = Color.Black, bbCol = Color.Cyan, selCol = new(0, 180, 255, 100), hitCol = new(0, 255, 0),
@@ -111,6 +116,7 @@ namespace SMPLSceneEditor
 			var cloth = CreateDefaultTable("tableCloth");
 			var pseudo3D = CreateDefaultTable("tablePseudo3D");
 			var spriteStack = CreateDefaultTable("tableSpriteStack");
+			var cube = CreateDefaultTable("tableCube");
 			var types = thingTypesTable;
 
 			types.Hide();
@@ -129,6 +135,7 @@ namespace SMPLSceneEditor
 			AddPropsCloth();
 			AddPropsPseudo3D();
 			AddPropsSpriteStack();
+			AddPropsCube();
 
 			editThingTableTypes[scene.Name] = scene;
 			editThingTableTypes[thing.Name] = thing;
@@ -143,6 +150,7 @@ namespace SMPLSceneEditor
 			editThingTableTypes[cloth.Name] = cloth;
 			editThingTableTypes[pseudo3D.Name] = pseudo3D;
 			editThingTableTypes[spriteStack.Name] = spriteStack;
+			editThingTableTypes[cube.Name] = cube;
 
 			TableLayoutPanel CreateDefaultTable(string name)
 			{
@@ -168,17 +176,20 @@ namespace SMPLSceneEditor
 				AddThingProperty(scene, "Grid 0", "SceneGrid0Color", typeof(Color));
 				AddThingProperty(scene, "Grid 1000", "SceneGrid1000Color", typeof(Color));
 				AddSpace(scene);
-				AddThingProperty(scene, "Bounding Box", "SceneBoundingBoxColor", typeof(Color), labelSizeOffset: 1);
-				AddThingProperty(scene, "Selection", "SceneSelectColor", typeof(Color));
+				AddThingProperty(scene, "Selection Box", "SceneBoundingBoxColor", typeof(Color), labelSizeOffset: 2);
+				AddThingProperty(scene, "Selection Fill", "SceneSelectColor", typeof(Color));
 				AddSpace(scene);
 				AddThingProperty(scene, "Sprite", "SceneSpriteColor", typeof(Color));
-				AddThingProperty(scene, "NinePatch", "SceneNinePatchColor", typeof(Color));
 				AddThingProperty(scene, "Text", "SceneTextColor", typeof(Color));
+				AddThingProperty(scene, "NinePatch", "SceneNinePatchColor", typeof(Color));
 				AddThingProperty(scene, "Tilemap", "SceneTilemapColor", typeof(Color));
 				AddThingProperty(scene, "Camera", "SceneCameraColor", typeof(Color));
 				AddThingProperty(scene, "Hitbox", "SceneHitboxColor", typeof(Color));
 				AddThingProperty(scene, "Light", "SceneLightColor", typeof(Color));
 				AddThingProperty(scene, "Audio", "SceneAudioColor", typeof(Color));
+				AddThingProperty(scene, "Cloth", "SceneClothColor", typeof(Color));
+				AddThingProperty(scene, "SpriteStack", "SceneSpriteStackColor", typeof(Color));
+				AddThingProperty(scene, "Cube", "SceneCubeColor", typeof(Color));
 			}
 			void AddPropsThing()
 			{
@@ -307,11 +318,31 @@ namespace SMPLSceneEditor
 			{
 				AddThingProperty(pseudo3D, "Depth", Thing.Property.PSEUDO_3D_DEPTH, typeof(float));
 				AddThingProperty(pseudo3D, "Tilt", Thing.Property.PSEUDO_3D_TILT, typeof(float));
-				AddThingProperty(pseudo3D, "Perspective Unit", Thing.Property.PSEUDO_3D_PERSPECTIVE_UNIT, typeof(float), labelSizeOffset: 2);
 			}
 			void AddPropsSpriteStack()
 			{
-				AddThingProperty(spriteStack, "Texture Paths", Thing.Property.SPRITE_STACK_TEXTURE_PATHS, typeof(List<string>));
+				AddThingProperty(spriteStack, "LocalSize", Thing.Property.SPRITE_STACK_LOCAL_SIZE, typeof(Vector2));
+				AddThingProperty(spriteStack, "Size", Thing.Property.SPRITE_STACK_SIZE, typeof(Vector2));
+				AddSpace(spriteStack);
+				AddThingProperty(spriteStack, "OriginUnit", Thing.Property.SPRITE_STACK_ORIGIN_UNIT, typeof(Vector2), smallNumericStep: true);
+				AddThingProperty(spriteStack, "Origin", Thing.Property.SPRITE_STACK_ORIGIN, typeof(Vector2));
+			}
+			void AddPropsCube()
+			{
+				AddThingProperty(cube, "Perspective Unit", Thing.Property.CUBE_PERSPECTIVE_UNIT, typeof(float), smallNumericStep: true);
+				AddSpace(cube);
+				AddThingProperty(cube, "Local Size", Thing.Property.CUBE_LOCAL_SIZE, typeof(Vector2));
+				AddThingProperty(cube, "Size", Thing.Property.CUBE_SIZE, typeof(Vector2));
+				AddSpace(cube);
+				AddThingProperty(cube, "Origin Unit", Thing.Property.CUBE_ORIGIN_UNIT, typeof(Vector2), smallNumericStep: true);
+				AddThingProperty(cube, "Origin", Thing.Property.CUBE_ORIGIN, typeof(Vector2));
+				AddSpace(cube);
+				AddThingProperty(cube, "Side Far", Thing.Property.CUBE_SIDE_FAR, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
+				AddThingProperty(cube, "Side Top", Thing.Property.CUBE_SIDE_TOP, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
+				AddThingProperty(cube, "Side Left", Thing.Property.CUBE_SIDE_LEFT, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
+				AddThingProperty(cube, "Side Right", Thing.Property.CUBE_SIDE_RIGHT, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
+				AddThingProperty(cube, "Side Bottom", Thing.Property.CUBE_SIDE_BOTTOM, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
+				AddThingProperty(cube, "Side Near", Thing.Property.CUBE_SIDE_NEAR, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
 			}
 
 			void AddSpace(TableLayoutPanel table)
@@ -348,7 +379,7 @@ namespace SMPLSceneEditor
 			}
 
 			var valueTypeIsFlag = valueType.IsDefined(typeof(FlagsAttribute), false);
-			if(valueType == typeof(string) || (valueType.IsEnum && valueTypeIsFlag))
+			if(valueType == typeof(string) || (valueType.IsEnum && valueTypeIsFlag) || valueType == typeof(Thing.CubeSide))
 			{
 				prop = new TextBox();
 				prop.TextChanged += OnTextBoxChange;
@@ -412,6 +443,11 @@ namespace SMPLSceneEditor
 			else if(valueType.IsEnum && valueType.IsDefined(typeof(FlagsAttribute), false))
 			{
 				CreateButton("Options", SelectFlagsEnum, 90);
+				lab.ForeColor = System.Drawing.Color.White;
+			}
+			else if(valueType == typeof(Thing.CubeSide))
+			{
+				CreateButton("Modify", CustomizeCubeSide, 90);
 				lab.ForeColor = System.Drawing.Color.White;
 			}
 
@@ -510,6 +546,9 @@ namespace SMPLSceneEditor
 						case "PropSceneGrid1000Color": gridCol1000 = C(gridCol1000); break;
 						case "PropSceneAudioColor": cols["Audio"] = C(cols["Audio"]); break;
 						case "PropSceneTilemapColor": cols["Tilemap"] = C(cols["Tilemap"]); break;
+						case "PropSceneClothColor": cols["Cloth"] = C(cols["Cloth"]); break;
+						case "PropSceneSpriteStackColor": cols["SpriteStack"] = C(cols["SpriteStack"]); break;
+						case "PropSceneCubeColor": cols["Cube"] = C(cols["Cube"]); break;
 					}
 
 					TryResetThingPanel();
@@ -550,7 +589,12 @@ namespace SMPLSceneEditor
 					return;
 
 				var asset = GetMirrorAssetPath(pickAsset.FileName);
-				if(isSpriteStackCreationOpen)
+				if(propName.Contains(nameof(Thing.CubeSide)) && cubeSideTexPath != null)
+				{
+					cubeSideTexPath.Text = asset;
+					return;
+				}
+				else if(isSpriteStackCreationOpen)
 				{
 					if(propName == "SpriteStackTexturePath" && spriteStackCreateTexPath != null)
 						spriteStackCreateTexPath.Text = asset;
@@ -858,6 +902,82 @@ namespace SMPLSceneEditor
 				if(paintTile.Checked && palette.Count == 0)
 					MessageBox.Show(this, "The Tile Palette is empty. Add tiles before painting.", "Paint Tile");
 			}
+			void CustomizeCubeSide(object? sender, EventArgs e)
+			{
+				const int TABLE_HEIGHT = 150;
+				var sz = new Vector2i(W + SPACING_X * 4, H + TABLE_HEIGHT);
+				var window = new Form()
+				{
+					Width = sz.X,
+					Height = sz.Y,
+					FormBorderStyle = FormBorderStyle.FixedToolWindow,
+					Text = $"Modify {propName?.Replace("Side", "")} Cube Side",
+					BackColor = System.Drawing.Color.Black,
+					ForeColor = System.Drawing.Color.White,
+					StartPosition = FormStartPosition.CenterScreen
+				};
+				var table = new TableLayoutPanel
+				{
+					Top = SPACING_Y,
+					Left = SPACING_X,
+					Width = sz.X - SPACING_X * 2 - SPACING_X / 2,
+					Height = TABLE_HEIGHT,
+					ColumnCount = 2,
+					RowCount = 6,
+					Name = "PropModifyCubeSide"
+				};
+				var button = new Button()
+				{
+					Text = "OK",
+					Top = table.Height + SPACING_Y * 2,
+					Left = sz.X - BUTTON_W - SPACING_X - SPACING_X / 4,
+					Width = BUTTON_W,
+					Height = BUTTON_H,
+					DialogResult = DialogResult.OK
+				};
+				button.Click += (sender, e) => { window.Close(); };
+				window.Controls.Add(table);
+				window.Controls.Add(button);
+				window.AcceptButton = button;
+
+				for(int i = 0; i < 2; i++)
+					table.ColumnStyles.Add(new(SizeType.Percent, 50));
+				for(int i = 0; i < 4; i++)
+					table.RowStyles.Add(new(SizeType.Percent, 50));
+
+				AddThingProperty(table, "Is Hidden", $"{nameof(Thing.CubeSide)}{nameof(Thing.CubeSide.IsHidden)}", valueType: typeof(bool));
+				AddThingProperty(table, "Texture Path", $"{nameof(Thing.CubeSide)}{nameof(Thing.CubeSide.TexturePath)}", valueType: typeof(string));
+				AddThingProperty(table, "Texture Coordinate Unit A", $"{nameof(Thing.CubeSide)}{nameof(Thing.CubeSide.TexCoordUnitA)}",
+					valueType: typeof(Vector2), labelSizeOffset: 2, smallNumericStep: true);
+				AddThingProperty(table, "Texture Coordinate Unit B", $"{nameof(Thing.CubeSide)}{nameof(Thing.CubeSide.TexCoordUnitB)}",
+					valueType: typeof(Vector2), labelSizeOffset: 2, smallNumericStep: true);
+
+				var hidden = (CheckBox)table.Controls[0];
+				var tex = (TextBox)table.Controls[2];
+				var texCoordUnitA = table.Controls[4];
+				var texCoordUnitB = table.Controls[6];
+
+				var cubeSide = (Thing.CubeSide)Thing.Get(selectedUIDs[0], propName);
+
+				cubeSideTexPath = tex;
+
+				hidden.Checked = cubeSide.IsHidden;
+				tex.Text = cubeSide.TexturePath;
+				((NumericUpDown)texCoordUnitA.Controls[0]).Value = (decimal)cubeSide.TexCoordUnitA.X;
+				((NumericUpDown)texCoordUnitA.Controls[1]).Value = (decimal)cubeSide.TexCoordUnitA.Y;
+				((NumericUpDown)texCoordUnitB.Controls[0]).Value = (decimal)cubeSide.TexCoordUnitB.X;
+				((NumericUpDown)texCoordUnitB.Controls[1]).Value = (decimal)cubeSide.TexCoordUnitB.Y;
+
+				if(window.ShowDialog() != DialogResult.OK)
+					return;
+
+				cubeSide.IsHidden = hidden.Checked;
+				cubeSide.TexturePath = tex.Text;
+				cubeSide.TexCoordUnitA = new Vector2((float)((NumericUpDown)texCoordUnitA.Controls[0]).Value, (float)((NumericUpDown)texCoordUnitA.Controls[1]).Value);
+				cubeSide.TexCoordUnitB = new Vector2((float)((NumericUpDown)texCoordUnitB.Controls[0]).Value, (float)((NumericUpDown)texCoordUnitB.Controls[1]).Value);
+
+				Thing.Set(selectedUIDs[0], propName, cubeSide);
+			}
 
 			void SetDefault(Control control, float fontSize = FONT_SIZE, bool reverseColors = false)
 			{
@@ -990,10 +1110,18 @@ namespace SMPLSceneEditor
 					case "List<String>": ProcessList((ComboBox)control, (List<string>)Thing.Get(uid, propName)); break;
 					case "ReadOnlyCollection<String>": ProcessList((ComboBox)control, (ReadOnlyCollection<string>)Thing.Get(uid, propName)); break;
 					case "BlendMode": ProcessEnumList((ComboBox)control, typeof(Thing.BlendMode), propName); break;
-					case "Styles": ProcessEnumFlagList((TextBox)control, typeof(Text.Styles), propName); break;
+					case "Styles": ProcessEnumFlagList((TextBox)control, typeof(Text.Styles)); break;
 					case "Effect": ProcessEnumList((ComboBox)control, typeof(Thing.Effect), propName); break;
 					case "AudioStatus": ProcessEnumList((ComboBox)control, typeof(Thing.AudioStatus), propName); break;
 					case "Hitbox": SetText((TextBox)control, $"{((Hitbox)Thing.Get(uid, propName)).Lines.Count} Lines", readOnly); break;
+					case "CubeSide":
+						{
+							var cubeSide = (Thing.CubeSide)Thing.Get(uid, propName);
+							var texPath = string.IsNullOrWhiteSpace(cubeSide.TexturePath) ?
+								(string)Thing.Get(uid, Thing.Property.VISUAL_TEXTURE_PATH) : cubeSide.TexturePath;
+							SetText((TextBox)control, $"{texPath}", true);
+							break;
+						}
 					case "Dictionary<String, Tile>":
 						{
 							var prevIndex = ((ComboBox)control).SelectedIndex;
@@ -1038,7 +1166,7 @@ namespace SMPLSceneEditor
 
 				list.SelectedIndex = (int)Thing.Get(uid, propName);
 			}
-			void ProcessEnumFlagList(TextBox count, Type enumType, string propName)
+			void ProcessEnumFlagList(TextBox count, Type enumType)
 			{
 				if(enumType.IsEnum == false || enumType.IsDefined(typeof(FlagsAttribute), false) == false)
 					return;
@@ -1244,6 +1372,9 @@ namespace SMPLSceneEditor
 				SetColor("PropSceneSpriteColor", typeColors["Sprite"]);
 				SetColor("PropSceneNinePatchColor", typeColors["NinePatch"]);
 				SetColor("PropSceneTilemapColor", typeColors["Tilemap"]);
+				SetColor("PropSceneClothColor", typeColors["Cloth"]);
+				SetColor("PropSceneSpriteStackColor", typeColors["SpriteStack"]);
+				SetColor("PropSceneCubeColor", typeColors["Cube"]);
 
 				void SetColor(string name, Color col)
 				{
@@ -2198,7 +2329,7 @@ namespace SMPLSceneEditor
 				(float)((NumericUpDown)rotation.Controls[1]).Value,
 				(float)((NumericUpDown)rotation.Controls[2]).Value);
 
-			Scene.CurrentScene.LoadSpriteStack(obj.Text, tex.Text, sc, rot, (int)count.Value, (float)detail.Value);
+			Scene.CurrentScene.LoadTextureStack(obj.Text, tex.Text, sc, rot, (int)count.Value, (float)detail.Value);
 			isSpriteStackCreationOpen = false;
 		}
 		private void OnUnloadTextureStack(object sender, EventArgs e)
@@ -2273,6 +2404,11 @@ namespace SMPLSceneEditor
 				return;
 
 			var uid = Thing.CreateCloth("Cloth", null, size.X, size.Y, (int)fragmentAmount.X, (int)fragmentAmount.Y);
+			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
+		}
+		private void OnSceneRightClickMenuCreateSpriteStack(object sender, EventArgs e)
+		{
+			var uid = Thing.CreateSpriteStack("SpriteStack", null);
 			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
 		}
 
@@ -2439,6 +2575,9 @@ namespace SMPLSceneEditor
 				return;
 			var textBox = (TextBox)sender;
 			var propName = textBox.Name["Prop".Length..];
+			if(propName.Contains(nameof(Thing.CubeSide)))
+				return;
+
 			var uid = selectedUIDs[0];
 
 			var prop = Thing.Info.GetProperty(uid, propName);
@@ -2461,14 +2600,15 @@ namespace SMPLSceneEditor
 
 			var checkBox = (CheckBox)sender;
 			var propName = checkBox.Name["Prop".Length..];
+
+			if(propName.Contains(nameof(Thing.CubeSide)))
+				return;
+
 			var uid = selectedUIDs[0];
 
-			if(propName == Thing.Property.HITBOX)
-			{
-
-			}
-			else
+			if(propName != Thing.Property.HITBOX)
 				Thing.Set(uid, propName, checkBox.Checked);
+
 			UpdateThingPanel();
 		}
 		private void OnNumericChange(object? sender, EventArgs e)
@@ -2480,7 +2620,10 @@ namespace SMPLSceneEditor
 			var propName = numeric.Name["Prop".Length..];
 			var vecColIndex = 0;
 			var parName = numeric.Parent.Name;
-			if(parName.StartsWith("Prop") || parName.StartsWith("Scene")) // is vector or color
+
+			if(parName.Contains(nameof(Thing.CubeSide)))
+				return;
+			else if(parName.StartsWith("Prop") || parName.StartsWith("Scene")) // is vector or color
 			{
 				vecColIndex = (int)propName[^1].ToString().ToNumber();
 				propName = propName[..^1];
@@ -2508,6 +2651,9 @@ namespace SMPLSceneEditor
 					case "PropSceneSpriteColor": cols["Sprite"] = SetColor(cols["Sprite"]); break;
 					case "PropSceneNinePatchColor": cols["NinePatch"] = SetColor(cols["NinePatch"]); break;
 					case "PropSceneTilemapColor": cols["Tilemap"] = SetColor(cols["Tilemap"]); break;
+					case "PropSceneClothColor": cols["Cloth"] = SetColor(cols["Cloth"]); break;
+					case "PropSceneSpriteStackColor": cols["SpriteStack"] = SetColor(cols["SpriteStack"]); break;
+					case "PropSceneCubeColor": cols["Cube"] = SetColor(cols["Cube"]); break;
 				}
 
 				TryResetThingPanel();
