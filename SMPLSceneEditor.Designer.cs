@@ -63,10 +63,8 @@
 			this.sceneRightClickMenuCreateAudio = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateLight = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateCamera = new System.Windows.Forms.ToolStripMenuItem();
-			this.sceneRightClickMenuDuplicate = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.sceneRightClickMenuResetView = new System.Windows.Forms.ToolStripMenuItem();
-			this.sceneRightClickMenuUnselectAll = new System.Windows.Forms.ToolStripMenuItem();
 			this.rightTable = new System.Windows.Forms.TableLayoutPanel();
 			this.thingTypesTable = new System.Windows.Forms.TableLayoutPanel();
 			this.load = new System.Windows.Forms.OpenFileDialog();
@@ -82,6 +80,10 @@
 			this.sceneRightClickMenuHitboxResetView = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuDeselectAll = new System.Windows.Forms.ToolStripMenuItem();
 			this.save = new System.Windows.Forms.SaveFileDialog();
+			this.sceneRightClickMenuSelection = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuSelectionDuplicate = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuSelectionDelete = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuSelectionDeselect = new System.Windows.Forms.ToolStripMenuItem();
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).BeginInit();
 			this.windowSplit.Panel1.SuspendLayout();
 			this.windowSplit.Panel2.SuspendLayout();
@@ -417,12 +419,11 @@
 			// 
 			this.sceneRightClickMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.sceneRightClickMenuCreate,
-            this.sceneRightClickMenuDuplicate,
+            this.sceneRightClickMenuSelection,
             this.sceneRightClickMenuSeparator1,
-            this.sceneRightClickMenuResetView,
-            this.sceneRightClickMenuUnselectAll});
+            this.sceneRightClickMenuResetView});
 			this.sceneRightClickMenu.Name = "sceneRightClickMenu";
-			this.sceneRightClickMenu.Size = new System.Drawing.Size(181, 120);
+			this.sceneRightClickMenu.Size = new System.Drawing.Size(181, 98);
 			this.sceneRightClickMenu.Opened += new System.EventHandler(this.OnSceneRightClickMenu);
 			// 
 			// sceneRightClickMenuCreate
@@ -524,13 +525,6 @@
 			this.sceneRightClickMenuCreateCamera.Text = "Camera";
 			this.sceneRightClickMenuCreateCamera.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateCamera);
 			// 
-			// sceneRightClickMenuDuplicate
-			// 
-			this.sceneRightClickMenuDuplicate.Name = "sceneRightClickMenuDuplicate";
-			this.sceneRightClickMenuDuplicate.Size = new System.Drawing.Size(180, 22);
-			this.sceneRightClickMenuDuplicate.Text = "Duplicate";
-			this.sceneRightClickMenuDuplicate.Click += new System.EventHandler(this.OnSceneRightClickMenuDuplicate);
-			// 
 			// sceneRightClickMenuSeparator1
 			// 
 			this.sceneRightClickMenuSeparator1.Name = "sceneRightClickMenuSeparator1";
@@ -542,13 +536,6 @@
 			this.sceneRightClickMenuResetView.Size = new System.Drawing.Size(180, 22);
 			this.sceneRightClickMenuResetView.Text = "Reset View";
 			this.sceneRightClickMenuResetView.Click += new System.EventHandler(this.OnSceneRightClickMenuResetView);
-			// 
-			// sceneRightClickMenuUnselectAll
-			// 
-			this.sceneRightClickMenuUnselectAll.Name = "sceneRightClickMenuUnselectAll";
-			this.sceneRightClickMenuUnselectAll.Size = new System.Drawing.Size(180, 22);
-			this.sceneRightClickMenuUnselectAll.Text = "Deselect All";
-			this.sceneRightClickMenuUnselectAll.Click += new System.EventHandler(this.OnSceneRightClickMenuDeselect);
 			// 
 			// rightTable
 			// 
@@ -658,13 +645,44 @@
 			this.sceneRightClickMenuDeselectAll.Name = "sceneRightClickMenuDeselectAll";
 			this.sceneRightClickMenuDeselectAll.Size = new System.Drawing.Size(135, 22);
 			this.sceneRightClickMenuDeselectAll.Text = "Deselect All";
-			this.sceneRightClickMenuDeselectAll.Click += new System.EventHandler(this.OnSceneRightClickMenuDeselect);
+			this.sceneRightClickMenuDeselectAll.Click += new System.EventHandler(this.OnSceneRightClickMenuSelectionDeselect);
 			// 
 			// save
 			// 
 			this.save.DefaultExt = "scene";
 			this.save.Filter = "Scene|*.scene";
 			this.save.Title = "Save Scene";
+			// 
+			// sceneRightClickMenuSelection
+			// 
+			this.sceneRightClickMenuSelection.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.sceneRightClickMenuSelectionDuplicate,
+            this.sceneRightClickMenuSelectionDelete,
+            this.sceneRightClickMenuSelectionDeselect});
+			this.sceneRightClickMenuSelection.Name = "sceneRightClickMenuSelection";
+			this.sceneRightClickMenuSelection.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuSelection.Text = "Selection";
+			// 
+			// sceneRightClickMenuSelectionDuplicate
+			// 
+			this.sceneRightClickMenuSelectionDuplicate.Name = "sceneRightClickMenuSelectionDuplicate";
+			this.sceneRightClickMenuSelectionDuplicate.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuSelectionDuplicate.Text = "Duplicate";
+			this.sceneRightClickMenuSelectionDuplicate.Click += new System.EventHandler(this.OnSceneRightClickMenuSelectionDuplicate);
+			// 
+			// sceneRightClickMenuSelectionDelete
+			// 
+			this.sceneRightClickMenuSelectionDelete.Name = "sceneRightClickMenuSelectionDelete";
+			this.sceneRightClickMenuSelectionDelete.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuSelectionDelete.Text = "Delete";
+			this.sceneRightClickMenuSelectionDelete.Click += new System.EventHandler(this.OnSceneRightClickMenuSelectionDelete);
+			// 
+			// sceneRightClickMenuSelectionDeselect
+			// 
+			this.sceneRightClickMenuSelectionDeselect.Name = "sceneRightClickMenuSelectionDeselect";
+			this.sceneRightClickMenuSelectionDeselect.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuSelectionDeselect.Text = "Deselect";
+			this.sceneRightClickMenuSelectionDeselect.Click += new System.EventHandler(this.OnSceneRightClickMenuSelectionDeselect);
 			// 
 			// FormWindow
 			// 
@@ -730,7 +748,6 @@
 		private GroupBox sceneGroup;
 		private TextBox searchScene;
 		private ToolStripMenuItem sceneRightClickMenuCreateLight;
-		private ToolStripMenuItem sceneRightClickMenuUnselectAll;
 		private ToolStripMenuItem sceneRightClickMenuCreateCamera;
 		private ColorDialog pickColor;
 		private OpenFileDialog pickAsset;
@@ -758,6 +775,9 @@
 		private Button unloadSpriteStack;
 		private ToolStripMenuItem sceneRightClickMenuCreateSpriteStack;
 		private ToolStripMenuItem sceneRightClickMenuCreateCube;
-		private ToolStripMenuItem sceneRightClickMenuDuplicate;
+		private ToolStripMenuItem sceneRightClickMenuSelection;
+		private ToolStripMenuItem sceneRightClickMenuSelectionDuplicate;
+		private ToolStripMenuItem sceneRightClickMenuSelectionDelete;
+		private ToolStripMenuItem sceneRightClickMenuSelectionDeselect;
 	}
 }

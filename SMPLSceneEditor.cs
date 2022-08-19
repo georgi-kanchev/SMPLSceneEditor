@@ -1056,7 +1056,7 @@ namespace SMPLSceneEditor
 
 			TryDrawAllNonVisuals();
 
-			TryDestroy();
+			TryDelete();
 			TryCtrlS();
 
 			Game.UpdateEngine(window);
@@ -1603,7 +1603,7 @@ namespace SMPLSceneEditor
 				window.Draw(fill, PrimitiveType.Quads);
 			}
 		}
-		private void TryDestroy()
+		private void TryDelete()
 		{
 			if(ActiveForm != this || (paintTile != null && paintTile.Checked))
 				return;
@@ -1613,6 +1613,10 @@ namespace SMPLSceneEditor
 			if(delClick == false)
 				return;
 
+			TryDestroySelection();
+		}
+		private void TryDestroySelection()
+		{
 			if(editHitbox != null && editHitbox.Checked)
 			{
 				// work on copy lists since removing from the main list changes other indexes in the main list but not the selectedPts lists
@@ -2372,29 +2376,30 @@ namespace SMPLSceneEditor
 
 		private void OnSceneRightClickMenu(object sender, EventArgs e)
 		{
-			var rightClickItems = sceneRightClickMenu.Items.Find("sceneRightClickMenuDuplicate", false);
-			if(rightClickItems == null || rightClickItems.Length == 0)
+			var sel = sceneRightClickMenu.Items.Find("sceneRightClickMenuSelection", false);
+			if(sel == null || sel.Length == 0)
 				return;
 
-			rightClickItems[0].Enabled = selectedUIDs.Count == 1;
+			sel[0].Enabled = selectedUIDs.Count > 0;
 		}
-		private void OnSceneRightClickMenuDuplicate(object sender, EventArgs e)
+		private void OnSceneRightClickMenuSelectionDuplicate(object sender, EventArgs e)
 		{
-			if(selectedUIDs.Count == 0)
-				return;
+			for(int i = 0; i < selectedUIDs.Count; i++)
+			{
+				var uid = selectedUIDs[i];
+				var dupUID = Thing.GetFreeUID(uid);
+				var pos = (Vector2)Thing.Get(uid, Thing.Property.POSITION);
+				var sc = (float)Thing.Get(uid, Thing.Property.SCALE);
 
-			var uid = selectedUIDs[0];
-			var dupUID = Thing.GetFreeUID(uid);
-			var pos = (Vector2)Thing.Get(uid, Thing.Property.POSITION);
-			var sc = (float)Thing.Get(uid, Thing.Property.SCALE);
-			Thing.Duplicate(selectedUIDs[0], dupUID);
-			Thing.Set(dupUID, Thing.Property.POSITION, pos.PointMoveAtAngle(45, sc * 10, false));
+				Thing.Duplicate(uid, dupUID);
+				Thing.Set(dupUID, Thing.Property.POSITION, pos.PointMoveAtAngle(45, sc * 20, false));
+			}
 		}
-		private void OnSceneRightClickMenuResetView(object sender, EventArgs e)
+		private void OnSceneRightClickMenuSelectionDelete(object sender, EventArgs e)
 		{
-			SetView();
+			TryDestroySelection();
 		}
-		private void OnSceneRightClickMenuDeselect(object sender, EventArgs e)
+		private void OnSceneRightClickMenuSelectionDeselect(object sender, EventArgs e)
 		{
 			if(editHitbox != null && editHitbox.Checked)
 			{
@@ -2405,6 +2410,11 @@ namespace SMPLSceneEditor
 
 			selectedUIDs.Clear();
 			TryResetThingPanel();
+		}
+
+		private void OnSceneRightClickMenuResetView(object sender, EventArgs e)
+		{
+			SetView();
 		}
 		#endregion
 
@@ -2804,7 +2814,10 @@ namespace SMPLSceneEditor
 
 			selectedUIDs.Clear();
 			Scene.CurrentScene.UnloadAssets();
-			DeleteCache();
+
+			// skip that since some of the resources might still be in use somehow
+			// cache is deleted the moment the app is started, no resources can be in use then
+			// DeleteCache();
 		}
 		#endregion
 
