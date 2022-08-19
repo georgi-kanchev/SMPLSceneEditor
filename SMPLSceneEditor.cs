@@ -8,11 +8,12 @@ global using SFML.Window;
 global using SMPL;
 global using SMPL.Tools;
 
+global using static SFML.Window.Keyboard;
+
 global using Color = SFML.Graphics.Color;
 global using BlendMode = SMPL.Thing.BlendMode;
+global using Extensions = SMPL.Tools.Extensions;
 global using Cursor = System.Windows.Forms.Cursor;
-
-using Extensions = SMPL.Tools.Extensions;
 
 namespace SMPLSceneEditor
 {
@@ -35,13 +36,13 @@ namespace SMPLSceneEditor
 		private readonly RenderWindow window;
 		private float sceneSc = 1f;
 		private int selectDepthIndex;
-		private bool isDragSelecting, isHoveringScene, isSpriteStackCreationOpen;
-		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, rightClickPos, tilePaintRightClickPos = new Vector2().NaN();
+		private bool isDragSelecting, isHoveringScene, isSpriteStackCreationOpen, isTyping;
+		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, tilePaintRightClickPos = new Vector2().NaN();
 		private readonly List<string> selectedUIDs = new();
 		private readonly List<int> selectedHitboxPointIndexesA = new(), selectedHitboxPointIndexesB = new();
 		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
 		private FileSystemWatcher? assetsWatcher, assetsFolderWatcher;
-		private string pickThingProperty = "", scenePath = "", loadingDescr = "", tilePaletteUID = "", tilePaletteHoveredIndexes = "";
+		private string pickThingProperty = "", scenePath = "", loadingDescr = "", tilePaletteUID = "", tilePaletteHoveredIndexes = "", lastCreatedTexStackName = "";
 		private readonly Dictionary<string, TableLayoutPanel> editThingTableTypes = new();
 		private readonly Dictionary<string, string> listBoxPlaceholderTexts = new()
 		{
@@ -62,6 +63,7 @@ namespace SMPLSceneEditor
 			{ "Cloth", Color.Blue },
 			{ "Cube", new(50, 150, 180) },
 		};
+		private readonly Dictionary<Key[], Action> hotkeys = new();
 
 		private Color bgCol = Color.Black, bbCol = Color.Cyan, selCol = new(0, 180, 255, 100), hitCol = new(0, 255, 0),
 			gridCol = new(50, 50, 50), gridCol0 = Color.Yellow, gridCol1000 = Color.White;
@@ -89,6 +91,7 @@ namespace SMPLSceneEditor
 
 			editSelectionOptions.SelectedIndex = 0;
 
+			InitHotkeys();
 			InitTables();
 			TryResetThingPanel();
 			SetView();
@@ -101,6 +104,31 @@ namespace SMPLSceneEditor
 			tilePaletteHoveredIndexesLabel = new();
 		}
 
+		private void InitHotkeys()
+		{
+			hotkeys.Add(new Key[] { Key.LControl, Key.S }, TrySaveScene);
+			hotkeys.Add(new Key[] { Key.LControl, Key.L }, TryLoadScene);
+
+			hotkeys.Add(new Key[] { Key.LControl, Key.LAlt, Key.P }, TryUnloadTextureStack);
+			hotkeys.Add(new Key[] { Key.LControl, Key.P }, TryCreateTextureStack);
+
+			hotkeys.Add(new Key[] { Key.LControl, Key.C }, TryDuplicateSelection);
+			hotkeys.Add(new Key[] { Key.LControl, Key.D }, DeselectAll);
+			hotkeys.Add(new Key[] { Key.Delete }, TryDestroySelection);
+
+			hotkeys.Add(new Key[] { Key.S }, CreateSprite);
+			hotkeys.Add(new Key[] { Key.T }, CreateText);
+			hotkeys.Add(new Key[] { Key.N }, CreateNinePatch);
+			hotkeys.Add(new Key[] { Key.I }, CreateLight);
+			hotkeys.Add(new Key[] { Key.C }, CreateCamera);
+			hotkeys.Add(new Key[] { Key.M }, CreateTilemap);
+			hotkeys.Add(new Key[] { Key.A }, CreateAudio);
+			hotkeys.Add(new Key[] { Key.H }, CreateCloth);
+			hotkeys.Add(new Key[] { Key.P }, CreateSpriteStack);
+			hotkeys.Add(new Key[] { Key.Q }, CreateCube);
+
+			hotkeys.Add(new Key[] { Key.Space }, ResetView);
+		}
 		private void InitTables()
 		{
 			var scene = CreateDefaultTable("tableScene");
@@ -372,6 +400,7 @@ namespace SMPLSceneEditor
 			{
 				prop = new TextBox();
 				prop.TextChanged += OnTextBoxChange;
+				SetFocusHotkeyPrevention(prop);
 			}
 			else if(valueType == typeof(bool) || valueType == typeof(Hitbox))
 			{
@@ -382,11 +411,13 @@ namespace SMPLSceneEditor
 			{
 				prop = new NumericUpDown();
 				SetDefaultNumeric((NumericUpDown)prop, true);
+				SetFocusHotkeyPrevention(prop);
 			}
 			else if(valueType == typeof(float))
 			{
 				prop = new NumericUpDown();
 				SetDefaultNumeric((NumericUpDown)prop, false);
+				SetFocusHotkeyPrevention(prop);
 			}
 			else if(valueType == typeof(List<string>) || (valueType.IsEnum && valueTypeIsFlag == false) ||
 				valueType == typeof(ReadOnlyCollection<string>) || valueType == typeof(Dictionary<string, Thing.Tile>))
@@ -968,6 +999,11 @@ namespace SMPLSceneEditor
 				Thing.Set(selectedUIDs[0], propName, cubeSide);
 			}
 
+			void SetFocusHotkeyPrevention(Control control)
+			{
+				control.GotFocus += (s, e) => { isTyping = true; };
+				control.LostFocus += (s, e) => { isTyping = false; };
+			}
 			void SetDefault(Control control, float fontSize = FONT_SIZE, bool reverseColors = false)
 			{
 				var black = System.Drawing.Color.Black;
@@ -1011,6 +1047,7 @@ namespace SMPLSceneEditor
 					var col = new NumericUpDown { BorderStyle = BorderStyle.None };
 					SetDefault(col);
 					SetDefaultNumeric(col, isInt);
+					SetFocusHotkeyPrevention(col);
 					col.Name += i.ToString();
 					vecTable.Controls.Add(col);
 				}
@@ -1056,8 +1093,7 @@ namespace SMPLSceneEditor
 
 			TryDrawAllNonVisuals();
 
-			TryDelete();
-			TryCtrlS();
+			TryHotkeys();
 
 			Game.UpdateEngine(window);
 			TryDrawSelection();
@@ -1217,23 +1253,6 @@ namespace SMPLSceneEditor
 			else if(control.Enabled == false)
 				control.Items.Add("(none)");
 		}
-		private void AddHitboxLine(string uid, List<Line> line)
-		{
-			var hitbox = (Hitbox)Thing.Get(uid, Thing.Property.HITBOX);
-			for(int i = 0; i < line.Count; i++)
-				hitbox.LocalLines.Add(new Line(Local(line[i].A), Local(line[i].B)));
-			UpdateThingPanel();
-
-			Vector2 Local(Vector2 global) => (Vector2)Thing.CallGet(uid, Thing.Method.GET_LOCAL_POSITION_FROM_SELF, global);
-		}
-		private void TrySelectThing(string uid)
-		{
-			if(selectedUIDs.Contains(uid))
-				return;
-
-			selectedUIDs.Add(uid);
-			TryResetThingPanel();
-		}
 		private void UpdateSceneValues()
 		{
 			var gridSpacing = GetGridSpacing();
@@ -1381,142 +1400,6 @@ namespace SMPLSceneEditor
 				}
 			}
 		}
-		private void TrySelect()
-		{
-			var left = Mouse.IsButtonPressed(Mouse.Button.Left);
-			var click = left.Once("leftClick");
-
-			if(isHoveringScene == false || (paintTile != null && paintTile.Checked))
-				return;
-
-			var mousePos = GetMousePosition();
-			var rawMousePos = Mouse.GetPosition(window);
-			var uids = Thing.GetUIDs();
-			var dragSelHitbox = GetDragSelectionHitbox();
-			var clickedUIDs = new List<string>();
-			var dist = selectStartPos.DistanceBetweenPoints(new(rawMousePos.X, rawMousePos.Y));
-			var ctrl = Keyboard.IsKeyPressed(Keyboard.Key.LControl);
-			var alt = Keyboard.IsKeyPressed(Keyboard.Key.LAlt);
-			var drag = left && dist > sceneSc * 5f;
-			var editingHitbox = editHitbox != null && editHitbox.Checked;
-
-			if(editingHitbox)
-			{
-				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Thing.Property.HITBOX);
-				if(hitbox == null)
-					return;
-
-				if(click)
-				{
-					TryDeselect();
-
-					var pointSelectDist = sceneSc * HITBOX_POINT_EDIT_MAX_DIST * 0.75f;
-					for(int i = 0; i < hitbox.Lines.Count; i++)
-					{
-						if(mousePos.DistanceBetweenPoints(hitbox.Lines[i].A) < pointSelectDist)
-						{
-							SelectHitboxPointIndexA(i);
-							break; // prevents multi selection with click (the only way to separate overlapping points)
-						}
-						else if(mousePos.DistanceBetweenPoints(hitbox.Lines[i].B) < pointSelectDist)
-						{
-							SelectHitboxPointIndexB(i);
-							break; // prevents multi selection with click (the only way to separate overlapping points)
-						}
-					}
-				}
-				else if(drag && dragSelHitbox != null)
-				{
-					TryDeselect();
-
-					for(int i = 0; i < hitbox.Lines.Count; i++)
-					{
-						if(dragSelHitbox.ConvexContains(hitbox.Lines[i].A))
-							SelectHitboxPointIndexA(i);
-						if(dragSelHitbox.ConvexContains(hitbox.Lines[i].B))
-							SelectHitboxPointIndexB(i);
-					}
-				}
-				return;
-
-				void TryDeselect()
-				{
-					if(ctrl || alt)
-						return;
-
-					selectedHitboxPointIndexesA.Clear();
-					selectedHitboxPointIndexesB.Clear();
-				}
-			}
-
-			if(click)
-			{
-				if(ctrl == false && alt == false)
-					selectedUIDs.Clear();
-
-				var sum = 0;
-				for(int i = 0; i < uids.Count; i++)
-				{
-					var uid = uids[i];
-					var hitbox = GetBoundingBox(uid);
-					if(hitbox == null)
-						continue;
-
-					// don't count an object in a multi unselect cycle if it is not selected
-					var unselectSpecialCase = alt && selectedUIDs.Contains(uid) == false;
-					// same for opposite
-					var oppositeSpecialCase = ctrl && selectedUIDs.Contains(uid);
-
-					if(hitbox.ConvexContains(mousePos) && unselectSpecialCase == false && oppositeSpecialCase == false)
-					{
-						clickedUIDs.Add(uid);
-						sum++;
-					}
-				}
-				selectDepthIndex = clickedUIDs.Count == 0 ? -1 : (selectDepthIndex + 1).Limit(0, sum, Extensions.Limitation.Overflow);
-			}
-			else if(drag)
-			{
-				if(ctrl == false && alt == false)
-					selectedUIDs.Clear();
-
-				for(int i = 0; i < uids.Count; i++)
-				{
-					var uid = uids[i];
-					var hitbox = GetBoundingBox(uid);
-					if(hitbox == null)
-						continue;
-
-					if(dragSelHitbox != null && dragSelHitbox.ConvexContains(hitbox))
-						TrySelectOrDeselectThing(uid);
-				}
-			}
-
-			if(clickedUIDs.Count > 0)
-				TrySelectOrDeselectThing(clickedUIDs[selectDepthIndex]);
-
-			void TrySelectOrDeselectThing(string uid)
-			{
-				if(selectedUIDs.Contains(uid) == false)
-					selectedUIDs.Add(uid);
-				if(Keyboard.IsKeyPressed(Keyboard.Key.LAlt))
-					selectedUIDs.Remove(uid);
-			}
-			void SelectHitboxPointIndexA(int index)
-			{
-				if(selectedHitboxPointIndexesA.Contains(index) == false)
-					selectedHitboxPointIndexesA.Add(index);
-				if(Keyboard.IsKeyPressed(Keyboard.Key.LAlt))
-					selectedHitboxPointIndexesA.Remove(index);
-			}
-			void SelectHitboxPointIndexB(int index)
-			{
-				if(selectedHitboxPointIndexesB.Contains(index) == false)
-					selectedHitboxPointIndexesB.Add(index);
-				if(Keyboard.IsKeyPressed(Keyboard.Key.LAlt))
-					selectedHitboxPointIndexesB.Remove(index);
-			}
-		}
 		private void TryDrawSelection()
 		{
 			if(paintTile != null && paintTile.Checked)
@@ -1603,69 +1486,35 @@ namespace SMPLSceneEditor
 				window.Draw(fill, PrimitiveType.Quads);
 			}
 		}
-		private void TryDelete()
+		private void TryHotkeys()
 		{
-			if(ActiveForm != this || (paintTile != null && paintTile.Checked))
+			if(ActiveForm != this || isTyping)
 				return;
 
-			var delClick = Keyboard.IsKeyPressed(Keyboard.Key.Delete).Once("delete-selected-objects");
-
-			if(delClick == false)
-				return;
-
-			TryDestroySelection();
-		}
-		private void TryDestroySelection()
-		{
-			if(editHitbox != null && editHitbox.Checked)
+			foreach(var kvp in hotkeys)
 			{
-				// work on copy lists since removing from the main list changes other indexes in the main list but not the selectedPts lists
-				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Thing.Property.HITBOX);
-				var lines = new List<Line>(hitbox.LocalLines);
-				var ptsA = new List<int>(selectedHitboxPointIndexesA);
-				var ptsB = new List<int>(selectedHitboxPointIndexesB);
+				var pressedKeys = 0;
+				var id = "";
 
-				for(int i = 0; i < ptsA.Count; i++)
-					Remove(ptsA[i]);
-				for(int i = 0; i < ptsB.Count; i++)
-					Remove(ptsB[i]);
-
-				hitbox.LocalLines.Clear();
-				for(int i = 0; i < lines.Count; i++)
-					if(lines[i].A.IsNaN() == false && lines[i].B.IsNaN() == false)
-						hitbox.LocalLines.Add(lines[i]);
-
-				selectedHitboxPointIndexesA.Clear();
-				selectedHitboxPointIndexesB.Clear();
-				UpdateThingPanel();
-				return;
-
-				void Remove(int index) => lines[index] = new Line(new Vector2().NaN(), new Vector2().NaN());
-			}
-
-			if(selectedUIDs.Count > 0)
-			{
-				loop.Stop();
-				var result = MessageBox.Show("Also delete the children of the selected Things?", "Delete Selection", MessageBoxButtons.YesNoCancel);
-				loop.Start();
-				var includeChildren = result == DialogResult.Yes;
-				if(result == DialogResult.Cancel)
-					return;
-
-				var sel = new List<string>(selectedUIDs);
-				for(int i = 0; i < sel.Count; i++)
+				for(int i = 0; i < kvp.Key.Length; i++)
 				{
-					var uid = sel[i];
+					if(IsKeyPressed(kvp.Key[i]))
+						pressedKeys++;
 
-					selectedUIDs.Remove(uid);
-					Thing.Destroy(uid, includeChildren);
+					id += $"{kvp.Key[i]} ";
 				}
-				TryResetThingPanel();
+
+				if((pressedKeys == kvp.Key.Length).Once(id))
+				{
+					kvp.Value.Invoke();
+					return; // no further hotkeys, order matters ('ctrl + s' comes before 's')
+				}
 			}
 		}
 		#endregion
 
 		#region View
+		private void ResetView() => SetView();
 		private void SetView(Vector2 pos = default, float angle = 0, float scale = 1.5f)
 		{
 			SetViewPosition(pos);
@@ -1740,36 +1589,6 @@ namespace SMPLSceneEditor
 		}
 		#endregion
 		#region Files
-		private void TryCtrlS()
-		{
-			if(ActiveForm == this && Keyboard.IsKeyPressed(Keyboard.Key.LControl) &&
-				Keyboard.IsKeyPressed(Keyboard.Key.S).Once("ctrl-s-save-scene"))
-				TrySave();
-		}
-		private void TrySave()
-		{
-			if(File.Exists(scenePath))
-				Save();
-			else
-				SaveAs();
-		}
-		private void SaveAs()
-		{
-			if(save.ShowDialog(this) != DialogResult.OK)
-				return;
-
-			Save();
-		}
-		private void Save()
-		{
-			scenePath = string.IsNullOrWhiteSpace(save.FileName) ? load.FileName : save.FileName;
-			Scene.CurrentScene.Name = Path.GetFileNameWithoutExtension(scenePath);
-			Loading("Saving Scene...");
-			Scene.CurrentScene.Save(Path.GetDirectoryName(scenePath));
-
-			TrackAssets();
-		}
-
 		private void TrackAssets()
 		{
 			var assetsPath = GetAssetsPath();
@@ -1941,6 +1760,378 @@ namespace SMPLSceneEditor
 		}
 		#endregion
 		#region Scene
+		private void TryLoadScene()
+		{
+			selectedUIDs.Clear();
+			TryResetThingPanel();
+
+			if(paintTile != null)
+				paintTile.Checked = false;
+			if(editHitbox != null)
+				editHitbox.Checked = false;
+
+			load.InitialDirectory = GetGameDirectory();
+			if(load.ShowDialog(this) != DialogResult.OK)
+				return;
+
+			if(MessageBox.Show("Confirm? Any unsaved changes will be lost.", "Confirm Load", MessageBoxButtons.OKCancel) != DialogResult.OK)
+				return;
+
+			scenePath = load.FileName;
+			var assetsPath = GetAssetsPath();
+
+			Loading(LOADING_ASSETS);
+			CopyMirrorFiles(assetsPath);
+			Loading(LOADING_SCENE);
+
+			Scene.Load(load.FileName);
+			Scene.CurrentScene.LoadAssets(GetMirrorAssetPath(assetsPath));
+
+			TrackAssets();
+
+			selectedUIDs.Clear();
+			SetView();
+			Loading();
+		}
+		private void TrySaveScene()
+		{
+			if(File.Exists(scenePath))
+				SaveScene();
+			else
+				TrySaveSceneAs();
+		}
+		private void TrySaveSceneAs()
+		{
+			if(save.ShowDialog(this) != DialogResult.OK)
+				return;
+
+			SaveScene();
+		}
+		private void SaveScene()
+		{
+			scenePath = string.IsNullOrWhiteSpace(save.FileName) ? load.FileName : save.FileName;
+			Scene.CurrentScene.Name = Path.GetFileNameWithoutExtension(scenePath);
+			Loading("Saving Scene...");
+			Scene.CurrentScene.Save(Path.GetDirectoryName(scenePath));
+
+			TrackAssets();
+		}
+
+		private void TrySelect()
+		{
+			var left = Mouse.IsButtonPressed(Mouse.Button.Left);
+			var click = left.Once("leftClick");
+
+			if(isHoveringScene == false || (paintTile != null && paintTile.Checked))
+				return;
+
+			var mousePos = GetMousePosition();
+			var rawMousePos = Mouse.GetPosition(window);
+			var uids = Thing.GetUIDs();
+			var dragSelHitbox = GetDragSelectionHitbox();
+			var clickedUIDs = new List<string>();
+			var dist = selectStartPos.DistanceBetweenPoints(new(rawMousePos.X, rawMousePos.Y));
+			var ctrl = Keyboard.IsKeyPressed(Keyboard.Key.LControl);
+			var alt = Keyboard.IsKeyPressed(Keyboard.Key.LAlt);
+			var drag = left && dist > sceneSc * 5f;
+			var editingHitbox = editHitbox != null && editHitbox.Checked;
+
+			if(editingHitbox)
+			{
+				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Thing.Property.HITBOX);
+				if(hitbox == null)
+					return;
+
+				if(click)
+				{
+					TryDeselect();
+
+					var pointSelectDist = sceneSc * HITBOX_POINT_EDIT_MAX_DIST * 0.75f;
+					for(int i = 0; i < hitbox.Lines.Count; i++)
+					{
+						if(mousePos.DistanceBetweenPoints(hitbox.Lines[i].A) < pointSelectDist)
+						{
+							SelectHitboxPointIndexA(i);
+							break; // prevents multi selection with click (the only way to separate overlapping points)
+						}
+						else if(mousePos.DistanceBetweenPoints(hitbox.Lines[i].B) < pointSelectDist)
+						{
+							SelectHitboxPointIndexB(i);
+							break; // prevents multi selection with click (the only way to separate overlapping points)
+						}
+					}
+				}
+				else if(drag && dragSelHitbox != null)
+				{
+					TryDeselect();
+
+					for(int i = 0; i < hitbox.Lines.Count; i++)
+					{
+						if(dragSelHitbox.ConvexContains(hitbox.Lines[i].A))
+							SelectHitboxPointIndexA(i);
+						if(dragSelHitbox.ConvexContains(hitbox.Lines[i].B))
+							SelectHitboxPointIndexB(i);
+					}
+				}
+				return;
+
+				void TryDeselect()
+				{
+					if(ctrl || alt)
+						return;
+
+					selectedHitboxPointIndexesA.Clear();
+					selectedHitboxPointIndexesB.Clear();
+				}
+			}
+
+			if(click)
+			{
+				if(ctrl == false && alt == false)
+					selectedUIDs.Clear();
+
+				var sum = 0;
+				for(int i = 0; i < uids.Count; i++)
+				{
+					var uid = uids[i];
+					var hitbox = GetBoundingBox(uid);
+					if(hitbox == null)
+						continue;
+
+					// don't count an object in a multi unselect cycle if it is not selected
+					var unselectSpecialCase = alt && selectedUIDs.Contains(uid) == false;
+					// same for opposite
+					var oppositeSpecialCase = ctrl && selectedUIDs.Contains(uid);
+
+					if(hitbox.ConvexContains(mousePos) && unselectSpecialCase == false && oppositeSpecialCase == false)
+					{
+						clickedUIDs.Add(uid);
+						sum++;
+					}
+				}
+				selectDepthIndex = clickedUIDs.Count == 0 ? -1 : (selectDepthIndex + 1).Limit(0, sum, Extensions.Limitation.Overflow);
+			}
+			else if(drag)
+			{
+				if(ctrl == false && alt == false)
+					selectedUIDs.Clear();
+
+				for(int i = 0; i < uids.Count; i++)
+				{
+					var uid = uids[i];
+					var hitbox = GetBoundingBox(uid);
+					if(hitbox == null)
+						continue;
+
+					if(dragSelHitbox != null && dragSelHitbox.ConvexContains(hitbox))
+						TrySelectOrDeselectThing(uid);
+				}
+			}
+
+			if(clickedUIDs.Count > 0)
+				TrySelectOrDeselectThing(clickedUIDs[selectDepthIndex]);
+
+			void TrySelectOrDeselectThing(string uid)
+			{
+				if(selectedUIDs.Contains(uid) == false)
+					selectedUIDs.Add(uid);
+				if(Keyboard.IsKeyPressed(Keyboard.Key.LAlt))
+					selectedUIDs.Remove(uid);
+			}
+			void SelectHitboxPointIndexA(int index)
+			{
+				if(selectedHitboxPointIndexesA.Contains(index) == false)
+					selectedHitboxPointIndexesA.Add(index);
+				if(Keyboard.IsKeyPressed(Keyboard.Key.LAlt))
+					selectedHitboxPointIndexesA.Remove(index);
+			}
+			void SelectHitboxPointIndexB(int index)
+			{
+				if(selectedHitboxPointIndexesB.Contains(index) == false)
+					selectedHitboxPointIndexesB.Add(index);
+				if(Keyboard.IsKeyPressed(Keyboard.Key.LAlt))
+					selectedHitboxPointIndexesB.Remove(index);
+			}
+		}
+		private void TrySelectThing(string uid)
+		{
+			if(selectedUIDs.Contains(uid))
+				return;
+
+			selectedUIDs.Add(uid);
+			TryResetThingPanel();
+		}
+		private void DeselectAll()
+		{
+			if(editHitbox != null && editHitbox.Checked)
+			{
+				selectedHitboxPointIndexesA.Clear();
+				selectedHitboxPointIndexesB.Clear();
+				return;
+			}
+
+			selectedUIDs.Clear();
+			TryResetThingPanel();
+		}
+		private void TryDuplicateSelection()
+		{
+			for(int i = 0; i < selectedUIDs.Count; i++)
+			{
+				var uid = selectedUIDs[i];
+				var dupUID = Thing.GetFreeUID(uid);
+				var pos = (Vector2)Thing.Get(uid, Thing.Property.POSITION);
+				var sc = (float)Thing.Get(uid, Thing.Property.SCALE);
+
+				Thing.Duplicate(uid, dupUID);
+				Thing.Set(dupUID, Thing.Property.POSITION, pos.PointMoveAtAngle(45, sc * 20, false));
+			}
+		}
+		private void TryDestroySelection()
+		{
+			if(ActiveForm != this || (paintTile != null && paintTile.Checked))
+				return;
+
+			if(editHitbox != null && editHitbox.Checked)
+			{
+				// work on copy lists since removing from the main list changes other indexes in the main list but not the selectedPts lists
+				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Thing.Property.HITBOX);
+				var lines = new List<Line>(hitbox.LocalLines);
+				var ptsA = new List<int>(selectedHitboxPointIndexesA);
+				var ptsB = new List<int>(selectedHitboxPointIndexesB);
+
+				for(int i = 0; i < ptsA.Count; i++)
+					Remove(ptsA[i]);
+				for(int i = 0; i < ptsB.Count; i++)
+					Remove(ptsB[i]);
+
+				hitbox.LocalLines.Clear();
+				for(int i = 0; i < lines.Count; i++)
+					if(lines[i].A.IsNaN() == false && lines[i].B.IsNaN() == false)
+						hitbox.LocalLines.Add(lines[i]);
+
+				selectedHitboxPointIndexesA.Clear();
+				selectedHitboxPointIndexesB.Clear();
+				UpdateThingPanel();
+				return;
+
+				void Remove(int index) => lines[index] = new Line(new Vector2().NaN(), new Vector2().NaN());
+			}
+
+			if(selectedUIDs.Count > 0)
+			{
+				loop.Stop();
+				var result = MessageBox.Show("Also delete the children of the selected Things?", "Delete Selection", MessageBoxButtons.YesNoCancel);
+				loop.Start();
+				var includeChildren = result == DialogResult.Yes;
+				if(result == DialogResult.Cancel)
+					return;
+
+				var sel = new List<string>(selectedUIDs);
+				for(int i = 0; i < sel.Count; i++)
+				{
+					var uid = sel[i];
+
+					selectedUIDs.Remove(uid);
+					Thing.Destroy(uid, includeChildren);
+				}
+				TryResetThingPanel();
+			}
+		}
+
+		private void AddHitboxLine(string uid, List<Line> line)
+		{
+			var hitbox = (Hitbox)Thing.Get(uid, Thing.Property.HITBOX);
+			for(int i = 0; i < line.Count; i++)
+				hitbox.LocalLines.Add(new Line(Local(line[i].A), Local(line[i].B)));
+			UpdateThingPanel();
+
+			Vector2 Local(Vector2 global) => (Vector2)Thing.CallGet(uid, Thing.Method.GET_LOCAL_POSITION_FROM_SELF, global);
+		}
+
+		private void CreateSprite()
+		{
+			var uid = Thing.CreateSprite("Sprite", null);
+			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+		}
+		private void CreateText()
+		{
+			var result = DialogResult.None;
+			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
+				MessageBox.Show(this, "This Text will be invisible without a Font.\n\n" + NO_ASSETS_MSG, "Create Text");
+			else if(MessageBox.Show(this, "Pick a Font?", "Create Text", MessageBoxButtons.YesNo) == DialogResult.Yes)
+				result = pickAsset.ShowDialog();
+
+			var uid = Thing.CreateText("Text", result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName));
+			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+		}
+		private void CreateNinePatch()
+		{
+			var uid = Thing.CreateNinePatch("NinePatch", null);
+			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+		}
+		private void CreateLight()
+		{
+			var uid = Thing.CreateLight("Light", Color.White);
+			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+		}
+		private void CreateCamera()
+		{
+			var res = GetVector2("Create Camera", "Provide the Camera resolution.", 1, 7680, 1, 4320, new(1000));
+			if(res == default)
+				return;
+
+			var uid = Thing.CreateCamera("Camera", res);
+			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+		}
+		private void CreateTilemap()
+		{
+			var uid = Thing.CreateTilemap("Tilemap", null);
+			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+		}
+		private void CreateAudio()
+		{
+			var result = DialogResult.None;
+			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
+				MessageBox.Show(this, "This Audio will be silent without an Audio file.\n\n" + NO_ASSETS_MSG, "Create Audio");
+			else if(MessageBox.Show(this, "Pick an Audio file?", "Create Audio", MessageBoxButtons.YesNo) == DialogResult.Yes)
+				result = pickAsset.ShowDialog();
+
+			var uid = Thing.CreateAudio("Audio", result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName));
+			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+		}
+		private void CreateCloth()
+		{
+			var size = GetVector2("Create Cloth", "Provide a constant size for the Cloth.", 1, int.MaxValue, 1, int.MaxValue, new(300));
+			if(size == default)
+				return;
+			var fragmentAmount = GetVector2("Create Cloth", "Provide the amount of fragments the Cloth is made of (in the range [1-10]). " +
+				"Or in other words - the detail.", 1, 10, 1, 10, new(5, 5));
+			if(fragmentAmount == default)
+				return;
+
+			var uid = Thing.CreateCloth("Cloth", null, size.X, size.Y, (int)fragmentAmount.X, (int)fragmentAmount.Y);
+			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+		}
+		private void CreateSpriteStack()
+		{
+			var texStackName = default(string);
+			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
+				MessageBox.Show(this, "This Sprite Stack will be invisible without a Texture Stack.\n\n" + NO_ASSETS_MSG, "Create Sprite Stack");
+			else if(MessageBox.Show(this, "Generate & Load a Texture Stack?", "Create Sprite Stack", MessageBoxButtons.YesNo) == DialogResult.Yes)
+			{
+				TryCreateTextureStack();
+				texStackName = lastCreatedTexStackName;
+			}
+
+			var uid = Thing.CreateSpriteStack("Text", texStackName);
+			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+		}
+		private void CreateCube()
+		{
+			var uid = Thing.CreateCube("Sprite", null);
+			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+		}
+
 		private void OnKeyDownObjectSearch(object sender, System.Windows.Forms.KeyEventArgs e)
 		{
 			if(e.KeyCode != Keys.Return || string.IsNullOrWhiteSpace(searchScene.Text) || (editHitbox != null && editHitbox.Checked) ||
@@ -1991,9 +2182,10 @@ namespace SMPLSceneEditor
 			UpdateThingPanel();
 			FocusThing(bestGuess);
 		}
+
 		private void OnSaveAsClick(object sender, EventArgs e)
 		{
-			SaveAs();
+			TrySaveSceneAs();
 		}
 		private void OnSaveClick(object sender, EventArgs e)
 		{
@@ -2003,41 +2195,10 @@ namespace SMPLSceneEditor
 				editHitbox.Checked = false;
 
 			TryResetThingPanel();
-			TrySave();
+			TrySaveScene();
 		}
-		private void OnLoadClick(object sender, EventArgs e)
-		{
-			selectedUIDs.Clear();
-			TryResetThingPanel();
+		private void OnLoadClick(object sender, EventArgs e) => TryLoadScene();
 
-			if(paintTile != null)
-				paintTile.Checked = false;
-			if(editHitbox != null)
-				editHitbox.Checked = false;
-
-			load.InitialDirectory = GetGameDirectory();
-			if(load.ShowDialog(this) != DialogResult.OK)
-				return;
-
-			if(MessageBox.Show("Confirm? Any unsaved changes will be lost.", "Confirm Load", MessageBoxButtons.OKCancel) != DialogResult.OK)
-				return;
-
-			scenePath = load.FileName;
-			var assetsPath = GetAssetsPath();
-
-			Loading(LOADING_ASSETS);
-			CopyMirrorFiles(assetsPath);
-			Loading(LOADING_SCENE);
-
-			Scene.Load(load.FileName);
-			Scene.CurrentScene.LoadAssets(GetMirrorAssetPath(assetsPath));
-
-			TrackAssets();
-
-			selectedUIDs.Clear();
-			SetView();
-			Loading();
-		}
 		private void OnSceneScroll(object? sender, MouseEventArgs e)
 		{
 			var delta = e.Delta > 0 ? -0.05f : 0.05f;
@@ -2098,7 +2259,6 @@ namespace SMPLSceneEditor
 		}
 		private void OnMouseMoveScene(object sender, MouseEventArgs e)
 		{
-			var uid = selectedUIDs.Count == 0 ? null : selectedUIDs[0];
 			if(e.Button == MouseButtons.Middle)
 			{
 				var editIndex = editSelectionOptions.SelectedIndex;
@@ -2119,6 +2279,7 @@ namespace SMPLSceneEditor
 				}
 				else if(editHitboxPts)
 				{
+					var uid = selectedUIDs[0];
 					var hitbox = (Hitbox)Thing.Get(uid, Thing.Property.HITBOX);
 					var sc = (float)Thing.Get(uid, Thing.Property.SCALE);
 
@@ -2186,9 +2347,9 @@ namespace SMPLSceneEditor
 				else
 					for(int i = 0; i < selectedUIDs.Count; i++)
 					{
+						var uid = selectedUIDs[i];
 						var pos = (Vector2)Thing.Get(uid, Thing.Property.POSITION);
 						var ang = (float)Thing.Get(uid, Thing.Property.ANGLE);
-
 
 						if(editIndex == 0)
 							Thing.Set(uid, Thing.Property.POSITION, Drag(pos, false, true));
@@ -2236,119 +2397,41 @@ namespace SMPLSceneEditor
 			TryPaintTile();
 			tilePaintRightClickPos = new Vector2().NaN();
 
-			if(e.Button == MouseButtons.Right)
-				rightClickPos = GetMousePosition();
-
 			if(e.Button != MouseButtons.Left && e.Button != MouseButtons.Right)
 				return;
 
 			isDragSelecting = false;
 		}
-		private void OnCreateTextureStack(object sender, EventArgs e)
-		{
-			TryCreateTextureStack();
-		}
-		private void OnUnloadTextureStack(object sender, EventArgs e)
-		{
-			var name = GetInput("Unload Texture Stack", "Provide the Texture Stack's name. The name comes from the .obj file upon generating a Texture Stack.");
-			var count = GetNumber("Unload Texture Stack", "Provide the Texture Stack's count. The count was provided upon generating a Texture Stack.");
 
-			for(int i = 0; i < (int)count; i++)
-			{
-				var id = $"{name}-{i}";
-				Scene.CurrentScene.UnloadAssets(id);
-			}
-		}
+		private void OnCreateTextureStack(object sender, EventArgs e) => TryCreateTextureStack();
+		private void OnUnloadTextureStack(object sender, EventArgs e) => TryUnloadTextureStack();
+
+		private void OnSearchSceneFocus(object sender, EventArgs e) => isTyping = true;
+		private void OnSearchSceneUnfocus(object sender, EventArgs e) => isTyping = false;
 		#endregion
 		#region SceneRightClick
-		private void OnSceneRightClickMenuCreateSprite(object sender, EventArgs e)
-		{
-			var uid = Thing.CreateSprite("Sprite", null);
-			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
-		}
-		private void OnSceneRightClickMenuCreateLight(object sender, EventArgs e)
-		{
-			var uid = Thing.CreateLight("Light", Color.White);
-			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
-		}
-		private void OnSceneRightClickMenuCreateCamera(object sender, EventArgs e)
-		{
-			var res = GetVector2("Create Camera", "Provide the Camera resolution.", 1, 7680, 1, 4320, new(1000));
-			var uid = Thing.CreateCamera("Camera", res);
-			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
-		}
-		private void OnSceneRightClickMenuCreateText(object sender, EventArgs e)
-		{
-			var result = DialogResult.None;
-			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
-				MessageBox.Show(this, "This Text will be invisible without a Font.\n\n" + NO_ASSETS_MSG, "Create Text");
-			else if(MessageBox.Show(this, "Pick a Font?", "Create Text", MessageBoxButtons.YesNo) == DialogResult.Yes)
-				result = pickAsset.ShowDialog();
-
-			var uid = Thing.CreateText("Text", result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName));
-			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
-		}
-		private void OnSceneRightClickMenuCreateNinePatch(object sender, EventArgs e)
-		{
-			var uid = Thing.CreateNinePatch("NinePatch", null);
-			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
-		}
-		private void OnSceneRightClickMenuCreateTilemap(object sender, EventArgs e)
-		{
-			var uid = Thing.CreateTilemap("Tilemap", null);
-			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
-		}
-		private void OnSceneRightClickMenuCreateAudio(object sender, EventArgs e)
-		{
-			var result = DialogResult.None;
-			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
-				MessageBox.Show(this, "This Audio will be silent without an Audio file.\n\n" + NO_ASSETS_MSG, "Create Audio");
-			else if(MessageBox.Show(this, "Pick an Audio file?", "Create Audio", MessageBoxButtons.YesNo) == DialogResult.Yes)
-				result = pickAsset.ShowDialog();
-
-			var uid = Thing.CreateAudio("Audio", result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName));
-			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
-		}
-		private void OnSceneRightClickMenuCreateCloth(object sender, EventArgs e)
-		{
-			var size = GetVector2("Create Cloth", "Provide a constant size for the Cloth.", 1, int.MaxValue, 1, int.MaxValue, new(300));
-			if(size == default)
-				return;
-			var fragmentAmount = GetVector2("Create Cloth", "Provide the amount of fragments the Cloth is made of (in the range [1-10]). " +
-				"Or in other words - the detail.", 1, 10, 1, 10, new(5, 5));
-			if(fragmentAmount == default)
-				return;
-
-			var uid = Thing.CreateCloth("Cloth", null, size.X, size.Y, (int)fragmentAmount.X, (int)fragmentAmount.Y);
-			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
-		}
-		private void OnSceneRightClickMenuCreateSpriteStack(object sender, EventArgs e)
-		{
-			var texStackName = default(string);
-			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
-				MessageBox.Show(this, "This Sprite Stack will be invisible without a Texture Stack.\n\n" + NO_ASSETS_MSG, "Create Sprite Stack");
-			else if(MessageBox.Show(this, "Generate & Load a Texture Stack?", "Create Sprite Stack", MessageBoxButtons.YesNo) == DialogResult.Yes)
-				texStackName = TryCreateTextureStack();
-
-			var uid = Thing.CreateSpriteStack("Text", texStackName);
-			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
-		}
-		private void OnSceneRightClickMenuCreateCube(object sender, EventArgs e)
-		{
-			var uid = Thing.CreateCube("Sprite", null);
-			Thing.Set(uid, Thing.Property.POSITION, rightClickPos);
-		}
+		private void OnSceneRightClickMenuCreateSprite(object sender, EventArgs e) => CreateSprite();
+		private void OnSceneRightClickMenuCreateText(object sender, EventArgs e) => CreateText();
+		private void OnSceneRightClickMenuCreateNinePatch(object sender, EventArgs e) => CreateNinePatch();
+		private void OnSceneRightClickMenuCreateLight(object sender, EventArgs e) => CreateLight();
+		private void OnSceneRightClickMenuCreateCamera(object sender, EventArgs e) => CreateCamera();
+		private void OnSceneRightClickMenuCreateTilemap(object sender, EventArgs e) => CreateTilemap();
+		private void OnSceneRightClickMenuCreateAudio(object sender, EventArgs e) => CreateAudio();
+		private void OnSceneRightClickMenuCreateCloth(object sender, EventArgs e) => CreateCloth();
+		private void OnSceneRightClickMenuCreateSpriteStack(object sender, EventArgs e) => CreateSpriteStack();
+		private void OnSceneRightClickMenuCreateCube(object sender, EventArgs e) => CreateCube();
 
 		private void OnSceneRightClickMenuCreateHitboxLine(object sender, EventArgs e)
 		{
 			var off = new Vector2(50f * sceneSc, 0);
-			AddHitboxLine(selectedUIDs[0], new List<Line>() { new(rightClickPos - off, rightClickPos + off) });
+			var mousePos = GetMousePosition();
+			AddHitboxLine(selectedUIDs[0], new List<Line>() { new(mousePos - off, mousePos + off) });
 		}
 		private void OnSceneRightClickMenuCreateHitboxSquare(object sender, EventArgs e)
 		{
 			var off = new Vector2(50f) * sceneSc;
 			var uid = selectedUIDs[0];
-			var p = rightClickPos;
+			var p = GetMousePosition();
 			var lines = new List<Line>()
 			{
 				new(p + new Vector2(-off.X, -off.Y), p + new Vector2(off.X, -off.Y)),
@@ -2364,11 +2447,12 @@ namespace SMPLSceneEditor
 			var radius = 50f * sceneSc;
 			var angStep = 360f / 8f;
 			var lines = new List<Line>();
+			var mousePos = GetMousePosition();
 
 			for(int i = 0; i < 8; i++)
 			{
-				var p = rightClickPos.PointMoveAtAngle(angStep * i, radius, false);
-				var p1 = rightClickPos.PointMoveAtAngle(angStep * (i - 1), radius, false);
+				var p = mousePos.PointMoveAtAngle(angStep * i, radius, false);
+				var p1 = mousePos.PointMoveAtAngle(angStep * (i - 1), radius, false);
 				lines.Add(new(p, p1));
 			}
 			AddHitboxLine(uid, lines);
@@ -2382,35 +2466,12 @@ namespace SMPLSceneEditor
 
 			sel[0].Enabled = selectedUIDs.Count > 0;
 		}
-		private void OnSceneRightClickMenuSelectionDuplicate(object sender, EventArgs e)
-		{
-			for(int i = 0; i < selectedUIDs.Count; i++)
-			{
-				var uid = selectedUIDs[i];
-				var dupUID = Thing.GetFreeUID(uid);
-				var pos = (Vector2)Thing.Get(uid, Thing.Property.POSITION);
-				var sc = (float)Thing.Get(uid, Thing.Property.SCALE);
-
-				Thing.Duplicate(uid, dupUID);
-				Thing.Set(dupUID, Thing.Property.POSITION, pos.PointMoveAtAngle(45, sc * 20, false));
-			}
-		}
+		private void OnSceneRightClickMenuSelectionDuplicate(object sender, EventArgs e) => TryDuplicateSelection();
 		private void OnSceneRightClickMenuSelectionDelete(object sender, EventArgs e)
 		{
 			TryDestroySelection();
 		}
-		private void OnSceneRightClickMenuSelectionDeselect(object sender, EventArgs e)
-		{
-			if(editHitbox != null && editHitbox.Checked)
-			{
-				selectedHitboxPointIndexesA.Clear();
-				selectedHitboxPointIndexesB.Clear();
-				return;
-			}
-
-			selectedUIDs.Clear();
-			TryResetThingPanel();
-		}
+		private void OnSceneRightClickMenuSelectionDeselect(object sender, EventArgs e) => DeselectAll();
 
 		private void OnSceneRightClickMenuResetView(object sender, EventArgs e)
 		{
@@ -2689,7 +2750,7 @@ namespace SMPLSceneEditor
 		}
 		#endregion
 		#region Assets
-		private string? TryCreateTextureStack()
+		private void TryCreateTextureStack()
 		{
 			const int TABLE_HEIGHT = 230;
 			var sz = new Vector2i(W + SPACING_X * 4, H + TABLE_HEIGHT);
@@ -2756,7 +2817,7 @@ namespace SMPLSceneEditor
 			spriteStackCreateObjPath = obj;
 
 			if(window.ShowDialog() != DialogResult.OK)
-				return default;
+				return;
 
 			var sc = new Vector3(
 				(float)((NumericUpDown)scale.Controls[0]).Value,
@@ -2771,7 +2832,18 @@ namespace SMPLSceneEditor
 			Scene.CurrentScene.LoadTextureStack(obj.Text, tex.Text, sc, rot, (int)count.Value, (float)detail.Value);
 			isSpriteStackCreationOpen = false;
 
-			return name;
+			lastCreatedTexStackName = name;
+		}
+		private void TryUnloadTextureStack()
+		{
+			var name = GetInput("Unload Texture Stack", "Provide the Texture Stack's name. The name comes from the .obj file upon generating a Texture Stack.");
+			var count = GetNumber("Unload Texture Stack", "Provide the Texture Stack's count. The count was provided upon generating a Texture Stack.");
+
+			for(int i = 0; i < (int)count; i++)
+			{
+				var id = $"{name}-{i}";
+				Scene.CurrentScene.UnloadAssets(id);
+			}
 		}
 
 		private void OnAssetRename(object sender, RenamedEventArgs e)
@@ -2810,7 +2882,7 @@ namespace SMPLSceneEditor
 				return;
 			}
 			else if(result == DialogResult.Yes)
-				TrySave();
+				TrySaveScene();
 
 			selectedUIDs.Clear();
 			Scene.CurrentScene.UnloadAssets();
@@ -3145,7 +3217,8 @@ namespace SMPLSceneEditor
 			thingsList.MaximumSize = new(thingsList.MaximumSize.Width, 300);
 			thingsList.Items.Clear();
 			for(int i = 0; i < uids.Count; i++)
-				thingsList.Items.Add(uids[i]);
+				if(selectedUIDs[0] != uids[i])
+					thingsList.Items.Add(uids[i]);
 
 			pickThingProperty = property;
 			// show twice cuz first time has wrong position

@@ -33,13 +33,6 @@
 			this.loading = new System.Windows.Forms.Label();
 			this.sceneValues = new System.Windows.Forms.Label();
 			this.sceneStatusPanel = new System.Windows.Forms.Panel();
-			this.loadTextureStackGroup = new System.Windows.Forms.GroupBox();
-			this.unloadSpriteStack = new System.Windows.Forms.Button();
-			this.generateSpriteStack = new System.Windows.Forms.Button();
-			this.sceneGroup = new System.Windows.Forms.GroupBox();
-			this.saveAsButton = new System.Windows.Forms.Button();
-			this.saveButton = new System.Windows.Forms.Button();
-			this.loadButton = new System.Windows.Forms.Button();
 			this.searchBox = new System.Windows.Forms.GroupBox();
 			this.searchScene = new System.Windows.Forms.TextBox();
 			this.editSelectionGroup = new System.Windows.Forms.GroupBox();
@@ -63,8 +56,19 @@
 			this.sceneRightClickMenuCreateAudio = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateLight = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateCamera = new System.Windows.Forms.ToolStripMenuItem();
-			this.sceneRightClickMenuSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-			this.sceneRightClickMenuResetView = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuSelection = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuSelectionDuplicate = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuSelectionDelete = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuSelectionDeselect = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuScene = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuSceneSave = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuSceneSaveAs = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuSceneLoad = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuSceneSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+			this.sceneRightClickMenuSceneResetView = new System.Windows.Forms.ToolStripMenuItem();
+			this.textureStackToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.generateLoadToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.unloadToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.rightTable = new System.Windows.Forms.TableLayoutPanel();
 			this.thingTypesTable = new System.Windows.Forms.TableLayoutPanel();
 			this.load = new System.Windows.Forms.OpenFileDialog();
@@ -80,17 +84,11 @@
 			this.sceneRightClickMenuHitboxResetView = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuDeselectAll = new System.Windows.Forms.ToolStripMenuItem();
 			this.save = new System.Windows.Forms.SaveFileDialog();
-			this.sceneRightClickMenuSelection = new System.Windows.Forms.ToolStripMenuItem();
-			this.sceneRightClickMenuSelectionDuplicate = new System.Windows.Forms.ToolStripMenuItem();
-			this.sceneRightClickMenuSelectionDelete = new System.Windows.Forms.ToolStripMenuItem();
-			this.sceneRightClickMenuSelectionDeselect = new System.Windows.Forms.ToolStripMenuItem();
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).BeginInit();
 			this.windowSplit.Panel1.SuspendLayout();
 			this.windowSplit.Panel2.SuspendLayout();
 			this.windowSplit.SuspendLayout();
 			this.sceneStatusPanel.SuspendLayout();
-			this.loadTextureStackGroup.SuspendLayout();
-			this.sceneGroup.SuspendLayout();
 			this.searchBox.SuspendLayout();
 			this.editSelectionGroup.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize)(this.snap)).BeginInit();
@@ -153,8 +151,6 @@
 			// sceneStatusPanel
 			// 
 			this.sceneStatusPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-			this.sceneStatusPanel.Controls.Add(this.loadTextureStackGroup);
-			this.sceneStatusPanel.Controls.Add(this.sceneGroup);
 			this.sceneStatusPanel.Controls.Add(this.searchBox);
 			this.sceneStatusPanel.Controls.Add(this.editSelectionGroup);
 			this.sceneStatusPanel.Controls.Add(this.gridGroup);
@@ -164,114 +160,12 @@
 			this.sceneStatusPanel.Size = new System.Drawing.Size(1201, 58);
 			this.sceneStatusPanel.TabIndex = 2;
 			// 
-			// loadTextureStackGroup
-			// 
-			this.loadTextureStackGroup.Controls.Add(this.unloadSpriteStack);
-			this.loadTextureStackGroup.Controls.Add(this.generateSpriteStack);
-			this.loadTextureStackGroup.Dock = System.Windows.Forms.DockStyle.Right;
-			this.loadTextureStackGroup.ForeColor = System.Drawing.Color.White;
-			this.loadTextureStackGroup.Location = new System.Drawing.Point(735, 0);
-			this.loadTextureStackGroup.Name = "loadTextureStackGroup";
-			this.loadTextureStackGroup.Size = new System.Drawing.Size(225, 54);
-			this.loadTextureStackGroup.TabIndex = 11;
-			this.loadTextureStackGroup.TabStop = false;
-			this.loadTextureStackGroup.Text = "Texture Stack";
-			// 
-			// unloadSpriteStack
-			// 
-			this.unloadSpriteStack.BackColor = System.Drawing.Color.Black;
-			this.unloadSpriteStack.Dock = System.Windows.Forms.DockStyle.Right;
-			this.unloadSpriteStack.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.unloadSpriteStack.ForeColor = System.Drawing.Color.White;
-			this.unloadSpriteStack.Location = new System.Drawing.Point(139, 19);
-			this.unloadSpriteStack.Name = "unloadSpriteStack";
-			this.unloadSpriteStack.Size = new System.Drawing.Size(83, 32);
-			this.unloadSpriteStack.TabIndex = 9;
-			this.unloadSpriteStack.TabStop = false;
-			this.unloadSpriteStack.Text = "Unload";
-			this.unloadSpriteStack.UseVisualStyleBackColor = false;
-			this.unloadSpriteStack.Click += new System.EventHandler(this.OnUnloadTextureStack);
-			// 
-			// generateSpriteStack
-			// 
-			this.generateSpriteStack.BackColor = System.Drawing.Color.Black;
-			this.generateSpriteStack.Dock = System.Windows.Forms.DockStyle.Left;
-			this.generateSpriteStack.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.generateSpriteStack.ForeColor = System.Drawing.Color.White;
-			this.generateSpriteStack.Location = new System.Drawing.Point(3, 19);
-			this.generateSpriteStack.Name = "generateSpriteStack";
-			this.generateSpriteStack.Size = new System.Drawing.Size(136, 32);
-			this.generateSpriteStack.TabIndex = 8;
-			this.generateSpriteStack.TabStop = false;
-			this.generateSpriteStack.Text = "Generate + Load";
-			this.generateSpriteStack.UseVisualStyleBackColor = false;
-			this.generateSpriteStack.Click += new System.EventHandler(this.OnCreateTextureStack);
-			// 
-			// sceneGroup
-			// 
-			this.sceneGroup.Controls.Add(this.saveAsButton);
-			this.sceneGroup.Controls.Add(this.saveButton);
-			this.sceneGroup.Controls.Add(this.loadButton);
-			this.sceneGroup.Dock = System.Windows.Forms.DockStyle.Right;
-			this.sceneGroup.ForeColor = System.Drawing.Color.White;
-			this.sceneGroup.Location = new System.Drawing.Point(960, 0);
-			this.sceneGroup.Name = "sceneGroup";
-			this.sceneGroup.Size = new System.Drawing.Size(237, 54);
-			this.sceneGroup.TabIndex = 10;
-			this.sceneGroup.TabStop = false;
-			this.sceneGroup.Text = "Scene";
-			// 
-			// saveAsButton
-			// 
-			this.saveAsButton.BackColor = System.Drawing.Color.Black;
-			this.saveAsButton.Dock = System.Windows.Forms.DockStyle.Right;
-			this.saveAsButton.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.saveAsButton.ForeColor = System.Drawing.Color.White;
-			this.saveAsButton.Location = new System.Drawing.Point(3, 19);
-			this.saveAsButton.Name = "saveAsButton";
-			this.saveAsButton.Size = new System.Drawing.Size(77, 32);
-			this.saveAsButton.TabIndex = 9;
-			this.saveAsButton.TabStop = false;
-			this.saveAsButton.Text = "Save As";
-			this.saveAsButton.UseVisualStyleBackColor = false;
-			this.saveAsButton.Click += new System.EventHandler(this.OnSaveAsClick);
-			// 
-			// saveButton
-			// 
-			this.saveButton.BackColor = System.Drawing.Color.Black;
-			this.saveButton.Dock = System.Windows.Forms.DockStyle.Right;
-			this.saveButton.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.saveButton.ForeColor = System.Drawing.Color.White;
-			this.saveButton.Location = new System.Drawing.Point(80, 19);
-			this.saveButton.Name = "saveButton";
-			this.saveButton.Size = new System.Drawing.Size(77, 32);
-			this.saveButton.TabIndex = 8;
-			this.saveButton.TabStop = false;
-			this.saveButton.Text = "Save";
-			this.saveButton.UseVisualStyleBackColor = false;
-			this.saveButton.Click += new System.EventHandler(this.OnSaveClick);
-			// 
-			// loadButton
-			// 
-			this.loadButton.BackColor = System.Drawing.Color.Black;
-			this.loadButton.Dock = System.Windows.Forms.DockStyle.Right;
-			this.loadButton.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-			this.loadButton.ForeColor = System.Drawing.Color.White;
-			this.loadButton.Location = new System.Drawing.Point(157, 19);
-			this.loadButton.Name = "loadButton";
-			this.loadButton.Size = new System.Drawing.Size(77, 32);
-			this.loadButton.TabIndex = 7;
-			this.loadButton.TabStop = false;
-			this.loadButton.Text = "Load";
-			this.loadButton.UseVisualStyleBackColor = false;
-			this.loadButton.Click += new System.EventHandler(this.OnLoadClick);
-			// 
 			// searchBox
 			// 
 			this.searchBox.Controls.Add(this.searchScene);
-			this.searchBox.Dock = System.Windows.Forms.DockStyle.Left;
+			this.searchBox.Dock = System.Windows.Forms.DockStyle.Right;
 			this.searchBox.ForeColor = System.Drawing.Color.White;
-			this.searchBox.Location = new System.Drawing.Point(354, 0);
+			this.searchBox.Location = new System.Drawing.Point(1055, 0);
 			this.searchBox.Name = "searchBox";
 			this.searchBox.Size = new System.Drawing.Size(142, 54);
 			this.searchBox.TabIndex = 9;
@@ -289,7 +183,10 @@
 			this.searchScene.PlaceholderText = "UID";
 			this.searchScene.Size = new System.Drawing.Size(136, 29);
 			this.searchScene.TabIndex = 6;
+			this.searchScene.TabStop = false;
+			this.searchScene.Enter += new System.EventHandler(this.OnSearchSceneFocus);
 			this.searchScene.KeyDown += new System.Windows.Forms.KeyEventHandler(this.OnKeyDownObjectSearch);
+			this.searchScene.Leave += new System.EventHandler(this.OnSearchSceneUnfocus);
 			// 
 			// editSelectionGroup
 			// 
@@ -341,6 +238,8 @@
 			this.snap.Size = new System.Drawing.Size(82, 27);
 			this.snap.TabIndex = 5;
 			this.snap.TabStop = false;
+			this.snap.Enter += new System.EventHandler(this.OnSearchSceneFocus);
+			this.snap.Leave += new System.EventHandler(this.OnSearchSceneUnfocus);
 			// 
 			// gridGroup
 			// 
@@ -386,6 +285,8 @@
             0,
             0,
             0});
+			this.gridSpacing.Enter += new System.EventHandler(this.OnSearchSceneFocus);
+			this.gridSpacing.Leave += new System.EventHandler(this.OnSearchSceneUnfocus);
 			// 
 			// gridThickness
 			// 
@@ -420,10 +321,10 @@
 			this.sceneRightClickMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.sceneRightClickMenuCreate,
             this.sceneRightClickMenuSelection,
-            this.sceneRightClickMenuSeparator1,
-            this.sceneRightClickMenuResetView});
+            this.sceneRightClickMenuScene,
+            this.textureStackToolStripMenuItem});
 			this.sceneRightClickMenu.Name = "sceneRightClickMenu";
-			this.sceneRightClickMenu.Size = new System.Drawing.Size(181, 98);
+			this.sceneRightClickMenu.Size = new System.Drawing.Size(144, 92);
 			this.sceneRightClickMenu.Opened += new System.EventHandler(this.OnSceneRightClickMenu);
 			// 
 			// sceneRightClickMenuCreate
@@ -442,100 +343,187 @@
             this.sceneRightClickMenuCreateLight,
             this.sceneRightClickMenuCreateCamera});
 			this.sceneRightClickMenuCreate.Name = "sceneRightClickMenuCreate";
-			this.sceneRightClickMenuCreate.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuCreate.Size = new System.Drawing.Size(143, 22);
 			this.sceneRightClickMenuCreate.Text = "Create";
 			// 
 			// sceneRightClickMenuCreateSprite
 			// 
 			this.sceneRightClickMenuCreateSprite.Name = "sceneRightClickMenuCreateSprite";
-			this.sceneRightClickMenuCreateSprite.Size = new System.Drawing.Size(135, 22);
-			this.sceneRightClickMenuCreateSprite.Text = "Sprite";
+			this.sceneRightClickMenuCreateSprite.Size = new System.Drawing.Size(153, 22);
+			this.sceneRightClickMenuCreateSprite.Text = "(S) Sprite";
 			this.sceneRightClickMenuCreateSprite.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateSprite);
 			// 
 			// sceneRightClickMenuCreateText
 			// 
 			this.sceneRightClickMenuCreateText.Name = "sceneRightClickMenuCreateText";
-			this.sceneRightClickMenuCreateText.Size = new System.Drawing.Size(135, 22);
-			this.sceneRightClickMenuCreateText.Text = "Text";
+			this.sceneRightClickMenuCreateText.Size = new System.Drawing.Size(153, 22);
+			this.sceneRightClickMenuCreateText.Text = "(T) Text";
 			this.sceneRightClickMenuCreateText.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateText);
 			// 
 			// sceneRightClickMenuCreateTileMap
 			// 
 			this.sceneRightClickMenuCreateTileMap.Name = "sceneRightClickMenuCreateTileMap";
-			this.sceneRightClickMenuCreateTileMap.Size = new System.Drawing.Size(135, 22);
-			this.sceneRightClickMenuCreateTileMap.Text = "Tilemap";
+			this.sceneRightClickMenuCreateTileMap.Size = new System.Drawing.Size(153, 22);
+			this.sceneRightClickMenuCreateTileMap.Text = "(M) Tilemap";
 			this.sceneRightClickMenuCreateTileMap.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateTilemap);
 			// 
 			// sceneRightClickMenuCreateNinePatch
 			// 
 			this.sceneRightClickMenuCreateNinePatch.Name = "sceneRightClickMenuCreateNinePatch";
-			this.sceneRightClickMenuCreateNinePatch.Size = new System.Drawing.Size(135, 22);
-			this.sceneRightClickMenuCreateNinePatch.Text = "Nine Patch";
+			this.sceneRightClickMenuCreateNinePatch.Size = new System.Drawing.Size(153, 22);
+			this.sceneRightClickMenuCreateNinePatch.Text = "(N) Nine Patch";
 			this.sceneRightClickMenuCreateNinePatch.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateNinePatch);
 			// 
 			// sceneRightClickMenuCreateSeparator1
 			// 
 			this.sceneRightClickMenuCreateSeparator1.Name = "sceneRightClickMenuCreateSeparator1";
-			this.sceneRightClickMenuCreateSeparator1.Size = new System.Drawing.Size(132, 6);
+			this.sceneRightClickMenuCreateSeparator1.Size = new System.Drawing.Size(150, 6);
 			// 
 			// sceneRightClickMenuCreateCloth
 			// 
 			this.sceneRightClickMenuCreateCloth.Name = "sceneRightClickMenuCreateCloth";
-			this.sceneRightClickMenuCreateCloth.Size = new System.Drawing.Size(135, 22);
-			this.sceneRightClickMenuCreateCloth.Text = "Cloth";
+			this.sceneRightClickMenuCreateCloth.Size = new System.Drawing.Size(153, 22);
+			this.sceneRightClickMenuCreateCloth.Text = "(H) Cloth";
 			this.sceneRightClickMenuCreateCloth.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateCloth);
 			// 
 			// sceneRightClickMenuCreateSpriteStack
 			// 
 			this.sceneRightClickMenuCreateSpriteStack.Name = "sceneRightClickMenuCreateSpriteStack";
-			this.sceneRightClickMenuCreateSpriteStack.Size = new System.Drawing.Size(135, 22);
-			this.sceneRightClickMenuCreateSpriteStack.Text = "Sprite Stack";
+			this.sceneRightClickMenuCreateSpriteStack.Size = new System.Drawing.Size(153, 22);
+			this.sceneRightClickMenuCreateSpriteStack.Text = "(P) Sprite Stack";
 			this.sceneRightClickMenuCreateSpriteStack.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateSpriteStack);
 			// 
 			// sceneRightClickMenuCreateCube
 			// 
 			this.sceneRightClickMenuCreateCube.Name = "sceneRightClickMenuCreateCube";
-			this.sceneRightClickMenuCreateCube.Size = new System.Drawing.Size(135, 22);
-			this.sceneRightClickMenuCreateCube.Text = "Cube";
+			this.sceneRightClickMenuCreateCube.Size = new System.Drawing.Size(153, 22);
+			this.sceneRightClickMenuCreateCube.Text = "(Q) Cube";
 			this.sceneRightClickMenuCreateCube.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateCube);
 			// 
 			// sceneRightClickMenuCreateSeparator2
 			// 
 			this.sceneRightClickMenuCreateSeparator2.Name = "sceneRightClickMenuCreateSeparator2";
-			this.sceneRightClickMenuCreateSeparator2.Size = new System.Drawing.Size(132, 6);
+			this.sceneRightClickMenuCreateSeparator2.Size = new System.Drawing.Size(150, 6);
 			// 
 			// sceneRightClickMenuCreateAudio
 			// 
 			this.sceneRightClickMenuCreateAudio.Name = "sceneRightClickMenuCreateAudio";
-			this.sceneRightClickMenuCreateAudio.Size = new System.Drawing.Size(135, 22);
-			this.sceneRightClickMenuCreateAudio.Text = "Audio";
+			this.sceneRightClickMenuCreateAudio.Size = new System.Drawing.Size(153, 22);
+			this.sceneRightClickMenuCreateAudio.Text = "(A) Audio";
 			this.sceneRightClickMenuCreateAudio.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateAudio);
 			// 
 			// sceneRightClickMenuCreateLight
 			// 
 			this.sceneRightClickMenuCreateLight.Name = "sceneRightClickMenuCreateLight";
-			this.sceneRightClickMenuCreateLight.Size = new System.Drawing.Size(135, 22);
-			this.sceneRightClickMenuCreateLight.Text = "Light";
+			this.sceneRightClickMenuCreateLight.Size = new System.Drawing.Size(153, 22);
+			this.sceneRightClickMenuCreateLight.Text = "(I) Light";
 			this.sceneRightClickMenuCreateLight.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateLight);
 			// 
 			// sceneRightClickMenuCreateCamera
 			// 
 			this.sceneRightClickMenuCreateCamera.Name = "sceneRightClickMenuCreateCamera";
-			this.sceneRightClickMenuCreateCamera.Size = new System.Drawing.Size(135, 22);
-			this.sceneRightClickMenuCreateCamera.Text = "Camera";
+			this.sceneRightClickMenuCreateCamera.Size = new System.Drawing.Size(153, 22);
+			this.sceneRightClickMenuCreateCamera.Text = "(C) Camera";
 			this.sceneRightClickMenuCreateCamera.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateCamera);
 			// 
-			// sceneRightClickMenuSeparator1
+			// sceneRightClickMenuSelection
 			// 
-			this.sceneRightClickMenuSeparator1.Name = "sceneRightClickMenuSeparator1";
-			this.sceneRightClickMenuSeparator1.Size = new System.Drawing.Size(177, 6);
+			this.sceneRightClickMenuSelection.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.sceneRightClickMenuSelectionDuplicate,
+            this.sceneRightClickMenuSelectionDelete,
+            this.sceneRightClickMenuSelectionDeselect});
+			this.sceneRightClickMenuSelection.Name = "sceneRightClickMenuSelection";
+			this.sceneRightClickMenuSelection.Size = new System.Drawing.Size(143, 22);
+			this.sceneRightClickMenuSelection.Text = "Selection";
 			// 
-			// sceneRightClickMenuResetView
+			// sceneRightClickMenuSelectionDuplicate
 			// 
-			this.sceneRightClickMenuResetView.Name = "sceneRightClickMenuResetView";
-			this.sceneRightClickMenuResetView.Size = new System.Drawing.Size(180, 22);
-			this.sceneRightClickMenuResetView.Text = "Reset View";
-			this.sceneRightClickMenuResetView.Click += new System.EventHandler(this.OnSceneRightClickMenuResetView);
+			this.sceneRightClickMenuSelectionDuplicate.Name = "sceneRightClickMenuSelectionDuplicate";
+			this.sceneRightClickMenuSelectionDuplicate.Size = new System.Drawing.Size(170, 22);
+			this.sceneRightClickMenuSelectionDuplicate.Text = "(Ctrl+C) Duplicate";
+			this.sceneRightClickMenuSelectionDuplicate.Click += new System.EventHandler(this.OnSceneRightClickMenuSelectionDuplicate);
+			// 
+			// sceneRightClickMenuSelectionDelete
+			// 
+			this.sceneRightClickMenuSelectionDelete.Name = "sceneRightClickMenuSelectionDelete";
+			this.sceneRightClickMenuSelectionDelete.Size = new System.Drawing.Size(170, 22);
+			this.sceneRightClickMenuSelectionDelete.Text = "(Delete) Delete";
+			this.sceneRightClickMenuSelectionDelete.Click += new System.EventHandler(this.OnSceneRightClickMenuSelectionDelete);
+			// 
+			// sceneRightClickMenuSelectionDeselect
+			// 
+			this.sceneRightClickMenuSelectionDeselect.Name = "sceneRightClickMenuSelectionDeselect";
+			this.sceneRightClickMenuSelectionDeselect.Size = new System.Drawing.Size(170, 22);
+			this.sceneRightClickMenuSelectionDeselect.Text = "(Ctrl+D) Deselect";
+			this.sceneRightClickMenuSelectionDeselect.Click += new System.EventHandler(this.OnSceneRightClickMenuSelectionDeselect);
+			// 
+			// sceneRightClickMenuScene
+			// 
+			this.sceneRightClickMenuScene.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.sceneRightClickMenuSceneSave,
+            this.sceneRightClickMenuSceneSaveAs,
+            this.sceneRightClickMenuSceneLoad,
+            this.sceneRightClickMenuSceneSeparator1,
+            this.sceneRightClickMenuSceneResetView});
+			this.sceneRightClickMenuScene.Name = "sceneRightClickMenuScene";
+			this.sceneRightClickMenuScene.Size = new System.Drawing.Size(143, 22);
+			this.sceneRightClickMenuScene.Text = "Scene";
+			// 
+			// sceneRightClickMenuSceneSave
+			// 
+			this.sceneRightClickMenuSceneSave.Name = "sceneRightClickMenuSceneSave";
+			this.sceneRightClickMenuSceneSave.Size = new System.Drawing.Size(188, 22);
+			this.sceneRightClickMenuSceneSave.Text = "(Ctrl+S) Save";
+			this.sceneRightClickMenuSceneSave.Click += new System.EventHandler(this.OnSaveClick);
+			// 
+			// sceneRightClickMenuSceneSaveAs
+			// 
+			this.sceneRightClickMenuSceneSaveAs.Name = "sceneRightClickMenuSceneSaveAs";
+			this.sceneRightClickMenuSceneSaveAs.Size = new System.Drawing.Size(188, 22);
+			this.sceneRightClickMenuSceneSaveAs.Text = "(Ctrl+N) Save As New";
+			this.sceneRightClickMenuSceneSaveAs.Click += new System.EventHandler(this.OnSaveAsClick);
+			// 
+			// sceneRightClickMenuSceneLoad
+			// 
+			this.sceneRightClickMenuSceneLoad.Name = "sceneRightClickMenuSceneLoad";
+			this.sceneRightClickMenuSceneLoad.Size = new System.Drawing.Size(188, 22);
+			this.sceneRightClickMenuSceneLoad.Text = "(Ctrl+L) Load";
+			this.sceneRightClickMenuSceneLoad.Click += new System.EventHandler(this.OnLoadClick);
+			// 
+			// sceneRightClickMenuSceneSeparator1
+			// 
+			this.sceneRightClickMenuSceneSeparator1.Name = "sceneRightClickMenuSceneSeparator1";
+			this.sceneRightClickMenuSceneSeparator1.Size = new System.Drawing.Size(185, 6);
+			// 
+			// sceneRightClickMenuSceneResetView
+			// 
+			this.sceneRightClickMenuSceneResetView.Name = "sceneRightClickMenuSceneResetView";
+			this.sceneRightClickMenuSceneResetView.Size = new System.Drawing.Size(188, 22);
+			this.sceneRightClickMenuSceneResetView.Text = "(Space) Reset View";
+			this.sceneRightClickMenuSceneResetView.Click += new System.EventHandler(this.OnSceneRightClickMenuResetView);
+			// 
+			// textureStackToolStripMenuItem
+			// 
+			this.textureStackToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.generateLoadToolStripMenuItem,
+            this.unloadToolStripMenuItem});
+			this.textureStackToolStripMenuItem.Name = "textureStackToolStripMenuItem";
+			this.textureStackToolStripMenuItem.Size = new System.Drawing.Size(143, 22);
+			this.textureStackToolStripMenuItem.Text = "Texture Stack";
+			// 
+			// generateLoadToolStripMenuItem
+			// 
+			this.generateLoadToolStripMenuItem.Name = "generateLoadToolStripMenuItem";
+			this.generateLoadToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.generateLoadToolStripMenuItem.Text = "(Ctrl+P) Generate";
+			this.generateLoadToolStripMenuItem.Click += new System.EventHandler(this.OnCreateTextureStack);
+			// 
+			// unloadToolStripMenuItem
+			// 
+			this.unloadToolStripMenuItem.Name = "unloadToolStripMenuItem";
+			this.unloadToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.unloadToolStripMenuItem.Text = "(Ctrl+Alt+P) Unload";
+			this.unloadToolStripMenuItem.Click += new System.EventHandler(this.OnUnloadTextureStack);
 			// 
 			// rightTable
 			// 
@@ -653,37 +641,6 @@
 			this.save.Filter = "Scene|*.scene";
 			this.save.Title = "Save Scene";
 			// 
-			// sceneRightClickMenuSelection
-			// 
-			this.sceneRightClickMenuSelection.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.sceneRightClickMenuSelectionDuplicate,
-            this.sceneRightClickMenuSelectionDelete,
-            this.sceneRightClickMenuSelectionDeselect});
-			this.sceneRightClickMenuSelection.Name = "sceneRightClickMenuSelection";
-			this.sceneRightClickMenuSelection.Size = new System.Drawing.Size(180, 22);
-			this.sceneRightClickMenuSelection.Text = "Selection";
-			// 
-			// sceneRightClickMenuSelectionDuplicate
-			// 
-			this.sceneRightClickMenuSelectionDuplicate.Name = "sceneRightClickMenuSelectionDuplicate";
-			this.sceneRightClickMenuSelectionDuplicate.Size = new System.Drawing.Size(180, 22);
-			this.sceneRightClickMenuSelectionDuplicate.Text = "Duplicate";
-			this.sceneRightClickMenuSelectionDuplicate.Click += new System.EventHandler(this.OnSceneRightClickMenuSelectionDuplicate);
-			// 
-			// sceneRightClickMenuSelectionDelete
-			// 
-			this.sceneRightClickMenuSelectionDelete.Name = "sceneRightClickMenuSelectionDelete";
-			this.sceneRightClickMenuSelectionDelete.Size = new System.Drawing.Size(180, 22);
-			this.sceneRightClickMenuSelectionDelete.Text = "Delete";
-			this.sceneRightClickMenuSelectionDelete.Click += new System.EventHandler(this.OnSceneRightClickMenuSelectionDelete);
-			// 
-			// sceneRightClickMenuSelectionDeselect
-			// 
-			this.sceneRightClickMenuSelectionDeselect.Name = "sceneRightClickMenuSelectionDeselect";
-			this.sceneRightClickMenuSelectionDeselect.Size = new System.Drawing.Size(180, 22);
-			this.sceneRightClickMenuSelectionDeselect.Text = "Deselect";
-			this.sceneRightClickMenuSelectionDeselect.Click += new System.EventHandler(this.OnSceneRightClickMenuSelectionDeselect);
-			// 
 			// FormWindow
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -704,8 +661,6 @@
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).EndInit();
 			this.windowSplit.ResumeLayout(false);
 			this.sceneStatusPanel.ResumeLayout(false);
-			this.loadTextureStackGroup.ResumeLayout(false);
-			this.sceneGroup.ResumeLayout(false);
 			this.searchBox.ResumeLayout(false);
 			this.searchBox.PerformLayout();
 			this.editSelectionGroup.ResumeLayout(false);
@@ -730,22 +685,17 @@
 		private TrackBar gridThickness;
 		private ContextMenuStrip sceneRightClickMenu;
 		private ToolStripMenuItem sceneRightClickMenuCreate;
-		private ToolStripSeparator sceneRightClickMenuSeparator1;
-		private ToolStripMenuItem sceneRightClickMenuResetView;
 		private ToolStripMenuItem sceneRightClickMenuCreateSprite;
-		private Button saveButton;
 		private Label sceneValues;
 		private ListBox editSelectionOptions;
 		private NumericUpDown snap;
 		private NumericUpDown gridSpacing;
 		private PictureBox windowPicture;
 		private GroupBox editSelectionGroup;
-		private Button loadButton;
 		private OpenFileDialog load;
 		private GroupBox searchBox;
 		private TableLayoutPanel rightTable;
 		private TableLayoutPanel thingTypesTable;
-		private GroupBox sceneGroup;
 		private TextBox searchScene;
 		private ToolStripMenuItem sceneRightClickMenuCreateLight;
 		private ToolStripMenuItem sceneRightClickMenuCreateCamera;
@@ -763,21 +713,26 @@
 		private ToolStripMenuItem sceneRightClickMenuCreateText;
 		private ToolStripSeparator sceneRightClickMenuCreateSeparator1;
 		private ToolStripMenuItem sceneRightClickMenuCreateNinePatch;
-		private Button saveAsButton;
 		private Label loading;
 		private ToolStripSeparator sceneRightClickMenuCreateSeparator2;
 		private ToolStripMenuItem sceneRightClickMenuCreateAudio;
 		private ToolStripMenuItem sceneRightClickMenuCreateTileMap;
 		private SaveFileDialog save;
 		private ToolStripMenuItem sceneRightClickMenuCreateCloth;
-		private GroupBox loadTextureStackGroup;
-		private Button generateSpriteStack;
-		private Button unloadSpriteStack;
 		private ToolStripMenuItem sceneRightClickMenuCreateSpriteStack;
 		private ToolStripMenuItem sceneRightClickMenuCreateCube;
 		private ToolStripMenuItem sceneRightClickMenuSelection;
 		private ToolStripMenuItem sceneRightClickMenuSelectionDuplicate;
 		private ToolStripMenuItem sceneRightClickMenuSelectionDelete;
 		private ToolStripMenuItem sceneRightClickMenuSelectionDeselect;
+		private ToolStripMenuItem sceneRightClickMenuScene;
+		private ToolStripMenuItem sceneRightClickMenuSceneSave;
+		private ToolStripMenuItem sceneRightClickMenuSceneSaveAs;
+		private ToolStripMenuItem sceneRightClickMenuSceneLoad;
+		private ToolStripSeparator sceneRightClickMenuSceneSeparator1;
+		private ToolStripMenuItem sceneRightClickMenuSceneResetView;
+		private ToolStripMenuItem textureStackToolStripMenuItem;
+		private ToolStripMenuItem generateLoadToolStripMenuItem;
+		private ToolStripMenuItem unloadToolStripMenuItem;
 	}
 }
