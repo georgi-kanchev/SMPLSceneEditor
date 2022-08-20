@@ -37,7 +37,7 @@ namespace SMPLSceneEditor
 		private float sceneSc = 1f;
 		private int selectDepthIndex;
 		private bool isDragSelecting, isHoveringScene, isSpriteStackCreationOpen, isTyping;
-		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, tilePaintRightClickPos = new Vector2().NaN();
+		private Vector2 prevFormsMousePos, prevMousePos, prevFormsMousePosGrid, selectStartPos, createPosition, tilePaintRightClickPos = new Vector2().NaN();
 		private readonly List<string> selectedUIDs = new();
 		private readonly List<int> selectedHitboxPointIndexesA = new(), selectedHitboxPointIndexesB = new();
 		private readonly Cursor[] editCursors = new Cursor[] { Cursors.NoMove2D, Cursors.Cross, Cursors.SizeAll };
@@ -106,6 +106,10 @@ namespace SMPLSceneEditor
 
 		private void InitHotkeys()
 		{
+			hotkeys.Add(new Key[] { Key.LShift, Key.L }, AddLineToHitbox);
+			hotkeys.Add(new Key[] { Key.LShift, Key.S }, AddSquareToHitbox);
+			hotkeys.Add(new Key[] { Key.LShift, Key.C }, AddCircleToHitbox);
+
 			hotkeys.Add(new Key[] { Key.LControl, Key.S }, TrySaveScene);
 			hotkeys.Add(new Key[] { Key.LControl, Key.L }, TryLoadScene);
 
@@ -659,21 +663,21 @@ namespace SMPLSceneEditor
 
 				var a = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 				if(a[1] == "true")
-					Thing.CallVoid(uid, "SetShaderBool", a[0], true);
+					Thing.CallVoid(uid, Thing.Method.VISUAL_SET_EFFECT_BOOL, a[0], true);
 				else if(a[1] == "false")
-					Thing.CallVoid(uid, "SetShaderBool", a[0], false);
+					Thing.CallVoid(uid, Thing.Method.VISUAL_SET_EFFECT_BOOL, a[0], false);
 				else if(a.Length == 2 && a[1].IsNumber())
 				{
 					var n = a[1].ToNumber();
-					Thing.CallVoid(uid, "SetShaderFloat", a[0], n);
-					Thing.CallVoid(uid, "SetShaderInt", a[0], (int)n);
+					Thing.CallVoid(uid, Thing.Method.VISUAL_SET_EFFECT_FLOAT, a[0], n);
+					Thing.CallVoid(uid, Thing.Method.VISUAL_SET_EFFECT_INT, a[0], (int)n);
 				}
 				else if(a.Length == 3 && a[1].IsNumber() && a[2].IsNumber())
-					Thing.CallVoid(uid, "SetShaderVector2", a[0], new Vector2(a[1].ToNumber(), a[2].ToNumber()));
+					Thing.CallVoid(uid, Thing.Method.VISUAL_SET_EFFECT_VECTOR2, a[0], new Vector2(a[1].ToNumber(), a[2].ToNumber()));
 				else if(a.Length == 4 && a[1].IsNumber() && a[2].IsNumber() && a[3].IsNumber())
-					Thing.CallVoid(uid, "SetShaderVector3", a[0], new Vector3(a[1].ToNumber(), a[2].ToNumber(), a[3].ToNumber()));
+					Thing.CallVoid(uid, Thing.Method.VISUAL_SET_EFFECT_VECTOR3, a[0], new Vector3(a[1].ToNumber(), a[2].ToNumber(), a[3].ToNumber()));
 				else if(a.Length == 5 && a[1].IsNumber() && a[2].IsNumber() && a[3].IsNumber() && a[4].IsNumber())
-					Thing.CallVoid(uid, "SetShaderVector4", a[0], new Vector4(a[1].ToNumber(), a[2].ToNumber(), a[3].ToNumber(), a[4].ToNumber()));
+					Thing.CallVoid(uid, Thing.Method.VISUAL_SET_EFFECT_VECTOR4, a[0], new Vector4(a[1].ToNumber(), a[2].ToNumber(), a[3].ToNumber(), a[4].ToNumber()));
 				else
 					MessageBox.Show(this, $"The {effect} uniform was not set due to invalid input.", $"Set {effect} Uniform Failed");
 			}
@@ -1504,11 +1508,14 @@ namespace SMPLSceneEditor
 					id += $"{kvp.Key[i]} ";
 				}
 
-				if((pressedKeys == kvp.Key.Length).Once(id))
+				var enoughKeys = pressedKeys == kvp.Key.Length;
+				if(enoughKeys.Once(id))
 				{
+					createPosition = GetMousePosition();
 					kvp.Value.Invoke();
-					return; // no further hotkeys, order matters ('ctrl + s' comes before 's')
 				}
+				if(enoughKeys)
+					return; // no further hotkeys, order matters ('ctrl + s' comes before 's')
 			}
 		}
 		#endregion
@@ -2047,11 +2054,54 @@ namespace SMPLSceneEditor
 
 			Vector2 Local(Vector2 global) => (Vector2)Thing.CallGet(uid, Thing.Method.GET_LOCAL_POSITION_FROM_SELF, global);
 		}
+		private void AddLineToHitbox()
+		{
+			if(editHitbox == null || editHitbox.Checked == false)
+				return;
+
+			var off = new Vector2(50f * sceneSc, 0);
+			AddHitboxLine(selectedUIDs[0], new List<Line>() { new(createPosition - off, createPosition + off) });
+		}
+		private void AddSquareToHitbox()
+		{
+			if(editHitbox == null || editHitbox.Checked == false)
+				return;
+
+			var off = new Vector2(50f) * sceneSc;
+			var uid = selectedUIDs[0];
+			var p = createPosition;
+			var lines = new List<Line>()
+			{
+				new(p + new Vector2(-off.X, -off.Y), p + new Vector2(off.X, -off.Y)),
+				new(p + new Vector2(off.X, -off.Y), p + new Vector2(off.X, off.Y)),
+				new(p + new Vector2(off.X, off.Y), p + new Vector2(-off.X, off.Y)),
+				new(p + new Vector2(-off.X, off.Y), p + new Vector2(-off.X, -off.Y)),
+			};
+			AddHitboxLine(uid, lines);
+		}
+		private void AddCircleToHitbox()
+		{
+			if(editHitbox == null || editHitbox.Checked == false)
+				return;
+
+			var uid = selectedUIDs[0];
+			var radius = 50f * sceneSc;
+			var angStep = 360f / 8f;
+			var lines = new List<Line>();
+
+			for(int i = 0; i < 8; i++)
+			{
+				var p = createPosition.PointMoveAtAngle(angStep * i, radius, false);
+				var p1 = createPosition.PointMoveAtAngle(angStep * (i - 1), radius, false);
+				lines.Add(new(p, p1));
+			}
+			AddHitboxLine(uid, lines);
+		}
 
 		private void CreateSprite()
 		{
 			var uid = Thing.CreateSprite("Sprite", null);
-			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateText()
 		{
@@ -2062,17 +2112,17 @@ namespace SMPLSceneEditor
 				result = pickAsset.ShowDialog();
 
 			var uid = Thing.CreateText("Text", result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName));
-			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateNinePatch()
 		{
 			var uid = Thing.CreateNinePatch("NinePatch", null);
-			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateLight()
 		{
 			var uid = Thing.CreateLight("Light", Color.White);
-			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateCamera()
 		{
@@ -2081,12 +2131,12 @@ namespace SMPLSceneEditor
 				return;
 
 			var uid = Thing.CreateCamera("Camera", res);
-			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateTilemap()
 		{
 			var uid = Thing.CreateTilemap("Tilemap", null);
-			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateAudio()
 		{
@@ -2097,7 +2147,7 @@ namespace SMPLSceneEditor
 				result = pickAsset.ShowDialog();
 
 			var uid = Thing.CreateAudio("Audio", result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName));
-			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateCloth()
 		{
@@ -2110,7 +2160,7 @@ namespace SMPLSceneEditor
 				return;
 
 			var uid = Thing.CreateCloth("Cloth", null, size.X, size.Y, (int)fragmentAmount.X, (int)fragmentAmount.Y);
-			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateSpriteStack()
 		{
@@ -2124,12 +2174,12 @@ namespace SMPLSceneEditor
 			}
 
 			var uid = Thing.CreateSpriteStack("Text", texStackName);
-			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateCube()
 		{
 			var uid = Thing.CreateCube("Sprite", null);
-			Thing.Set(uid, Thing.Property.POSITION, GetMousePosition());
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 
 		private void OnKeyDownObjectSearch(object sender, System.Windows.Forms.KeyEventArgs e)
@@ -2375,10 +2425,7 @@ namespace SMPLSceneEditor
 			if(e.Button == MouseButtons.Right)
 			{
 				tilePaintRightClickPos = GetMousePosition();
-
-				windowPicture.ContextMenuStrip = editHitbox != null && editHitbox.Checked ? sceneRightClickMenuHitbox : sceneRightClickMenu;
-				if(paintTile != null && paintTile.Checked)
-					windowPicture.ContextMenuStrip = null;
+				createPosition = GetMousePosition();
 			}
 
 			if(e.Button != MouseButtons.Left)
@@ -2421,50 +2468,19 @@ namespace SMPLSceneEditor
 		private void OnSceneRightClickMenuCreateSpriteStack(object sender, EventArgs e) => CreateSpriteStack();
 		private void OnSceneRightClickMenuCreateCube(object sender, EventArgs e) => CreateCube();
 
-		private void OnSceneRightClickMenuCreateHitboxLine(object sender, EventArgs e)
-		{
-			var off = new Vector2(50f * sceneSc, 0);
-			var mousePos = GetMousePosition();
-			AddHitboxLine(selectedUIDs[0], new List<Line>() { new(mousePos - off, mousePos + off) });
-		}
-		private void OnSceneRightClickMenuCreateHitboxSquare(object sender, EventArgs e)
-		{
-			var off = new Vector2(50f) * sceneSc;
-			var uid = selectedUIDs[0];
-			var p = GetMousePosition();
-			var lines = new List<Line>()
-			{
-				new(p + new Vector2(-off.X, -off.Y), p + new Vector2(off.X, -off.Y)),
-				new(p + new Vector2(off.X, -off.Y), p + new Vector2(off.X, off.Y)),
-				new(p + new Vector2(off.X, off.Y), p + new Vector2(-off.X, off.Y)),
-				new(p + new Vector2(-off.X, off.Y), p + new Vector2(-off.X, -off.Y)),
-			};
-			AddHitboxLine(uid, lines);
-		}
-		private void OnSceneRightClickMenuCreateHitboxCircle(object sender, EventArgs e)
-		{
-			var uid = selectedUIDs[0];
-			var radius = 50f * sceneSc;
-			var angStep = 360f / 8f;
-			var lines = new List<Line>();
-			var mousePos = GetMousePosition();
-
-			for(int i = 0; i < 8; i++)
-			{
-				var p = mousePos.PointMoveAtAngle(angStep * i, radius, false);
-				var p1 = mousePos.PointMoveAtAngle(angStep * (i - 1), radius, false);
-				lines.Add(new(p, p1));
-			}
-			AddHitboxLine(uid, lines);
-		}
+		private void OnSceneRightClickMenuCreateHitboxLine(object sender, EventArgs e) => AddLineToHitbox();
+		private void OnSceneRightClickMenuCreateHitboxSquare(object sender, EventArgs e) => AddSquareToHitbox();
+		private void OnSceneRightClickMenuCreateHitboxCircle(object sender, EventArgs e) => AddCircleToHitbox();
 
 		private void OnSceneRightClickMenu(object sender, EventArgs e)
 		{
 			var sel = sceneRightClickMenu.Items.Find("sceneRightClickMenuSelection", false);
-			if(sel == null || sel.Length == 0)
-				return;
+			if(sel != null && sel.Length != 0)
+				sel[0].Enabled = selectedUIDs.Count > 0;
 
-			sel[0].Enabled = selectedUIDs.Count > 0;
+			var hitboxOption = sceneRightClickMenu.Items.Find("sceneRightClickMenuHitbox", false);
+			if(hitboxOption != null && hitboxOption.Length != 0)
+				hitboxOption[0].Enabled = editHitbox != null && editHitbox.Checked;
 		}
 		private void OnSceneRightClickMenuSelectionDuplicate(object sender, EventArgs e) => TryDuplicateSelection();
 		private void OnSceneRightClickMenuSelectionDelete(object sender, EventArgs e)

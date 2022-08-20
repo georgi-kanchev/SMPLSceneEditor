@@ -56,6 +56,10 @@
 			this.sceneRightClickMenuCreateAudio = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateLight = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateCamera = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuHitbox = new System.Windows.Forms.ToolStripMenuItem();
+			this.shiftLLine2PointsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.shiftSSquare4PointsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.shiftCCircle8PointsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuSelection = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuSelectionDuplicate = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuSelectionDelete = new System.Windows.Forms.ToolStripMenuItem();
@@ -75,14 +79,6 @@
 			this.pickColor = new System.Windows.Forms.ColorDialog();
 			this.pickAsset = new System.Windows.Forms.OpenFileDialog();
 			this.thingsList = new System.Windows.Forms.ContextMenuStrip(this.components);
-			this.sceneRightClickMenuHitbox = new System.Windows.Forms.ContextMenuStrip(this.components);
-			this.sceneRightClickMenuHitboxCreateLine = new System.Windows.Forms.ToolStripMenuItem();
-			this.lineToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.squareToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.circleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.sceneRightClickMenuHitboxSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-			this.sceneRightClickMenuHitboxResetView = new System.Windows.Forms.ToolStripMenuItem();
-			this.sceneRightClickMenuDeselectAll = new System.Windows.Forms.ToolStripMenuItem();
 			this.save = new System.Windows.Forms.SaveFileDialog();
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).BeginInit();
 			this.windowSplit.Panel1.SuspendLayout();
@@ -98,7 +94,6 @@
 			((System.ComponentModel.ISupportInitialize)(this.windowPicture)).BeginInit();
 			this.sceneRightClickMenu.SuspendLayout();
 			this.rightTable.SuspendLayout();
-			this.sceneRightClickMenuHitbox.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// windowSplit
@@ -320,11 +315,12 @@
 			// 
 			this.sceneRightClickMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.sceneRightClickMenuCreate,
+            this.sceneRightClickMenuHitbox,
             this.sceneRightClickMenuSelection,
             this.sceneRightClickMenuScene,
             this.textureStackToolStripMenuItem});
 			this.sceneRightClickMenu.Name = "sceneRightClickMenu";
-			this.sceneRightClickMenu.Size = new System.Drawing.Size(144, 92);
+			this.sceneRightClickMenu.Size = new System.Drawing.Size(181, 136);
 			this.sceneRightClickMenu.Opened += new System.EventHandler(this.OnSceneRightClickMenu);
 			// 
 			// sceneRightClickMenuCreate
@@ -343,7 +339,7 @@
             this.sceneRightClickMenuCreateLight,
             this.sceneRightClickMenuCreateCamera});
 			this.sceneRightClickMenuCreate.Name = "sceneRightClickMenuCreate";
-			this.sceneRightClickMenuCreate.Size = new System.Drawing.Size(143, 22);
+			this.sceneRightClickMenuCreate.Size = new System.Drawing.Size(180, 22);
 			this.sceneRightClickMenuCreate.Text = "Create";
 			// 
 			// sceneRightClickMenuCreateSprite
@@ -426,6 +422,37 @@
 			this.sceneRightClickMenuCreateCamera.Text = "(C) Camera";
 			this.sceneRightClickMenuCreateCamera.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateCamera);
 			// 
+			// sceneRightClickMenuHitbox
+			// 
+			this.sceneRightClickMenuHitbox.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.shiftLLine2PointsToolStripMenuItem,
+            this.shiftSSquare4PointsToolStripMenuItem,
+            this.shiftCCircle8PointsToolStripMenuItem});
+			this.sceneRightClickMenuHitbox.Name = "sceneRightClickMenuHitbox";
+			this.sceneRightClickMenuHitbox.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuHitbox.Text = "Add to Hitbox";
+			// 
+			// shiftLLine2PointsToolStripMenuItem
+			// 
+			this.shiftLLine2PointsToolStripMenuItem.Name = "shiftLLine2PointsToolStripMenuItem";
+			this.shiftLLine2PointsToolStripMenuItem.Size = new System.Drawing.Size(212, 22);
+			this.shiftLLine2PointsToolStripMenuItem.Text = "(Shift+L) Line (2 points)";
+			this.shiftLLine2PointsToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateHitboxLine);
+			// 
+			// shiftSSquare4PointsToolStripMenuItem
+			// 
+			this.shiftSSquare4PointsToolStripMenuItem.Name = "shiftSSquare4PointsToolStripMenuItem";
+			this.shiftSSquare4PointsToolStripMenuItem.Size = new System.Drawing.Size(212, 22);
+			this.shiftSSquare4PointsToolStripMenuItem.Text = "(Shift+S) Square (4 points)";
+			this.shiftSSquare4PointsToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateHitboxSquare);
+			// 
+			// shiftCCircle8PointsToolStripMenuItem
+			// 
+			this.shiftCCircle8PointsToolStripMenuItem.Name = "shiftCCircle8PointsToolStripMenuItem";
+			this.shiftCCircle8PointsToolStripMenuItem.Size = new System.Drawing.Size(212, 22);
+			this.shiftCCircle8PointsToolStripMenuItem.Text = "(Shift+C) Circle (8 points)";
+			this.shiftCCircle8PointsToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateHitboxCircle);
+			// 
 			// sceneRightClickMenuSelection
 			// 
 			this.sceneRightClickMenuSelection.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -433,7 +460,7 @@
             this.sceneRightClickMenuSelectionDelete,
             this.sceneRightClickMenuSelectionDeselect});
 			this.sceneRightClickMenuSelection.Name = "sceneRightClickMenuSelection";
-			this.sceneRightClickMenuSelection.Size = new System.Drawing.Size(143, 22);
+			this.sceneRightClickMenuSelection.Size = new System.Drawing.Size(180, 22);
 			this.sceneRightClickMenuSelection.Text = "Selection";
 			// 
 			// sceneRightClickMenuSelectionDuplicate
@@ -466,7 +493,7 @@
             this.sceneRightClickMenuSceneSeparator1,
             this.sceneRightClickMenuSceneResetView});
 			this.sceneRightClickMenuScene.Name = "sceneRightClickMenuScene";
-			this.sceneRightClickMenuScene.Size = new System.Drawing.Size(143, 22);
+			this.sceneRightClickMenuScene.Size = new System.Drawing.Size(180, 22);
 			this.sceneRightClickMenuScene.Text = "Scene";
 			// 
 			// sceneRightClickMenuSceneSave
@@ -508,7 +535,7 @@
             this.generateLoadToolStripMenuItem,
             this.unloadToolStripMenuItem});
 			this.textureStackToolStripMenuItem.Name = "textureStackToolStripMenuItem";
-			this.textureStackToolStripMenuItem.Size = new System.Drawing.Size(143, 22);
+			this.textureStackToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
 			this.textureStackToolStripMenuItem.Text = "Texture Stack";
 			// 
 			// generateLoadToolStripMenuItem
@@ -575,66 +602,6 @@
 			this.thingsList.Size = new System.Drawing.Size(61, 4);
 			this.thingsList.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.OnThingListPick);
 			// 
-			// sceneRightClickMenuHitbox
-			// 
-			this.sceneRightClickMenuHitbox.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.sceneRightClickMenuHitboxCreateLine,
-            this.sceneRightClickMenuHitboxSeparator1,
-            this.sceneRightClickMenuHitboxResetView,
-            this.sceneRightClickMenuDeselectAll});
-			this.sceneRightClickMenuHitbox.Name = "sceneRightClickMenuHitbox";
-			this.sceneRightClickMenuHitbox.Size = new System.Drawing.Size(136, 76);
-			// 
-			// sceneRightClickMenuHitboxCreateLine
-			// 
-			this.sceneRightClickMenuHitboxCreateLine.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.lineToolStripMenuItem,
-            this.squareToolStripMenuItem,
-            this.circleToolStripMenuItem});
-			this.sceneRightClickMenuHitboxCreateLine.Name = "sceneRightClickMenuHitboxCreateLine";
-			this.sceneRightClickMenuHitboxCreateLine.Size = new System.Drawing.Size(135, 22);
-			this.sceneRightClickMenuHitboxCreateLine.Text = "Create";
-			// 
-			// lineToolStripMenuItem
-			// 
-			this.lineToolStripMenuItem.Name = "lineToolStripMenuItem";
-			this.lineToolStripMenuItem.Size = new System.Drawing.Size(156, 22);
-			this.lineToolStripMenuItem.Text = "Line (1 side)";
-			this.lineToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateHitboxLine);
-			// 
-			// squareToolStripMenuItem
-			// 
-			this.squareToolStripMenuItem.Name = "squareToolStripMenuItem";
-			this.squareToolStripMenuItem.Size = new System.Drawing.Size(156, 22);
-			this.squareToolStripMenuItem.Text = "Square (4 sides)";
-			this.squareToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateHitboxSquare);
-			// 
-			// circleToolStripMenuItem
-			// 
-			this.circleToolStripMenuItem.Name = "circleToolStripMenuItem";
-			this.circleToolStripMenuItem.Size = new System.Drawing.Size(156, 22);
-			this.circleToolStripMenuItem.Text = "Circle (8 sides)";
-			this.circleToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateHitboxCircle);
-			// 
-			// sceneRightClickMenuHitboxSeparator1
-			// 
-			this.sceneRightClickMenuHitboxSeparator1.Name = "sceneRightClickMenuHitboxSeparator1";
-			this.sceneRightClickMenuHitboxSeparator1.Size = new System.Drawing.Size(132, 6);
-			// 
-			// sceneRightClickMenuHitboxResetView
-			// 
-			this.sceneRightClickMenuHitboxResetView.Name = "sceneRightClickMenuHitboxResetView";
-			this.sceneRightClickMenuHitboxResetView.Size = new System.Drawing.Size(135, 22);
-			this.sceneRightClickMenuHitboxResetView.Text = "Reset View";
-			this.sceneRightClickMenuHitboxResetView.Click += new System.EventHandler(this.OnSceneRightClickMenuResetView);
-			// 
-			// sceneRightClickMenuDeselectAll
-			// 
-			this.sceneRightClickMenuDeselectAll.Name = "sceneRightClickMenuDeselectAll";
-			this.sceneRightClickMenuDeselectAll.Size = new System.Drawing.Size(135, 22);
-			this.sceneRightClickMenuDeselectAll.Text = "Deselect All";
-			this.sceneRightClickMenuDeselectAll.Click += new System.EventHandler(this.OnSceneRightClickMenuSelectionDeselect);
-			// 
 			// save
 			// 
 			this.save.DefaultExt = "scene";
@@ -672,7 +639,6 @@
 			((System.ComponentModel.ISupportInitialize)(this.windowPicture)).EndInit();
 			this.sceneRightClickMenu.ResumeLayout(false);
 			this.rightTable.ResumeLayout(false);
-			this.sceneRightClickMenuHitbox.ResumeLayout(false);
 			this.ResumeLayout(false);
 
 		}
@@ -702,14 +668,6 @@
 		private ColorDialog pickColor;
 		private OpenFileDialog pickAsset;
 		private ContextMenuStrip thingsList;
-		private ContextMenuStrip sceneRightClickMenuHitbox;
-		private ToolStripMenuItem sceneRightClickMenuHitboxCreateLine;
-		private ToolStripSeparator sceneRightClickMenuHitboxSeparator1;
-		private ToolStripMenuItem sceneRightClickMenuHitboxResetView;
-		private ToolStripMenuItem sceneRightClickMenuDeselectAll;
-		private ToolStripMenuItem lineToolStripMenuItem;
-		private ToolStripMenuItem squareToolStripMenuItem;
-		private ToolStripMenuItem circleToolStripMenuItem;
 		private ToolStripMenuItem sceneRightClickMenuCreateText;
 		private ToolStripSeparator sceneRightClickMenuCreateSeparator1;
 		private ToolStripMenuItem sceneRightClickMenuCreateNinePatch;
@@ -734,5 +692,9 @@
 		private ToolStripMenuItem textureStackToolStripMenuItem;
 		private ToolStripMenuItem generateLoadToolStripMenuItem;
 		private ToolStripMenuItem unloadToolStripMenuItem;
+		private ToolStripMenuItem sceneRightClickMenuHitbox;
+		private ToolStripMenuItem shiftLLine2PointsToolStripMenuItem;
+		private ToolStripMenuItem shiftSSquare4PointsToolStripMenuItem;
+		private ToolStripMenuItem shiftCCircle8PointsToolStripMenuItem;
 	}
 }
