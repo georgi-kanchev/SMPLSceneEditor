@@ -48,6 +48,8 @@
 			this.sceneRightClickMenuCreateText = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateTileMap = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateNinePatch = new System.Windows.Forms.ToolStripMenuItem();
+			this.uIToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.uBButtonToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.sceneRightClickMenuCreateCloth = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateSpriteStack = new System.Windows.Forms.ToolStripMenuItem();
@@ -80,6 +82,7 @@
 			this.pickAsset = new System.Windows.Forms.OpenFileDialog();
 			this.thingsList = new System.Windows.Forms.ContextMenuStrip(this.components);
 			this.save = new System.Windows.Forms.SaveFileDialog();
+			this.uTTextboxToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).BeginInit();
 			this.windowSplit.Panel1.SuspendLayout();
 			this.windowSplit.Panel2.SuspendLayout();
@@ -330,6 +333,7 @@
             this.sceneRightClickMenuCreateText,
             this.sceneRightClickMenuCreateTileMap,
             this.sceneRightClickMenuCreateNinePatch,
+            this.uIToolStripMenuItem,
             this.sceneRightClickMenuCreateSeparator1,
             this.sceneRightClickMenuCreateCloth,
             this.sceneRightClickMenuCreateSpriteStack,
@@ -345,81 +349,97 @@
 			// sceneRightClickMenuCreateSprite
 			// 
 			this.sceneRightClickMenuCreateSprite.Name = "sceneRightClickMenuCreateSprite";
-			this.sceneRightClickMenuCreateSprite.Size = new System.Drawing.Size(153, 22);
-			this.sceneRightClickMenuCreateSprite.Text = "(S) Sprite";
+			this.sceneRightClickMenuCreateSprite.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuCreateSprite.Text = "(C+S) Sprite";
 			this.sceneRightClickMenuCreateSprite.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateSprite);
 			// 
 			// sceneRightClickMenuCreateText
 			// 
 			this.sceneRightClickMenuCreateText.Name = "sceneRightClickMenuCreateText";
-			this.sceneRightClickMenuCreateText.Size = new System.Drawing.Size(153, 22);
-			this.sceneRightClickMenuCreateText.Text = "(T) Text";
+			this.sceneRightClickMenuCreateText.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuCreateText.Text = "(C+T) Text";
 			this.sceneRightClickMenuCreateText.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateText);
 			// 
 			// sceneRightClickMenuCreateTileMap
 			// 
 			this.sceneRightClickMenuCreateTileMap.Name = "sceneRightClickMenuCreateTileMap";
-			this.sceneRightClickMenuCreateTileMap.Size = new System.Drawing.Size(153, 22);
-			this.sceneRightClickMenuCreateTileMap.Text = "(M) Tilemap";
+			this.sceneRightClickMenuCreateTileMap.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuCreateTileMap.Text = "(C+M) Tilemap";
 			this.sceneRightClickMenuCreateTileMap.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateTilemap);
 			// 
 			// sceneRightClickMenuCreateNinePatch
 			// 
 			this.sceneRightClickMenuCreateNinePatch.Name = "sceneRightClickMenuCreateNinePatch";
-			this.sceneRightClickMenuCreateNinePatch.Size = new System.Drawing.Size(153, 22);
-			this.sceneRightClickMenuCreateNinePatch.Text = "(N) Nine Patch";
+			this.sceneRightClickMenuCreateNinePatch.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuCreateNinePatch.Text = "(C+N) Nine Patch";
 			this.sceneRightClickMenuCreateNinePatch.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateNinePatch);
+			// 
+			// uIToolStripMenuItem
+			// 
+			this.uIToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.uBButtonToolStripMenuItem,
+            this.uTTextboxToolStripMenuItem});
+			this.uIToolStripMenuItem.Name = "uIToolStripMenuItem";
+			this.uIToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.uIToolStripMenuItem.Text = "UI";
+			// 
+			// uBButtonToolStripMenuItem
+			// 
+			this.uBButtonToolStripMenuItem.Name = "uBButtonToolStripMenuItem";
+			this.uBButtonToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.uBButtonToolStripMenuItem.Text = "(U+B) Button";
+			this.uBButtonToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateUIButton);
 			// 
 			// sceneRightClickMenuCreateSeparator1
 			// 
 			this.sceneRightClickMenuCreateSeparator1.Name = "sceneRightClickMenuCreateSeparator1";
-			this.sceneRightClickMenuCreateSeparator1.Size = new System.Drawing.Size(150, 6);
+			this.sceneRightClickMenuCreateSeparator1.Size = new System.Drawing.Size(177, 6);
 			// 
 			// sceneRightClickMenuCreateCloth
 			// 
 			this.sceneRightClickMenuCreateCloth.Name = "sceneRightClickMenuCreateCloth";
-			this.sceneRightClickMenuCreateCloth.Size = new System.Drawing.Size(153, 22);
-			this.sceneRightClickMenuCreateCloth.Text = "(H) Cloth";
+			this.sceneRightClickMenuCreateCloth.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuCreateCloth.Text = "(C+H) Cloth";
 			this.sceneRightClickMenuCreateCloth.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateCloth);
 			// 
 			// sceneRightClickMenuCreateSpriteStack
 			// 
 			this.sceneRightClickMenuCreateSpriteStack.Name = "sceneRightClickMenuCreateSpriteStack";
-			this.sceneRightClickMenuCreateSpriteStack.Size = new System.Drawing.Size(153, 22);
-			this.sceneRightClickMenuCreateSpriteStack.Text = "(P) Sprite Stack";
+			this.sceneRightClickMenuCreateSpriteStack.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuCreateSpriteStack.Text = "(C+P) Sprite Stack";
 			this.sceneRightClickMenuCreateSpriteStack.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateSpriteStack);
 			// 
 			// sceneRightClickMenuCreateCube
 			// 
 			this.sceneRightClickMenuCreateCube.Name = "sceneRightClickMenuCreateCube";
-			this.sceneRightClickMenuCreateCube.Size = new System.Drawing.Size(153, 22);
-			this.sceneRightClickMenuCreateCube.Text = "(Q) Cube";
+			this.sceneRightClickMenuCreateCube.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuCreateCube.Text = "(C+Q) Cube";
 			this.sceneRightClickMenuCreateCube.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateCube);
 			// 
 			// sceneRightClickMenuCreateSeparator2
 			// 
 			this.sceneRightClickMenuCreateSeparator2.Name = "sceneRightClickMenuCreateSeparator2";
-			this.sceneRightClickMenuCreateSeparator2.Size = new System.Drawing.Size(150, 6);
+			this.sceneRightClickMenuCreateSeparator2.Size = new System.Drawing.Size(177, 6);
 			// 
 			// sceneRightClickMenuCreateAudio
 			// 
 			this.sceneRightClickMenuCreateAudio.Name = "sceneRightClickMenuCreateAudio";
-			this.sceneRightClickMenuCreateAudio.Size = new System.Drawing.Size(153, 22);
-			this.sceneRightClickMenuCreateAudio.Text = "(A) Audio";
+			this.sceneRightClickMenuCreateAudio.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuCreateAudio.Text = "(C+A) Audio";
 			this.sceneRightClickMenuCreateAudio.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateAudio);
 			// 
 			// sceneRightClickMenuCreateLight
 			// 
 			this.sceneRightClickMenuCreateLight.Name = "sceneRightClickMenuCreateLight";
-			this.sceneRightClickMenuCreateLight.Size = new System.Drawing.Size(153, 22);
-			this.sceneRightClickMenuCreateLight.Text = "(I) Light";
+			this.sceneRightClickMenuCreateLight.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuCreateLight.Text = "(C+I) Light";
 			this.sceneRightClickMenuCreateLight.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateLight);
 			// 
 			// sceneRightClickMenuCreateCamera
 			// 
 			this.sceneRightClickMenuCreateCamera.Name = "sceneRightClickMenuCreateCamera";
-			this.sceneRightClickMenuCreateCamera.Size = new System.Drawing.Size(153, 22);
-			this.sceneRightClickMenuCreateCamera.Text = "(C) Camera";
+			this.sceneRightClickMenuCreateCamera.Size = new System.Drawing.Size(180, 22);
+			this.sceneRightClickMenuCreateCamera.Text = "(C+R) Camera";
 			this.sceneRightClickMenuCreateCamera.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateCamera);
 			// 
 			// sceneRightClickMenuHitbox
@@ -435,22 +455,22 @@
 			// shiftLLine2PointsToolStripMenuItem
 			// 
 			this.shiftLLine2PointsToolStripMenuItem.Name = "shiftLLine2PointsToolStripMenuItem";
-			this.shiftLLine2PointsToolStripMenuItem.Size = new System.Drawing.Size(212, 22);
-			this.shiftLLine2PointsToolStripMenuItem.Text = "(Shift+L) Line (2 points)";
+			this.shiftLLine2PointsToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
+			this.shiftLLine2PointsToolStripMenuItem.Text = "(H+L) Line (2 points)";
 			this.shiftLLine2PointsToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateHitboxLine);
 			// 
 			// shiftSSquare4PointsToolStripMenuItem
 			// 
 			this.shiftSSquare4PointsToolStripMenuItem.Name = "shiftSSquare4PointsToolStripMenuItem";
-			this.shiftSSquare4PointsToolStripMenuItem.Size = new System.Drawing.Size(212, 22);
-			this.shiftSSquare4PointsToolStripMenuItem.Text = "(Shift+S) Square (4 points)";
+			this.shiftSSquare4PointsToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
+			this.shiftSSquare4PointsToolStripMenuItem.Text = "(H+S) Square (4 points)";
 			this.shiftSSquare4PointsToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateHitboxSquare);
 			// 
 			// shiftCCircle8PointsToolStripMenuItem
 			// 
 			this.shiftCCircle8PointsToolStripMenuItem.Name = "shiftCCircle8PointsToolStripMenuItem";
-			this.shiftCCircle8PointsToolStripMenuItem.Size = new System.Drawing.Size(212, 22);
-			this.shiftCCircle8PointsToolStripMenuItem.Text = "(Shift+C) Circle (8 points)";
+			this.shiftCCircle8PointsToolStripMenuItem.Size = new System.Drawing.Size(197, 22);
+			this.shiftCCircle8PointsToolStripMenuItem.Text = "(H+C) Circle (8 points)";
 			this.shiftCCircle8PointsToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateHitboxCircle);
 			// 
 			// sceneRightClickMenuSelection
@@ -608,6 +628,13 @@
 			this.save.Filter = "Scene|*.scene";
 			this.save.Title = "Save Scene";
 			// 
+			// uTTextboxToolStripMenuItem
+			// 
+			this.uTTextboxToolStripMenuItem.Name = "uTTextboxToolStripMenuItem";
+			this.uTTextboxToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.uTTextboxToolStripMenuItem.Text = "(U+T) Textbox";
+			this.uTTextboxToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateUITextbox);
+			// 
 			// FormWindow
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -696,5 +723,8 @@
 		private ToolStripMenuItem shiftLLine2PointsToolStripMenuItem;
 		private ToolStripMenuItem shiftSSquare4PointsToolStripMenuItem;
 		private ToolStripMenuItem shiftCCircle8PointsToolStripMenuItem;
+		private ToolStripMenuItem uIToolStripMenuItem;
+		private ToolStripMenuItem uBButtonToolStripMenuItem;
+		private ToolStripMenuItem uTTextboxToolStripMenuItem;
 	}
 }

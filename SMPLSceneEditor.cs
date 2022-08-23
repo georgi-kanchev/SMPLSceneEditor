@@ -106,9 +106,9 @@ namespace SMPLSceneEditor
 
 		private void InitHotkeys()
 		{
-			hotkeys.Add(new Key[] { Key.LShift, Key.L }, AddLineToHitbox);
-			hotkeys.Add(new Key[] { Key.LShift, Key.S }, AddSquareToHitbox);
-			hotkeys.Add(new Key[] { Key.LShift, Key.C }, AddCircleToHitbox);
+			hotkeys.Add(new Key[] { Key.H, Key.L }, AddLineToHitbox);
+			hotkeys.Add(new Key[] { Key.H, Key.S }, AddSquareToHitbox);
+			hotkeys.Add(new Key[] { Key.H, Key.C }, AddCircleToHitbox);
 
 			hotkeys.Add(new Key[] { Key.LControl, Key.S }, TrySaveScene);
 			hotkeys.Add(new Key[] { Key.LControl, Key.L }, TryLoadScene);
@@ -119,19 +119,21 @@ namespace SMPLSceneEditor
 			hotkeys.Add(new Key[] { Key.LControl, Key.C }, TryDuplicateSelection);
 			hotkeys.Add(new Key[] { Key.LControl, Key.D }, DeselectAll);
 			hotkeys.Add(new Key[] { Key.Delete }, TryDestroySelection);
-
-			hotkeys.Add(new Key[] { Key.S }, CreateSprite);
-			hotkeys.Add(new Key[] { Key.T }, CreateText);
-			hotkeys.Add(new Key[] { Key.N }, CreateNinePatch);
-			hotkeys.Add(new Key[] { Key.I }, CreateLight);
-			hotkeys.Add(new Key[] { Key.C }, CreateCamera);
-			hotkeys.Add(new Key[] { Key.M }, CreateTilemap);
-			hotkeys.Add(new Key[] { Key.A }, CreateAudio);
-			hotkeys.Add(new Key[] { Key.H }, CreateCloth);
-			hotkeys.Add(new Key[] { Key.P }, CreateSpriteStack);
-			hotkeys.Add(new Key[] { Key.Q }, CreateCube);
-
 			hotkeys.Add(new Key[] { Key.Space }, ResetView);
+
+			hotkeys.Add(new Key[] { Key.C, Key.S }, CreateSprite);
+			hotkeys.Add(new Key[] { Key.C, Key.T }, CreateText);
+			hotkeys.Add(new Key[] { Key.C, Key.N }, CreateNinePatch);
+			hotkeys.Add(new Key[] { Key.C, Key.I }, CreateLight);
+			hotkeys.Add(new Key[] { Key.C, Key.R }, CreateCamera);
+			hotkeys.Add(new Key[] { Key.C, Key.M }, CreateTilemap);
+			hotkeys.Add(new Key[] { Key.C, Key.A }, CreateAudio);
+			hotkeys.Add(new Key[] { Key.C, Key.H }, CreateCloth);
+			hotkeys.Add(new Key[] { Key.C, Key.P }, CreateSpriteStack);
+			hotkeys.Add(new Key[] { Key.C, Key.Q }, CreateCube);
+
+			hotkeys.Add(new Key[] { Key.U, Key.B }, CreateUIButton);
+
 		}
 		private void InitTables()
 		{
@@ -148,6 +150,8 @@ namespace SMPLSceneEditor
 			var cloth = CreateDefaultTable("tableCloth");
 			var pseudo3D = CreateDefaultTable("tablePseudo3D");
 			var cube = CreateDefaultTable("tableCube");
+			var button = CreateDefaultTable("tableButton");
+			var textbox = CreateDefaultTable("tableTextbox");
 			var types = thingTypesTable;
 
 			types.Hide();
@@ -166,6 +170,8 @@ namespace SMPLSceneEditor
 			AddPropsCloth();
 			AddPropsPseudo3D();
 			AddPropsCube();
+			AddPropsButton();
+			AddPropsTextbox();
 
 			editThingTableTypes[scene.Name] = scene;
 			editThingTableTypes[thing.Name] = thing;
@@ -180,6 +186,8 @@ namespace SMPLSceneEditor
 			editThingTableTypes[cloth.Name] = cloth;
 			editThingTableTypes[pseudo3D.Name] = pseudo3D;
 			editThingTableTypes[cube.Name] = cube;
+			editThingTableTypes[button.Name] = button;
+			editThingTableTypes[textbox.Name] = textbox;
 
 			TableLayoutPanel CreateDefaultTable(string name)
 			{
@@ -364,6 +372,26 @@ namespace SMPLSceneEditor
 				AddThingProperty(cube, "Side Right", Thing.Property.CUBE_SIDE_RIGHT, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
 				AddThingProperty(cube, "Side Bottom", Thing.Property.CUBE_SIDE_BOTTOM, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
 				AddThingProperty(cube, "Side Near", Thing.Property.CUBE_SIDE_NEAR, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
+			}
+			void AddPropsButton()
+			{
+				AddThingProperty(button, "Is Disabled", Thing.Property.UI_BUTTON_IS_DISABLED, typeof(bool));
+				AddThingProperty(button, "Is Draggable", Thing.Property.UI_BUTTON_IS_DRAGGABLE, typeof(bool));
+				AddSpace(button);
+				AddThingProperty(button, "Hold Delay", Thing.Property.UI_BUTTON_HOLD_DELAY, typeof(float));
+				AddThingProperty(button, "Hold Trigger Speed", Thing.Property.UI_BUTTON_HOLD_TRIGGER_SPEED, typeof(float), labelSizeOffset: 2);
+			}
+			void AddPropsTextbox()
+			{
+				AddThingProperty(textbox, "Background Color", Thing.Property.UI_TEXTBOX_BACKGROUND_COLOR, typeof(Color));
+				AddThingProperty(textbox, "Camera UID", Thing.Property.UI_TEXTBOX_CAMERA_UID, typeof(string));
+				AddThingProperty(textbox, "Alignment", Thing.Property.UI_TEXTBOX_ALIGNMENT, typeof(SMPL.UI.Thing.TextboxAlignment));
+				AddSpace(textbox);
+				AddThingProperty(textbox, "Line Width", Thing.Property.UI_TEXTBOX_LINE_WIDTH, typeof(float));
+				AddThingProperty(textbox, "Line Count", Thing.Property.UI_TEXTBOX_LINE_COUNT, typeof(int), readOnly: true);
+				AddSpace(textbox);
+				AddThingProperty(textbox, "ShadowOffset", Thing.Property.UI_TEXTBOX_SHADOW_OFFSET, typeof(Vector2), smallNumericStep: true);
+				AddThingProperty(textbox, "ShadowColor", Thing.Property.UI_TEXTBOX_SHADOW_COLOR, typeof(Color));
 			}
 
 			void AddSpace(TableLayoutPanel table)
@@ -1139,6 +1167,7 @@ namespace SMPLSceneEditor
 					case "List<String>": ProcessList((ComboBox)control, (List<string>)Thing.Get(uid, propName)); break;
 					case "ReadOnlyCollection<String>": ProcessList((ComboBox)control, (ReadOnlyCollection<string>)Thing.Get(uid, propName)); break;
 					case "BlendMode": ProcessEnumList((ComboBox)control, typeof(Thing.BlendMode), propName); break;
+					case "TextboxAlignment": ProcessEnumList((ComboBox)control, typeof(SMPL.UI.Thing.TextboxAlignment), propName); break;
 					case "Styles": ProcessEnumFlagList((TextBox)control, typeof(Text.Styles)); break;
 					case "Effect": ProcessEnumList((ComboBox)control, typeof(Thing.Effect), propName); break;
 					case "AudioStatus": ProcessEnumList((ComboBox)control, typeof(Thing.AudioStatus), propName); break;
@@ -1179,7 +1208,6 @@ namespace SMPLSceneEditor
 							break;
 						}
 				}
-
 				object Get() => Thing.Get(uid, propName);
 			}
 
@@ -2105,13 +2133,7 @@ namespace SMPLSceneEditor
 		}
 		private void CreateText()
 		{
-			var result = DialogResult.None;
-			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
-				MessageBox.Show(this, "This Text will be invisible without a Font.\n\n" + NO_ASSETS_MSG, "Create Text");
-			else if(MessageBox.Show(this, "Pick a Font?", "Create Text", MessageBoxButtons.YesNo) == DialogResult.Yes)
-				result = pickAsset.ShowDialog();
-
-			var uid = Thing.CreateText("Text", result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName));
+			var uid = Thing.CreateText("Text", GetFont("Create Text", "Text"));
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateNinePatch()
@@ -2126,7 +2148,7 @@ namespace SMPLSceneEditor
 		}
 		private void CreateCamera()
 		{
-			var res = GetVector2("Create Camera", "Provide the Camera resolution.", 1, 7680, 1, 4320, new(1000));
+			var res = GetVector2("Create Camera", "Provide the Camera resolution.", 1, 7680, 1, 4320, new(1280, 720));
 			if(res == default)
 				return;
 
@@ -2179,6 +2201,24 @@ namespace SMPLSceneEditor
 		private void CreateCube()
 		{
 			var uid = Thing.CreateCube("Sprite", null);
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
+		}
+
+		private void CreateUIButton()
+		{
+			var uid = Thing.UI.CreateButton("Button", null);
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
+		}
+		private void CreateUITextbox()
+		{
+			var font = GetFont("Create Textbox", "Textbox");
+			var camUID = GetInput("Create Textbox", "Provide the Textbox's Camera UID.", "Camera");
+			if(string.IsNullOrWhiteSpace(camUID))
+				return;
+			var camRes = GetVector2("Create Textbox", "Provide the Textbox's Camera resolution.", 1, 2048, 1, 2048, new(200));
+			if(camRes == default)
+				return;
+			var uid = Thing.UI.CreateTextbox("Textbox", camUID, font, resolutionX: (uint)camRes.X, resolutionY: (uint)camRes.Y);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 
@@ -2470,6 +2510,9 @@ namespace SMPLSceneEditor
 		private void OnSceneRightClickMenuCreateSpriteStack(object sender, EventArgs e) => CreateSpriteStack();
 		private void OnSceneRightClickMenuCreateCube(object sender, EventArgs e) => CreateCube();
 
+		private void OnSceneRightClickMenuCreateUIButton(object sender, EventArgs e) => CreateUIButton();
+		private void OnSceneRightClickMenuCreateUITextbox(object sender, EventArgs e) => CreateUITextbox();
+
 		private void OnSceneRightClickMenuCreateHitboxLine(object sender, EventArgs e) => AddLineToHitbox();
 		private void OnSceneRightClickMenuCreateHitboxSquare(object sender, EventArgs e) => AddSquareToHitbox();
 		private void OnSceneRightClickMenuCreateHitboxCircle(object sender, EventArgs e) => AddCircleToHitbox();
@@ -2560,6 +2603,11 @@ namespace SMPLSceneEditor
 			{
 				var index = list.SelectedIndex;
 				Thing.Set(selectedUIDs[0], Thing.Property.TEXT_STYLE, (Text.Styles)(index * 2));
+			}
+			else if(list.Name == $"Prop{Thing.Property.UI_TEXTBOX_ALIGNMENT}")
+			{
+				var index = list.SelectedIndex;
+				Thing.Set(selectedUIDs[0], Thing.Property.UI_TEXTBOX_ALIGNMENT, (SMPL.UI.Thing.TextboxAlignment)index);
 			}
 			else if(list.Name == $"Prop{Thing.Property.AUDIO_STATUS}")
 			{
@@ -2948,6 +2996,22 @@ namespace SMPLSceneEditor
 		{
 			return new Vector2(ang).PointToGrid(new(gridSz)).X;
 		}
+		private void Loading(string description = "")
+		{
+			loadingDescr = description;
+			Application.DoEvents();
+		}
+
+		private string? GetFont(string title, string name)
+		{
+			var result = DialogResult.None;
+			if(string.IsNullOrWhiteSpace(GetAssetsPath()))
+				MessageBox.Show(this, $"This {name} will be invisible without a Font.\n\n" + NO_ASSETS_MSG, title);
+			else if(MessageBox.Show(this, "Pick a Font?", title, MessageBoxButtons.YesNo) == DialogResult.Yes)
+				result = pickAsset.ShowDialog();
+
+			return result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName);
+		}
 		private static string GetInput(string title, string text, string defaultInput = "")
 		{
 			var sz = new Vector2i(W, H + text.Split('\n').Length * 15);
@@ -3244,11 +3308,6 @@ namespace SMPLSceneEditor
 			Show();
 
 			void Show() => thingsList.Show(this, control.PointToScreen(new(-thingsList.Width, -control.Height / 2)));
-		}
-		private void Loading(string description = "")
-		{
-			loadingDescr = description;
-			Application.DoEvents();
 		}
 		#endregion
 	}
