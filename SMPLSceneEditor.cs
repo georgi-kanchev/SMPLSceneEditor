@@ -1336,7 +1336,7 @@ namespace SMPLSceneEditor
 			var uid = selectedUIDs[0];
 			var tileIndecies = Thing.CallGet(uid, Thing.Method.TILEMAP_GET_TILE_INDEXES, GetMousePosition());
 			var startRightTileInd = Thing.CallGet(uid, Thing.Method.TILEMAP_GET_TILE_INDEXES, tilePaintRightClickPos);
-			var alt = Keyboard.IsKeyPressed(Keyboard.Key.LAlt);
+			var alt = IsKeyPressed(Key.LAlt);
 
 			if(Mouse.IsButtonPressed(Mouse.Button.Left))
 			{
@@ -2424,6 +2424,8 @@ namespace SMPLSceneEditor
 
 			if(e.Button == MouseButtons.Right)
 			{
+				windowPicture.ContextMenuStrip = paintTile != null && paintTile.Checked ? null : sceneRightClickMenu;
+
 				tilePaintRightClickPos = GetMousePosition();
 				createPosition = GetMousePosition();
 			}
