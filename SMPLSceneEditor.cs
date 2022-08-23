@@ -15,6 +15,9 @@ global using BlendMode = SMPL.Thing.BlendMode;
 global using Extensions = SMPL.Tools.Extensions;
 global using Cursor = System.Windows.Forms.Cursor;
 
+using Application = System.Windows.Forms.Application;
+using Text = SFML.Graphics.Text;
+
 namespace SMPLSceneEditor
 {
 	public partial class FormWindow : Form
@@ -57,6 +60,8 @@ namespace SMPLSceneEditor
 			{ "Audio", Color.Magenta },
 			{ "Text", new(150, 150, 150) },
 			{ "Sprite", Color.White },
+			{ "Button", Color.White },
+			{ "Textbox", new(150, 150, 150) },
 			{ "NinePatch", Color.White },
 			{ "Tilemap", new(100, 60, 20) },
 			{ "SpriteStack", new(255, 150, 60) },
@@ -233,6 +238,7 @@ namespace SMPLSceneEditor
 				AddThingProperty(thing, "UID", Thing.Property.UID, typeof(string));
 				AddThingProperty(thing, "Old UID", Thing.Property.OLD_UID, typeof(string), readOnly: true);
 				AddThingProperty(thing, "Numeric UID", Thing.Property.NUMERIC_UID, typeof(int), readOnly: true);
+				AddThingProperty(thing, "Tags", Thing.Property.TAGS, typeof(List<string>));
 				AddThingProperty(thing, "Age (Seconds)", Thing.Property.AGE, typeof(float), readOnly: true);
 				AddSpace(thing);
 				AddThingProperty(thing, "Position", Thing.Property.POSITION, typeof(Vector2));
@@ -383,15 +389,12 @@ namespace SMPLSceneEditor
 			}
 			void AddPropsTextbox()
 			{
-				AddThingProperty(textbox, "Background Color", Thing.Property.UI_TEXTBOX_BACKGROUND_COLOR, typeof(Color));
+				AddThingProperty(textbox, "Backgr. Color", Thing.Property.UI_TEXTBOX_BACKGROUND_COLOR, typeof(Color), labelSizeOffset: 2);
 				AddThingProperty(textbox, "Camera UID", Thing.Property.UI_TEXTBOX_CAMERA_UID, typeof(string));
 				AddThingProperty(textbox, "Alignment", Thing.Property.UI_TEXTBOX_ALIGNMENT, typeof(SMPL.UI.Thing.TextboxAlignment));
 				AddSpace(textbox);
-				AddThingProperty(textbox, "Line Width", Thing.Property.UI_TEXTBOX_LINE_WIDTH, typeof(float));
-				AddThingProperty(textbox, "Line Count", Thing.Property.UI_TEXTBOX_LINE_COUNT, typeof(int), readOnly: true);
-				AddSpace(textbox);
 				AddThingProperty(textbox, "ShadowOffset", Thing.Property.UI_TEXTBOX_SHADOW_OFFSET, typeof(Vector2), smallNumericStep: true);
-				AddThingProperty(textbox, "ShadowColor", Thing.Property.UI_TEXTBOX_SHADOW_COLOR, typeof(Color));
+				AddThingProperty(textbox, "ShadowColor", Thing.Property.UI_TEXTBOX_SHADOW_COLOR, typeof(Color), labelSizeOffset: 2);
 			}
 
 			void AddSpace(TableLayoutPanel table)
@@ -508,8 +511,13 @@ namespace SMPLSceneEditor
 
 			if(propName.Contains("Path") && propName.Contains("Paths") == false)
 				CreateButton("Assets", PickAsset);
-			else if(valueType == typeof(string) && propName != Thing.Property.UID && propName.Contains("UID"))
-				CreateButton("Things", PickThingList);
+			else if(valueType == typeof(string))
+			{
+				if(propName != Thing.Property.UID && propName.Contains("UID"))
+					CreateButton("Things", PickThingList);
+				else if(propName == Thing.Property.TEXT_VALUE)
+					CreateButton("Text", GetBigText);
+			}
 			else if(valueType == typeof(Color))
 				CreateButton("Colors", PickColor);
 			else if(valueType == typeof(List<string>))
@@ -1030,6 +1038,64 @@ namespace SMPLSceneEditor
 
 				Thing.Set(selectedUIDs[0], propName, cubeSide);
 			}
+			void GetBigText(object? sender, EventArgs e)
+			{
+				if(selectedUIDs.Count == 0)
+					return;
+
+				var value = (string)Thing.Get(selectedUIDs[0], propName);
+				var sz = new Vector2i(W, H + 100);
+				var window = new Form()
+				{
+					Width = sz.X,
+					Height = sz.Y,
+					FormBorderStyle = FormBorderStyle.FixedToolWindow,
+					Text = "Edit Text",
+					BackColor = System.Drawing.Color.Black,
+					ForeColor = System.Drawing.Color.White,
+					StartPosition = FormStartPosition.CenterScreen
+				};
+				var textBox = new TextBox()
+				{
+					Left = SPACING_X,
+					Top = SPACING_Y,
+					Width = sz.X - BUTTON_W - SPACING_X * 3,
+					Height = sz.Y - BUTTON_H - SPACING_Y * 4,
+					Text = value,
+					Multiline = true,
+					BackColor = System.Drawing.Color.Black,
+					ForeColor = System.Drawing.Color.White
+				};
+				var button = new Button()
+				{
+					Text = "OK",
+					Left = sz.X - BUTTON_W - SPACING_X - SPACING_X / 4,
+					Width = BUTTON_W,
+					Height = BUTTON_H,
+					Top = SPACING_Y + textBox.Height,
+					DialogResult = DialogResult.OK
+				};
+				window.FormClosing += (sender, e) =>
+				{
+					if(IsKeyPressed(Key.Enter) && textBox.Focused)
+						e.Cancel = true;
+				};
+				textBox.PreviewKeyDown += (sender, e) =>
+				{
+					if(e.KeyCode == Keys.Enter)
+						textBox.AppendText(Environment.NewLine);
+				};
+				button.Click += (sender, e) => window.Close();
+				window.Controls.Add(textBox);
+				window.Controls.Add(button);
+				window.AcceptButton = button;
+
+				if(window.ShowDialog() != DialogResult.OK)
+					return;
+
+				Thing.Set(selectedUIDs[0], propName, textBox.Text);
+				UpdateThingPanel();
+			}
 
 			void SetFocusHotkeyPrevention(Control control)
 			{
@@ -1540,6 +1606,7 @@ namespace SMPLSceneEditor
 				if(enoughKeys.Once(id))
 				{
 					createPosition = GetMousePosition();
+					sceneRightClickMenu.Hide();
 					kvp.Value.Invoke();
 				}
 				if(enoughKeys)
