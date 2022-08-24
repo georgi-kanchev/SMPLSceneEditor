@@ -48,9 +48,22 @@
 			this.sceneRightClickMenuCreateText = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateTileMap = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateNinePatch = new System.Windows.Forms.ToolStripMenuItem();
+			this.sceneRightClickMenuCreateSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.uIToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.uBButtonToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.sceneRightClickMenuCreateSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+			this.uXTextButtonToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.uTTextboxToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.uIInputBoxToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+			this.uCCheckboxToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.uPProgressBarToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.uSSliderToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.uCScrollToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+			this.uLListToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.uMMultiselectListToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.uAListCarouselToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.uDDropdownListToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateCloth = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateSpriteStack = new System.Windows.Forms.ToolStripMenuItem();
 			this.sceneRightClickMenuCreateCube = new System.Windows.Forms.ToolStripMenuItem();
@@ -82,7 +95,6 @@
 			this.pickAsset = new System.Windows.Forms.OpenFileDialog();
 			this.thingsList = new System.Windows.Forms.ContextMenuStrip(this.components);
 			this.save = new System.Windows.Forms.SaveFileDialog();
-			this.uTTextboxToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			((System.ComponentModel.ISupportInitialize)(this.windowSplit)).BeginInit();
 			this.windowSplit.Panel1.SuspendLayout();
 			this.windowSplit.Panel2.SuspendLayout();
@@ -333,8 +345,8 @@
             this.sceneRightClickMenuCreateText,
             this.sceneRightClickMenuCreateTileMap,
             this.sceneRightClickMenuCreateNinePatch,
-            this.uIToolStripMenuItem,
             this.sceneRightClickMenuCreateSeparator1,
+            this.uIToolStripMenuItem,
             this.sceneRightClickMenuCreateCloth,
             this.sceneRightClickMenuCreateSpriteStack,
             this.sceneRightClickMenuCreateCube,
@@ -374,11 +386,28 @@
 			this.sceneRightClickMenuCreateNinePatch.Text = "(C+N) Nine Patch";
 			this.sceneRightClickMenuCreateNinePatch.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateNinePatch);
 			// 
+			// sceneRightClickMenuCreateSeparator1
+			// 
+			this.sceneRightClickMenuCreateSeparator1.Name = "sceneRightClickMenuCreateSeparator1";
+			this.sceneRightClickMenuCreateSeparator1.Size = new System.Drawing.Size(177, 6);
+			// 
 			// uIToolStripMenuItem
 			// 
 			this.uIToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.uBButtonToolStripMenuItem,
-            this.uTTextboxToolStripMenuItem});
+            this.uXTextButtonToolStripMenuItem,
+            this.uTTextboxToolStripMenuItem,
+            this.uIInputBoxToolStripMenuItem,
+            this.toolStripSeparator1,
+            this.uCCheckboxToolStripMenuItem,
+            this.uPProgressBarToolStripMenuItem,
+            this.uSSliderToolStripMenuItem,
+            this.uCScrollToolStripMenuItem,
+            this.toolStripSeparator2,
+            this.uLListToolStripMenuItem,
+            this.uDDropdownListToolStripMenuItem,
+            this.uMMultiselectListToolStripMenuItem,
+            this.uAListCarouselToolStripMenuItem});
 			this.uIToolStripMenuItem.Name = "uIToolStripMenuItem";
 			this.uIToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
 			this.uIToolStripMenuItem.Text = "UI";
@@ -386,14 +415,96 @@
 			// uBButtonToolStripMenuItem
 			// 
 			this.uBButtonToolStripMenuItem.Name = "uBButtonToolStripMenuItem";
-			this.uBButtonToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.uBButtonToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
 			this.uBButtonToolStripMenuItem.Text = "(U+B) Button";
 			this.uBButtonToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateUIButton);
 			// 
-			// sceneRightClickMenuCreateSeparator1
+			// uXTextButtonToolStripMenuItem
 			// 
-			this.sceneRightClickMenuCreateSeparator1.Name = "sceneRightClickMenuCreateSeparator1";
-			this.sceneRightClickMenuCreateSeparator1.Size = new System.Drawing.Size(177, 6);
+			this.uXTextButtonToolStripMenuItem.Name = "uXTextButtonToolStripMenuItem";
+			this.uXTextButtonToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+			this.uXTextButtonToolStripMenuItem.Text = "(U+X) TextButton";
+			this.uXTextButtonToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateUITextButton);
+			// 
+			// uTTextboxToolStripMenuItem
+			// 
+			this.uTTextboxToolStripMenuItem.Name = "uTTextboxToolStripMenuItem";
+			this.uTTextboxToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+			this.uTTextboxToolStripMenuItem.Text = "(U+T) Textbox";
+			this.uTTextboxToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateUITextbox);
+			// 
+			// uIInputBoxToolStripMenuItem
+			// 
+			this.uIInputBoxToolStripMenuItem.Name = "uIInputBoxToolStripMenuItem";
+			this.uIInputBoxToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+			this.uIInputBoxToolStripMenuItem.Text = "(U+I) Inputbox";
+			this.uIInputBoxToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateUIInputbox);
+			// 
+			// toolStripSeparator1
+			// 
+			this.toolStripSeparator1.Name = "toolStripSeparator1";
+			this.toolStripSeparator1.Size = new System.Drawing.Size(188, 6);
+			// 
+			// uCCheckboxToolStripMenuItem
+			// 
+			this.uCCheckboxToolStripMenuItem.Name = "uCCheckboxToolStripMenuItem";
+			this.uCCheckboxToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+			this.uCCheckboxToolStripMenuItem.Text = "(U+C) Checkbox";
+			this.uCCheckboxToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateUICheckbox);
+			// 
+			// uPProgressBarToolStripMenuItem
+			// 
+			this.uPProgressBarToolStripMenuItem.Name = "uPProgressBarToolStripMenuItem";
+			this.uPProgressBarToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+			this.uPProgressBarToolStripMenuItem.Text = "(U+P) Progress Bar";
+			this.uPProgressBarToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateUIProgressBar);
+			// 
+			// uSSliderToolStripMenuItem
+			// 
+			this.uSSliderToolStripMenuItem.Name = "uSSliderToolStripMenuItem";
+			this.uSSliderToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+			this.uSSliderToolStripMenuItem.Text = "(U+S) Slider";
+			this.uSSliderToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateUISlider);
+			// 
+			// uCScrollToolStripMenuItem
+			// 
+			this.uCScrollToolStripMenuItem.Name = "uCScrollToolStripMenuItem";
+			this.uCScrollToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+			this.uCScrollToolStripMenuItem.Text = "(U+R) Scroll";
+			this.uCScrollToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateUIScroll);
+			// 
+			// toolStripSeparator2
+			// 
+			this.toolStripSeparator2.Name = "toolStripSeparator2";
+			this.toolStripSeparator2.Size = new System.Drawing.Size(188, 6);
+			// 
+			// uLListToolStripMenuItem
+			// 
+			this.uLListToolStripMenuItem.Name = "uLListToolStripMenuItem";
+			this.uLListToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+			this.uLListToolStripMenuItem.Text = "(U+L) List";
+			this.uLListToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateUIList);
+			// 
+			// uMMultiselectListToolStripMenuItem
+			// 
+			this.uMMultiselectListToolStripMenuItem.Name = "uMMultiselectListToolStripMenuItem";
+			this.uMMultiselectListToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+			this.uMMultiselectListToolStripMenuItem.Text = "(U+M) Multiselect List";
+			this.uMMultiselectListToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateUIListMultiselect);
+			// 
+			// uAListCarouselToolStripMenuItem
+			// 
+			this.uAListCarouselToolStripMenuItem.Name = "uAListCarouselToolStripMenuItem";
+			this.uAListCarouselToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+			this.uAListCarouselToolStripMenuItem.Text = "(U+A) Carousel List";
+			this.uAListCarouselToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateUICarousel);
+			// 
+			// uDDropdownListToolStripMenuItem
+			// 
+			this.uDDropdownListToolStripMenuItem.Name = "uDDropdownListToolStripMenuItem";
+			this.uDDropdownListToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+			this.uDDropdownListToolStripMenuItem.Text = "(U+D) Dropdown List";
+			this.uDDropdownListToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateUIDropdown);
 			// 
 			// sceneRightClickMenuCreateCloth
 			// 
@@ -628,13 +739,6 @@
 			this.save.Filter = "Scene|*.scene";
 			this.save.Title = "Save Scene";
 			// 
-			// uTTextboxToolStripMenuItem
-			// 
-			this.uTTextboxToolStripMenuItem.Name = "uTTextboxToolStripMenuItem";
-			this.uTTextboxToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-			this.uTTextboxToolStripMenuItem.Text = "(U+T) Textbox";
-			this.uTTextboxToolStripMenuItem.Click += new System.EventHandler(this.OnSceneRightClickMenuCreateUITextbox);
-			// 
 			// FormWindow
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -726,5 +830,17 @@
 		private ToolStripMenuItem uIToolStripMenuItem;
 		private ToolStripMenuItem uBButtonToolStripMenuItem;
 		private ToolStripMenuItem uTTextboxToolStripMenuItem;
+		private ToolStripMenuItem uXTextButtonToolStripMenuItem;
+		private ToolStripMenuItem uIInputBoxToolStripMenuItem;
+		private ToolStripSeparator toolStripSeparator1;
+		private ToolStripMenuItem uCCheckboxToolStripMenuItem;
+		private ToolStripMenuItem uPProgressBarToolStripMenuItem;
+		private ToolStripMenuItem uSSliderToolStripMenuItem;
+		private ToolStripMenuItem uCScrollToolStripMenuItem;
+		private ToolStripSeparator toolStripSeparator2;
+		private ToolStripMenuItem uLListToolStripMenuItem;
+		private ToolStripMenuItem uMMultiselectListToolStripMenuItem;
+		private ToolStripMenuItem uAListCarouselToolStripMenuItem;
+		private ToolStripMenuItem uDDropdownListToolStripMenuItem;
 	}
 }

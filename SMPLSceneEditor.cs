@@ -32,9 +32,9 @@ namespace SMPLSceneEditor
 		private const float HITBOX_POINT_EDIT_MAX_DIST = 20;
 
 		private TextBox? spriteStackCreateTexPath, spriteStackCreateObjPath, cubeSideTexPath;
-		private Label tilePaletteHoveredIndexesLabel;
+		private readonly Label tilePaletteHoveredIndexesLabel;
 		private CheckBox? editHitbox, paintTile;
-		private Control? waitingPickThingControl, tilePaletteCol;
+		private Control? waitingPickThingControl, tilePaletteCol, pickThingResult;
 		private readonly System.Windows.Forms.Timer loop;
 		private readonly RenderWindow window;
 		private float sceneSc = 1f;
@@ -49,9 +49,9 @@ namespace SMPLSceneEditor
 		private readonly Dictionary<string, TableLayoutPanel> editThingTableTypes = new();
 		private readonly Dictionary<string, string> listBoxPlaceholderTexts = new()
 		{
-			{ "PropChildrenUIDs", "(select to focus)                                     " },
-			{ "PropTypes", "(select to edit)                                     " },
-			{ "PropCameraUIDs", "(select to focus)                                     " },
+			{ $"Prop{Thing.Property.CHILDREN_UIDS}", "(select to focus)                                     " },
+			{ $"Prop{Thing.Property.TYPES}", "(select to edit)                                     " },
+			{ $"Prop{Thing.Property.UI_LIST_MULTISELECT_SELECTION_UIDS}", "(select to focus)                                     " },
 		};
 		private readonly Dictionary<string, Color> typeColors = new()
 		{
@@ -60,13 +60,13 @@ namespace SMPLSceneEditor
 			{ "Audio", Color.Magenta },
 			{ "Text", new(150, 150, 150) },
 			{ "Sprite", Color.White },
-			{ "Button", Color.White },
-			{ "Textbox", new(150, 150, 150) },
 			{ "NinePatch", Color.White },
 			{ "Tilemap", new(100, 60, 20) },
-			{ "SpriteStack", new(255, 150, 60) },
-			{ "Cloth", Color.Blue },
-			{ "Cube", new(50, 150, 180) },
+			{ "SpriteStack", Color.White },
+			{ "Cloth", Color.White },
+			{ "Cube", Color.White },
+			{ "Button", new(50, 150, 180) },
+			{ "Textbox", new(50, 150, 180) },
 		};
 		private readonly Dictionary<Key[], Action> hotkeys = new();
 
@@ -142,58 +142,43 @@ namespace SMPLSceneEditor
 		}
 		private void InitTables()
 		{
-			var scene = CreateDefaultTable("tableScene");
-			var thing = CreateDefaultTable("tableThing");
-			var sprite = CreateDefaultTable("tableSprite");
-			var visual = CreateDefaultTable("tableVisual");
-			var light = CreateDefaultTable("tableLight");
-			var camera = CreateDefaultTable("tableCamera");
-			var text = CreateDefaultTable("tableText");
-			var ninePatch = CreateDefaultTable("tableNinePatch");
-			var audio = CreateDefaultTable("tableAudio");
-			var tilemap = CreateDefaultTable("tableTilemap");
-			var cloth = CreateDefaultTable("tableCloth");
-			var pseudo3D = CreateDefaultTable("tablePseudo3D");
-			var cube = CreateDefaultTable("tableCube");
-			var button = CreateDefaultTable("tableButton");
-			var textbox = CreateDefaultTable("tableTextbox");
-			var types = thingTypesTable;
+			CreateTable("tableScene", AddPropsScene);
+			CreateTable("tableThing", AddPropsThing);
+			CreateTable("tableSprite", AddPropsSprite);
+			CreateTable("tableVisual", AddPropsVisual);
+			CreateTable("tableLight", AddPropsLight);
+			CreateTable("tableCamera", AddPropsCamera);
+			CreateTable("tableText", AddPropsText);
+			CreateTable("tableNinePatch", AddPropsNinePatch);
+			CreateTable("tableAudio", AddPropsAudio);
+			CreateTable("tableTilemap", AddPropsTilemap);
+			CreateTable("tableCloth", AddPropsCloth);
+			CreateTable("tablePseudo3D", AddPropsPseudo3D);
+			CreateTable("tableCube", AddPropsCube);
+			CreateTable("tableButton", AddPropsButton);
+			CreateTable("tableTextbox", AddPropsTextbox);
+			CreateTable("tableTextButton", AddPropsTextButton);
+			CreateTable("tableInputbox", AddPropsInputbox);
+			CreateTable("tableCheckbox", AddPropsCheckbox);
+			CreateTable("tableProgressBar", AddPropsProgressBar);
+			CreateTable("tableScrollBar", AddPropsScrollBar);
+			CreateTable("tableSlider", AddPropsSlider);
+			CreateTable("tableList", AddPropsList);
+			CreateTable("tableListDropdown", AddPropsListDropdown);
+			CreateTable("tableListCarousel", AddPropsListCarousel);
+			CreateTable("tableListMultiselect", AddPropsListMultiselect);
 
+			var types = thingTypesTable;
 			types.Hide();
 			AddThingProperty(types, "Types", Thing.Property.TYPES, typeof(ReadOnlyCollection<string>));
 
-			AddPropsScene();
-			AddPropsThing();
-			AddPropsSprite();
-			AddPropsVisual();
-			AddThingProperty(light, "Color", Thing.Property.LIGHT_COLOR, typeof(Color));
-			AddPropsCamera();
-			AddPropsText();
-			AddThingProperty(ninePatch, "Border Size", Thing.Property.NINE_PATCH_BORDER_SIZE, typeof(float));
-			AddPropsAudio();
-			AddPropsTilemap();
-			AddPropsCloth();
-			AddPropsPseudo3D();
-			AddPropsCube();
-			AddPropsButton();
-			AddPropsTextbox();
-
-			editThingTableTypes[scene.Name] = scene;
-			editThingTableTypes[thing.Name] = thing;
-			editThingTableTypes[sprite.Name] = sprite;
-			editThingTableTypes[visual.Name] = visual;
-			editThingTableTypes[light.Name] = light;
-			editThingTableTypes[camera.Name] = camera;
-			editThingTableTypes[text.Name] = text;
-			editThingTableTypes[ninePatch.Name] = ninePatch;
-			editThingTableTypes[audio.Name] = audio;
-			editThingTableTypes[tilemap.Name] = tilemap;
-			editThingTableTypes[cloth.Name] = cloth;
-			editThingTableTypes[pseudo3D.Name] = pseudo3D;
-			editThingTableTypes[cube.Name] = cube;
-			editThingTableTypes[button.Name] = button;
-			editThingTableTypes[textbox.Name] = textbox;
-
+			TableLayoutPanel CreateTable(string name, Action<TableLayoutPanel> addPropertiesMethod)
+			{
+				var table = CreateDefaultTable(name);
+				addPropertiesMethod?.Invoke(table);
+				editThingTableTypes[table.Name] = table;
+				return table;
+			}
 			TableLayoutPanel CreateDefaultTable(string name)
 			{
 				var result = new TableLayoutPanel
@@ -210,141 +195,141 @@ namespace SMPLSceneEditor
 
 				return result;
 			}
-			void AddPropsScene()
+			void AddPropsScene(TableLayoutPanel table)
 			{
-				AddThingProperty(scene, "SMPL Scene", rightLabel: true); AddThingProperty(scene, "Editor Colors");
-				AddThingProperty(scene, "Background", "SceneBackgroundColor", typeof(Color));
-				AddThingProperty(scene, "Grid", "SceneGridColor", typeof(Color));
-				AddThingProperty(scene, "Grid 0", "SceneGrid0Color", typeof(Color));
-				AddThingProperty(scene, "Grid 1000", "SceneGrid1000Color", typeof(Color));
-				AddSpace(scene);
-				AddThingProperty(scene, "Selection Box", "SceneBoundingBoxColor", typeof(Color), labelSizeOffset: 2);
-				AddThingProperty(scene, "Selection Fill", "SceneSelectColor", typeof(Color));
-				AddSpace(scene);
-				AddThingProperty(scene, "Sprite", "SceneSpriteColor", typeof(Color));
-				AddThingProperty(scene, "Text", "SceneTextColor", typeof(Color));
-				AddThingProperty(scene, "NinePatch", "SceneNinePatchColor", typeof(Color));
-				AddThingProperty(scene, "Tilemap", "SceneTilemapColor", typeof(Color));
-				AddThingProperty(scene, "Camera", "SceneCameraColor", typeof(Color));
-				AddThingProperty(scene, "Hitbox", "SceneHitboxColor", typeof(Color));
-				AddThingProperty(scene, "Light", "SceneLightColor", typeof(Color));
-				AddThingProperty(scene, "Audio", "SceneAudioColor", typeof(Color));
-				AddThingProperty(scene, "Cloth", "SceneClothColor", typeof(Color));
-				AddThingProperty(scene, "SpriteStack", "SceneSpriteStackColor", typeof(Color));
-				AddThingProperty(scene, "Cube", "SceneCubeColor", typeof(Color));
+				AddThingProperty(table, "SMPL Scene", rightLabel: true); AddThingProperty(table, "Editor Colors");
+				AddThingProperty(table, "Background", "SceneBackgroundColor", typeof(Color));
+				AddThingProperty(table, "Grid", "SceneGridColor", typeof(Color));
+				AddThingProperty(table, "Grid 0", "SceneGrid0Color", typeof(Color));
+				AddThingProperty(table, "Grid 1000", "SceneGrid1000Color", typeof(Color));
+				AddSpace(table);
+				AddThingProperty(table, "Selection Box", "SceneBoundingBoxColor", typeof(Color), labelSizeOffset: 2);
+				AddThingProperty(table, "Selection Fill", "SceneSelectColor", typeof(Color));
+				AddSpace(table);
+				AddThingProperty(table, "Sprite", "SceneSpriteColor", typeof(Color));
+				AddThingProperty(table, "Text", "SceneTextColor", typeof(Color));
+				AddThingProperty(table, "NinePatch", "SceneNinePatchColor", typeof(Color));
+				AddThingProperty(table, "Tilemap", "SceneTilemapColor", typeof(Color));
+				AddThingProperty(table, "Camera", "SceneCameraColor", typeof(Color));
+				AddThingProperty(table, "Hitbox", "SceneHitboxColor", typeof(Color));
+				AddThingProperty(table, "Light", "SceneLightColor", typeof(Color));
+				AddThingProperty(table, "Audio", "SceneAudioColor", typeof(Color));
+				AddThingProperty(table, "Cloth", "SceneClothColor", typeof(Color));
+				AddThingProperty(table, "SpriteStack", "SceneSpriteStackColor", typeof(Color));
+				AddThingProperty(table, "Cube", "SceneCubeColor", typeof(Color));
 			}
-			void AddPropsThing()
+			void AddPropsThing(TableLayoutPanel table)
 			{
-				AddThingProperty(thing, "UID", Thing.Property.UID, typeof(string));
-				AddThingProperty(thing, "Old UID", Thing.Property.OLD_UID, typeof(string), readOnly: true);
-				AddThingProperty(thing, "Numeric UID", Thing.Property.NUMERIC_UID, typeof(int), readOnly: true);
-				AddThingProperty(thing, "Tags", Thing.Property.TAGS, typeof(List<string>));
-				AddThingProperty(thing, "Age (Seconds)", Thing.Property.AGE, typeof(float), readOnly: true);
-				AddSpace(thing);
-				AddThingProperty(thing, "Position", Thing.Property.POSITION, typeof(Vector2));
-				AddThingProperty(thing, "Angle", Thing.Property.ANGLE, typeof(float));
-				AddThingProperty(thing, "Direction", Thing.Property.DIRECTION, typeof(Vector2), readOnly: true, smallNumericStep: true);
-				AddThingProperty(thing, "Scale", Thing.Property.SCALE, typeof(float), smallNumericStep: true);
-				AddSpace(thing);
-				AddThingProperty(thing, "Parent UID", Thing.Property.PARENT_UID, typeof(string));
-				AddThingProperty(thing, "Parent Old UID", Thing.Property.PARENT_OLD_UID, typeof(string), readOnly: true);
-				AddThingProperty(thing, "Children UIDs", Thing.Property.CHILDREN_UIDS, typeof(ReadOnlyCollection<string>), thingList: true);
-				AddSpace(thing);
-				AddThingProperty(thing, "Local Position", Thing.Property.LOCAL_POSITION, typeof(Vector2));
-				AddThingProperty(thing, "Local Angle", Thing.Property.LOCAL_ANGLE, typeof(float));
-				AddThingProperty(thing, "Local Direction", Thing.Property.LOCAL_DIRECTION, typeof(Vector2), readOnly: true, smallNumericStep: true);
-				AddThingProperty(thing, "Local Scale", Thing.Property.LOCAL_SCALE, typeof(float), smallNumericStep: true);
-				AddSpace(thing);
-				AddThingProperty(thing, "Hitbox", Thing.Property.HITBOX, typeof(string), readOnly: true);
+				AddThingProperty(table, "UID", Thing.Property.UID, typeof(string));
+				AddThingProperty(table, "Old UID", Thing.Property.OLD_UID, typeof(string), readOnly: true);
+				AddThingProperty(table, "Numeric UID", Thing.Property.NUMERIC_UID, typeof(int), readOnly: true);
+				AddThingProperty(table, "Tags", Thing.Property.TAGS, typeof(List<string>));
+				AddThingProperty(table, "Age (Seconds)", Thing.Property.AGE, typeof(float), readOnly: true);
+				AddSpace(table);
+				AddThingProperty(table, "Position", Thing.Property.POSITION, typeof(Vector2));
+				AddThingProperty(table, "Angle", Thing.Property.ANGLE, typeof(float));
+				AddThingProperty(table, "Direction", Thing.Property.DIRECTION, typeof(Vector2), readOnly: true, smallNumericStep: true);
+				AddThingProperty(table, "Scale", Thing.Property.SCALE, typeof(float), smallNumericStep: true);
+				AddSpace(table);
+				AddThingProperty(table, "Parent UID", Thing.Property.PARENT_UID, typeof(string));
+				AddThingProperty(table, "Parent Old UID", Thing.Property.PARENT_OLD_UID, typeof(string), readOnly: true);
+				AddThingProperty(table, "Children UIDs", Thing.Property.CHILDREN_UIDS, typeof(ReadOnlyCollection<string>), thingList: true);
+				AddSpace(table);
+				AddThingProperty(table, "Local Position", Thing.Property.LOCAL_POSITION, typeof(Vector2));
+				AddThingProperty(table, "Local Angle", Thing.Property.LOCAL_ANGLE, typeof(float));
+				AddThingProperty(table, "Local Direction", Thing.Property.LOCAL_DIRECTION, typeof(Vector2), readOnly: true, smallNumericStep: true);
+				AddThingProperty(table, "Local Scale", Thing.Property.LOCAL_SCALE, typeof(float), smallNumericStep: true);
+				AddSpace(table);
+				AddThingProperty(table, "Hitbox", Thing.Property.HITBOX, typeof(string), readOnly: true);
 			}
-			void AddPropsSprite()
+			void AddPropsSprite(TableLayoutPanel table)
 			{
-				AddThingProperty(sprite, "Local Size", Thing.Property.SPRITE_LOCAL_SIZE, typeof(Vector2));
-				AddThingProperty(sprite, "Size", Thing.Property.SPRITE_SIZE, typeof(Vector2));
-				AddSpace(sprite);
-				AddThingProperty(sprite, "Origin Unit", Thing.Property.SPRITE_ORIGIN_UNIT, typeof(Vector2), smallNumericStep: true);
-				AddThingProperty(sprite, "Origin", Thing.Property.SPRITE_ORIGIN, typeof(Vector2));
-				AddSpace(sprite);
-				AddThingProperty(sprite, "Texture Coordinate Unit A", Thing.Property.SPRITE_TEX_COORD_UNIT_A, typeof(Vector2), labelSizeOffset: -1, smallNumericStep: true);
-				AddThingProperty(sprite, "Texture Coordinate Unit B", Thing.Property.SPRITE_TEX_COORD_UNIT_B, typeof(Vector2), labelSizeOffset: -1, smallNumericStep: true);
-				AddThingProperty(sprite, "Texture Coordinate A", Thing.Property.SPRITE_TEX_COORD_A, typeof(Vector2), labelSizeOffset: 1, smallNumericStep: true);
-				AddThingProperty(sprite, "Texture Coordinate B", Thing.Property.SPRITE_TEX_COORD_B, typeof(Vector2), labelSizeOffset: 1, smallNumericStep: true);
+				AddThingProperty(table, "Local Size", Thing.Property.SPRITE_LOCAL_SIZE, typeof(Vector2));
+				AddThingProperty(table, "Size", Thing.Property.SPRITE_SIZE, typeof(Vector2));
+				AddSpace(table);
+				AddThingProperty(table, "Origin Unit", Thing.Property.SPRITE_ORIGIN_UNIT, typeof(Vector2), smallNumericStep: true);
+				AddThingProperty(table, "Origin", Thing.Property.SPRITE_ORIGIN, typeof(Vector2));
+				AddSpace(table);
+				AddThingProperty(table, "Texture Coordinate Unit A", Thing.Property.SPRITE_TEX_COORD_UNIT_A, typeof(Vector2), labelSizeOffset: -1, smallNumericStep: true);
+				AddThingProperty(table, "Texture Coordinate Unit B", Thing.Property.SPRITE_TEX_COORD_UNIT_B, typeof(Vector2), labelSizeOffset: -1, smallNumericStep: true);
+				AddThingProperty(table, "Texture Coordinate A", Thing.Property.SPRITE_TEX_COORD_A, typeof(Vector2), labelSizeOffset: 1, smallNumericStep: true);
+				AddThingProperty(table, "Texture Coordinate B", Thing.Property.SPRITE_TEX_COORD_B, typeof(Vector2), labelSizeOffset: 1, smallNumericStep: true);
 			}
-			void AddPropsVisual()
+			void AddPropsVisual(TableLayoutPanel table)
 			{
-				AddThingProperty(visual, "Texture Path", Thing.Property.VISUAL_TEXTURE_PATH, typeof(string));
-				AddThingProperty(visual, "Tint", Thing.Property.VISUAL_TINT, typeof(Color));
-				AddThingProperty(visual, "Order", Thing.Property.VISUAL_ORDER, typeof(int));
-				AddSpace(visual);
-				AddThingProperty(visual, "Is Hidden", Thing.Property.VISUAL_IS_HIDDEN, typeof(bool));
-				AddThingProperty(visual, "Is Repeated", Thing.Property.VISUAL_IS_REPEATED, typeof(bool));
-				AddThingProperty(visual, "Is Smooth", Thing.Property.VISUAL_IS_SMOOTH, typeof(bool));
-				AddSpace(visual);
-				AddThingProperty(visual, "Effect", Thing.Property.VISUAL_EFFECT, typeof(Thing.Effect));
-				AddThingProperty(visual, "Blend Mode", Thing.Property.VISUAL_BLEND_MODE, typeof(BlendMode));
-				AddSpace(visual);
-				AddThingProperty(visual, "Camera Tag", Thing.Property.VISUAL_CAMERA_TAG, typeof(string), thingList: true);
+				AddThingProperty(table, "Texture Path", Thing.Property.VISUAL_TEXTURE_PATH, typeof(string));
+				AddThingProperty(table, "Tint", Thing.Property.VISUAL_TINT, typeof(Color));
+				AddThingProperty(table, "Order", Thing.Property.VISUAL_ORDER, typeof(int));
+				AddSpace(table);
+				AddThingProperty(table, "Is Hidden", Thing.Property.VISUAL_IS_HIDDEN, typeof(bool));
+				AddThingProperty(table, "Is Repeated", Thing.Property.VISUAL_IS_REPEATED, typeof(bool));
+				AddThingProperty(table, "Is Smooth", Thing.Property.VISUAL_IS_SMOOTH, typeof(bool));
+				AddSpace(table);
+				AddThingProperty(table, "Effect", Thing.Property.VISUAL_EFFECT, typeof(Thing.Effect));
+				AddThingProperty(table, "Blend Mode", Thing.Property.VISUAL_BLEND_MODE, typeof(BlendMode));
+				AddSpace(table);
+				AddThingProperty(table, "Camera Tag", Thing.Property.VISUAL_CAMERA_TAG, typeof(string), thingList: true);
 			}
-			void AddPropsCamera()
+			void AddPropsCamera(TableLayoutPanel table)
 			{
-				AddThingProperty(camera, "Resolution", Thing.Property.CAMERA_RESOLUTION, typeof(Vector2), readOnly: true);
-				AddSpace(camera);
-				AddThingProperty(camera, "Is Smooth", Thing.Property.CAMERA_IS_SMOOTH, typeof(bool));
+				AddThingProperty(table, "Resolution", Thing.Property.CAMERA_RESOLUTION, typeof(Vector2), readOnly: true);
+				AddSpace(table);
+				AddThingProperty(table, "Is Smooth", Thing.Property.CAMERA_IS_SMOOTH, typeof(bool));
 			}
-			void AddPropsText()
+			void AddPropsText(TableLayoutPanel table)
 			{
-				AddThingProperty(text, "Font Path", Thing.Property.TEXT_FONT_PATH, typeof(string));
-				AddThingProperty(text, "Value", Thing.Property.TEXT_VALUE, typeof(string));
-				AddThingProperty(text, "Color", Thing.Property.TEXT_COLOR, typeof(Color));
-				AddThingProperty(text, "Style", Thing.Property.TEXT_STYLE, typeof(Text.Styles), readOnly: true);
-				AddSpace(text);
-				AddThingProperty(text, "Origin Unit", Thing.Property.TEXT_ORIGIN_UNIT, typeof(Vector2));
-				AddThingProperty(text, "Symbol Size", Thing.Property.TEXT_SYMBOL_SIZE, typeof(int));
-				AddThingProperty(text, "Symbol Space", Thing.Property.TEXT_SYMBOL_SPACE, typeof(float));
-				AddThingProperty(text, "Line Space", Thing.Property.TEXT_LINE_SPACE, typeof(float));
-				AddSpace(text);
-				AddThingProperty(text, "Outline Color", Thing.Property.TEXT_OUTLINE_COLOR, typeof(Color));
-				AddThingProperty(text, "Outline Size", Thing.Property.TEXT_OUTLINE_SIZE, typeof(float));
+				AddThingProperty(table, "Font Path", Thing.Property.TEXT_FONT_PATH, typeof(string));
+				AddThingProperty(table, "Value", Thing.Property.TEXT_VALUE, typeof(string));
+				AddThingProperty(table, "Color", Thing.Property.TEXT_COLOR, typeof(Color));
+				AddThingProperty(table, "Style", Thing.Property.TEXT_STYLE, typeof(Text.Styles), readOnly: true);
+				AddSpace(table);
+				AddThingProperty(table, "Origin Unit", Thing.Property.TEXT_ORIGIN_UNIT, typeof(Vector2));
+				AddThingProperty(table, "Symbol Size", Thing.Property.TEXT_SYMBOL_SIZE, typeof(int));
+				AddThingProperty(table, "Symbol Space", Thing.Property.TEXT_SYMBOL_SPACE, typeof(float));
+				AddThingProperty(table, "Line Space", Thing.Property.TEXT_LINE_SPACE, typeof(float));
+				AddSpace(table);
+				AddThingProperty(table, "Outline Color", Thing.Property.TEXT_OUTLINE_COLOR, typeof(Color));
+				AddThingProperty(table, "Outline Size", Thing.Property.TEXT_OUTLINE_SIZE, typeof(float));
 			}
-			void AddPropsAudio()
+			void AddPropsAudio(TableLayoutPanel table)
 			{
-				AddThingProperty(audio, "Path", Thing.Property.AUDIO_PATH, typeof(string));
-				AddSpace(audio);
-				AddThingProperty(audio, "Status", Thing.Property.AUDIO_STATUS, typeof(Thing.AudioStatus));
-				AddThingProperty(audio, "Duration", Thing.Property.AUDIO_DURATION, typeof(float), readOnly: true);
-				AddThingProperty(audio, "Progress (Seconds)", Thing.Property.AUDIO_PROGRESS, typeof(float));
-				AddThingProperty(audio, "Progress Unit", Thing.Property.AUDIO_PROGRESS_UNIT, typeof(float), smallNumericStep: true);
-				AddSpace(audio);
-				AddThingProperty(audio, "Volume Unit", Thing.Property.AUDIO_VOLUME_UNIT, typeof(float), smallNumericStep: true);
-				AddThingProperty(audio, "Is Looping", Thing.Property.AUDIO_IS_LOOPING, typeof(bool));
-				AddThingProperty(audio, "Is Global", Thing.Property.AUDIO_IS_GLOBAL, typeof(bool));
-				AddThingProperty(audio, "Pitch Unit", Thing.Property.AUDIO_PITCH_UNIT, typeof(float), smallNumericStep: true);
-				AddThingProperty(audio, "Distance Fade", Thing.Property.AUDIO_FADE, typeof(float));
+				AddThingProperty(table, "Path", Thing.Property.AUDIO_PATH, typeof(string));
+				AddSpace(table);
+				AddThingProperty(table, "Status", Thing.Property.AUDIO_STATUS, typeof(Thing.AudioStatus));
+				AddThingProperty(table, "Duration", Thing.Property.AUDIO_DURATION, typeof(float), readOnly: true);
+				AddThingProperty(table, "Progress (Seconds)", Thing.Property.AUDIO_PROGRESS, typeof(float));
+				AddThingProperty(table, "Progress Unit", Thing.Property.AUDIO_PROGRESS_UNIT, typeof(float), smallNumericStep: true);
+				AddSpace(table);
+				AddThingProperty(table, "Volume Unit", Thing.Property.AUDIO_VOLUME_UNIT, typeof(float), smallNumericStep: true);
+				AddThingProperty(table, "Is Looping", Thing.Property.AUDIO_IS_LOOPING, typeof(bool));
+				AddThingProperty(table, "Is Global", Thing.Property.AUDIO_IS_GLOBAL, typeof(bool));
+				AddThingProperty(table, "Pitch Unit", Thing.Property.AUDIO_PITCH_UNIT, typeof(float), smallNumericStep: true);
+				AddThingProperty(table, "Distance Fade", Thing.Property.AUDIO_FADE, typeof(float));
 			}
-			void AddPropsTilemap()
+			void AddPropsTilemap(TableLayoutPanel table)
 			{
-				AddThingProperty(tilemap, "Tile Size", Thing.Property.TILEMAP_TILE_SIZE, typeof(Vector2));
-				AddThingProperty(tilemap, "Tile Gap", Thing.Property.TILEMAP_TILE_GAP, typeof(Vector2));
-				AddSpace(tilemap);
-				AddThingProperty(tilemap, "Tile Brush", Thing.Property.TILEMAP_TILE_PALETTE, typeof(Dictionary<string, Thing.Tile>));
-				AddThingProperty(tilemap, "Tiles", Thing.Property.TILEMAP_TILE_COUNT, typeof(int), readOnly: true);
+				AddThingProperty(table, "Tile Size", Thing.Property.TILEMAP_TILE_SIZE, typeof(Vector2));
+				AddThingProperty(table, "Tile Gap", Thing.Property.TILEMAP_TILE_GAP, typeof(Vector2));
+				AddSpace(table);
+				AddThingProperty(table, "Tile Brush", Thing.Property.TILEMAP_TILE_PALETTE, typeof(Dictionary<string, Thing.Tile>));
+				AddThingProperty(table, "Tiles", Thing.Property.TILEMAP_TILE_COUNT, typeof(int), readOnly: true);
 			}
-			void AddPropsCloth()
+			void AddPropsCloth(TableLayoutPanel table)
 			{
-				AddThingProperty(cloth, "Is Simulating", Thing.Property.CLOTH_IS_SIMULATING, typeof(bool));
-				AddThingProperty(cloth, "Has Threads", Thing.Property.CLOTH_HAS_THREADS, typeof(bool));
-				AddSpace(cloth);
-				AddThingProperty(cloth, "Break Threshold", Thing.Property.CLOTH_BREAK_THRESHOLD, typeof(float));
-				AddThingProperty(cloth, "Gravity", Thing.Property.CLOTH_GRAVITY, typeof(Vector2));
-				AddThingProperty(cloth, "Force", Thing.Property.CLOTH_FORCE, typeof(Vector2));
-				AddSpace(cloth);
-				AddThingProperty(cloth, "Texture Coordinate Unit A", Thing.Property.CLOTH_TEX_COORD_UNIT_A, typeof(Vector2), labelSizeOffset: -1, smallNumericStep: true);
-				AddThingProperty(cloth, "Texture Coordinate Unit B", Thing.Property.CLOTH_TEX_COORD_UNIT_B, typeof(Vector2), labelSizeOffset: -1, smallNumericStep: true);
-				AddThingProperty(cloth, "Texture Coordinate A", Thing.Property.CLOTH_TEX_COORD_A, typeof(Vector2), labelSizeOffset: 1, smallNumericStep: true);
-				AddThingProperty(cloth, "Texture Coordinate B", Thing.Property.CLOTH_TEX_COORD_B, typeof(Vector2), labelSizeOffset: 1, smallNumericStep: true);
-				AddSpace(cloth);
-				AddButton(cloth, "Add Pin", Pin);
-				AddButton(cloth, "Remove Pin", Unpin);
+				AddThingProperty(table, "Is Simulating", Thing.Property.CLOTH_IS_SIMULATING, typeof(bool));
+				AddThingProperty(table, "Has Threads", Thing.Property.CLOTH_HAS_THREADS, typeof(bool));
+				AddSpace(table);
+				AddThingProperty(table, "Break Threshold", Thing.Property.CLOTH_BREAK_THRESHOLD, typeof(float));
+				AddThingProperty(table, "Gravity", Thing.Property.CLOTH_GRAVITY, typeof(Vector2));
+				AddThingProperty(table, "Force", Thing.Property.CLOTH_FORCE, typeof(Vector2));
+				AddSpace(table);
+				AddThingProperty(table, "Texture Coordinate Unit A", Thing.Property.CLOTH_TEX_COORD_UNIT_A, typeof(Vector2), labelSizeOffset: -1, smallNumericStep: true);
+				AddThingProperty(table, "Texture Coordinate Unit B", Thing.Property.CLOTH_TEX_COORD_UNIT_B, typeof(Vector2), labelSizeOffset: -1, smallNumericStep: true);
+				AddThingProperty(table, "Texture Coordinate A", Thing.Property.CLOTH_TEX_COORD_A, typeof(Vector2), labelSizeOffset: 1, smallNumericStep: true);
+				AddThingProperty(table, "Texture Coordinate B", Thing.Property.CLOTH_TEX_COORD_B, typeof(Vector2), labelSizeOffset: 1, smallNumericStep: true);
+				AddSpace(table);
+				AddButton(table, "Add Pin", Pin);
+				AddButton(table, "Remove Pin", Unpin);
 
 				void Pin(object? sender, EventArgs e)
 				{
@@ -357,44 +342,131 @@ namespace SMPLSceneEditor
 					Thing.CallVoid(selectedUIDs[0], Thing.Method.CLOTH_PIN, index, false);
 				}
 			}
-			void AddPropsPseudo3D()
+			void AddPropsPseudo3D(TableLayoutPanel table)
 			{
-				AddThingProperty(pseudo3D, "Tilt", Thing.Property.PSEUDO_3D_TILT, typeof(float));
-				AddThingProperty(pseudo3D, "Depth", Thing.Property.PSEUDO_3D_DEPTH, typeof(float));
-				AddSpace(pseudo3D);
-				AddThingProperty(pseudo3D, "Local Size", Thing.Property.PSEUDO_3D_LOCAL_SIZE, typeof(Vector2));
-				AddThingProperty(pseudo3D, "Size", Thing.Property.PSEUDO_3D_SIZE, typeof(Vector2));
-				AddSpace(pseudo3D);
-				AddThingProperty(pseudo3D, "Origin Unit", Thing.Property.PSEUDO_3D_ORIGIN_UNIT, typeof(Vector2), smallNumericStep: true);
-				AddThingProperty(pseudo3D, "Origin", Thing.Property.PSEUDO_3D_ORIGIN, typeof(Vector2));
+				AddThingProperty(table, "Tilt", Thing.Property.PSEUDO_3D_TILT, typeof(float));
+				AddThingProperty(table, "Depth", Thing.Property.PSEUDO_3D_DEPTH, typeof(float));
+				AddSpace(table);
+				AddThingProperty(table, "Local Size", Thing.Property.PSEUDO_3D_LOCAL_SIZE, typeof(Vector2));
+				AddThingProperty(table, "Size", Thing.Property.PSEUDO_3D_SIZE, typeof(Vector2));
+				AddSpace(table);
+				AddThingProperty(table, "Origin Unit", Thing.Property.PSEUDO_3D_ORIGIN_UNIT, typeof(Vector2), smallNumericStep: true);
+				AddThingProperty(table, "Origin", Thing.Property.PSEUDO_3D_ORIGIN, typeof(Vector2));
 			}
-			void AddPropsCube()
+			void AddPropsCube(TableLayoutPanel table)
 			{
-				AddThingProperty(cube, "Perspective Unit", Thing.Property.CUBE_PERSPECTIVE_UNIT, typeof(float), smallNumericStep: true);
-				AddSpace(cube);
-				AddThingProperty(cube, "Side Far", Thing.Property.CUBE_SIDE_FAR, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
-				AddThingProperty(cube, "Side Top", Thing.Property.CUBE_SIDE_TOP, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
-				AddThingProperty(cube, "Side Left", Thing.Property.CUBE_SIDE_LEFT, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
-				AddThingProperty(cube, "Side Right", Thing.Property.CUBE_SIDE_RIGHT, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
-				AddThingProperty(cube, "Side Bottom", Thing.Property.CUBE_SIDE_BOTTOM, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
-				AddThingProperty(cube, "Side Near", Thing.Property.CUBE_SIDE_NEAR, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
+				AddThingProperty(table, "Perspective Unit", Thing.Property.CUBE_PERSPECTIVE_UNIT, typeof(float), smallNumericStep: true);
+				AddSpace(table);
+				AddThingProperty(table, "Side Far", Thing.Property.CUBE_SIDE_FAR, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
+				AddThingProperty(table, "Side Top", Thing.Property.CUBE_SIDE_TOP, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
+				AddThingProperty(table, "Side Left", Thing.Property.CUBE_SIDE_LEFT, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
+				AddThingProperty(table, "Side Right", Thing.Property.CUBE_SIDE_RIGHT, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
+				AddThingProperty(table, "Side Bottom", Thing.Property.CUBE_SIDE_BOTTOM, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
+				AddThingProperty(table, "Side Near", Thing.Property.CUBE_SIDE_NEAR, typeof(Thing.CubeSide), readOnly: true, labelSizeOffset: 2);
 			}
-			void AddPropsButton()
+			void AddPropsLight(TableLayoutPanel table)
 			{
-				AddThingProperty(button, "Is Disabled", Thing.Property.UI_BUTTON_IS_DISABLED, typeof(bool));
-				AddThingProperty(button, "Is Draggable", Thing.Property.UI_BUTTON_IS_DRAGGABLE, typeof(bool));
-				AddSpace(button);
-				AddThingProperty(button, "Hold Delay", Thing.Property.UI_BUTTON_HOLD_DELAY, typeof(float));
-				AddThingProperty(button, "Hold Trigger Speed", Thing.Property.UI_BUTTON_HOLD_TRIGGER_SPEED, typeof(float), labelSizeOffset: 2);
+				AddThingProperty(table, "Color", Thing.Property.LIGHT_COLOR, typeof(Color));
 			}
-			void AddPropsTextbox()
+			void AddPropsNinePatch(TableLayoutPanel table)
 			{
-				AddThingProperty(textbox, "Backgr. Color", Thing.Property.UI_TEXTBOX_BACKGROUND_COLOR, typeof(Color), labelSizeOffset: 2);
-				AddThingProperty(textbox, "Camera UID", Thing.Property.UI_TEXTBOX_CAMERA_UID, typeof(string));
-				AddThingProperty(textbox, "Alignment", Thing.Property.UI_TEXTBOX_ALIGNMENT, typeof(SMPL.UI.Thing.TextboxAlignment));
-				AddSpace(textbox);
-				AddThingProperty(textbox, "ShadowOffset", Thing.Property.UI_TEXTBOX_SHADOW_OFFSET, typeof(Vector2), smallNumericStep: true);
-				AddThingProperty(textbox, "ShadowColor", Thing.Property.UI_TEXTBOX_SHADOW_COLOR, typeof(Color), labelSizeOffset: 2);
+				AddThingProperty(table, "Border Size", Thing.Property.NINE_PATCH_BORDER_SIZE, typeof(float));
+			}
+			void AddPropsButton(TableLayoutPanel table)
+			{
+				AddThingProperty(table, "Is Disabled", Thing.Property.UI_BUTTON_IS_DISABLED, typeof(bool));
+				AddThingProperty(table, "Is Draggable", Thing.Property.UI_BUTTON_IS_DRAGGABLE, typeof(bool));
+				AddSpace(table);
+				AddThingProperty(table, "Hold Delay", Thing.Property.UI_BUTTON_HOLD_DELAY, typeof(float));
+				AddThingProperty(table, "Hold Trigger Speed", Thing.Property.UI_BUTTON_HOLD_TRIGGER_SPEED, typeof(float), labelSizeOffset: 2);
+			}
+			void AddPropsTextbox(TableLayoutPanel table)
+			{
+				AddThingProperty(table, "Backgr. Color", Thing.Property.UI_TEXTBOX_BACKGROUND_COLOR, typeof(Color), labelSizeOffset: 2);
+				AddThingProperty(table, "Camera UID", Thing.Property.UI_TEXTBOX_CAMERA_UID, typeof(string));
+				AddThingProperty(table, "Alignment", Thing.Property.UI_TEXTBOX_ALIGNMENT, typeof(SMPL.UI.Thing.TextboxAlignment));
+				AddSpace(table);
+				AddThingProperty(table, "ShadowOffset", Thing.Property.UI_TEXTBOX_SHADOW_OFFSET, typeof(Vector2), smallNumericStep: true);
+				AddThingProperty(table, "ShadowColor", Thing.Property.UI_TEXTBOX_SHADOW_COLOR, typeof(Color), labelSizeOffset: 2);
+			}
+			void AddPropsTextButton(TableLayoutPanel table)
+			{
+				AddThingProperty(table, "Text UID", Thing.Property.UI_TEXT_BUTTON_TEXT_UID, typeof(string));
+				AddSpace(table);
+				AddThingProperty(table, "Is Hyperlink", Thing.Property.UI_TEXT_BUTTON_IS_HYPERLINK, typeof(bool));
+			}
+			void AddPropsInputbox(TableLayoutPanel table)
+			{
+				AddThingProperty(table, "Is Disabled", Thing.Property.UI_INPUTBOX_IS_DISABLED, typeof(bool));
+				AddSpace(table);
+				AddThingProperty(table, "Cursor Color", Thing.Property.UI_INPUTBOX_CURSOR_COLOR, typeof(Color));
+				AddThingProperty(table, "Cursor Position Index", Thing.Property.UI_INPUTBOX_CURSOR_POSITION_INDEX, typeof(int), labelSizeOffset: 2);
+				AddSpace(table);
+				AddThingProperty(table, "Placeholder Value", Thing.Property.UI_INPUTBOX_PLACEHOLDER_VALUE, typeof(string));
+				AddThingProperty(table, "Placeh. Color", Thing.Property.UI_INPUTBOX_PLACEHOLDER_COLOR, typeof(Color), labelSizeOffset: 2);
+			}
+			void AddPropsCheckbox(TableLayoutPanel table)
+			{
+				AddThingProperty(table, "Is Checked", Thing.Property.UI_CHECKBOX_IS_CHECKED, typeof(bool));
+			}
+			void AddPropsProgressBar(TableLayoutPanel table)
+			{
+				AddThingProperty(table, "Range A", Thing.Property.UI_PROGRESS_BAR_RANGE_A, typeof(float));
+				AddThingProperty(table, "Range B", Thing.Property.UI_PROGRESS_BAR_RANGE_B, typeof(float));
+				AddSpace(table);
+				AddThingProperty(table, "Progress Unit", Thing.Property.UI_PROGRESS_BAR_UNIT, typeof(float), smallNumericStep: true);
+				AddThingProperty(table, "Value", Thing.Property.UI_PROGRESS_BAR_VALUE, typeof(float));
+				AddSpace(table);
+				AddThingProperty(table, "Max Length", Thing.Property.UI_PROGRESS_BAR_MAX_LENGTH, typeof(float));
+			}
+			void AddPropsScrollBar(TableLayoutPanel table)
+			{
+				AddThingProperty(table, "Button ^ UID", Thing.Property.UI_SCROLL_BAR_BUTTON_UP_UID, typeof(string), labelSizeOffset: 2);
+				AddThingProperty(table, "Button V UID", Thing.Property.UI_SCROLL_BAR_BUTTON_DOWN_UID, typeof(string), labelSizeOffset: 2);
+				AddSpace(table);
+				AddThingProperty(table, "Step", Thing.Property.UI_SCROLL_BAR_STEP, typeof(float), smallNumericStep: true);
+				AddThingProperty(table, "Step Unit", Thing.Property.UI_SCROLL_BAR_STEP_UNIT, typeof(float), smallNumericStep: true);
+			}
+			void AddPropsSlider(TableLayoutPanel table)
+			{
+				AddThingProperty(table, "Is Disabled", Thing.Property.UI_SLIDER_IS_DISABLED, typeof(bool));
+				AddSpace(table);
+				AddThingProperty(table, "Length Unit", Thing.Property.UI_SLIDER_LENGTH_UNIT, typeof(float), smallNumericStep: true);
+				AddThingProperty(table, "Length", Thing.Property.UI_SLIDER_LENGTH, typeof(float));
+				AddSpace(table);
+				AddThingProperty(table, "Progress Col.", Thing.Property.UI_SLIDER_PROGRESS_COLOR, typeof(Color));
+				AddThingProperty(table, "Empty Col.", Thing.Property.UI_SLIDER_EMPTY_COLOR, typeof(Color));
+			}
+			void AddPropsList(TableLayoutPanel table)
+			{
+				AddThingProperty(table, "Buttons Tag", Thing.Property.UI_LIST_BUTTONS_TAG, typeof(string));
+				AddSpace(table);
+				AddThingProperty(table, "Visible Btn Count Max", Thing.Property.UI_LIST_VISIBLE_BUTTON_COUNT_MAX, typeof(int), labelSizeOffset: 2);
+				AddThingProperty(table, "Visible Btn Count Current", Thing.Property.UI_LIST_VISIBLE_BUTTON_COUNT_CURRENT,
+					typeof(int), labelSizeOffset: 0, readOnly: true);
+				AddSpace(table);
+				AddThingProperty(table, "Button Spacing", Thing.Property.UI_LIST_BUTTON_SPACING, typeof(float));
+				AddThingProperty(table, "Button Width", Thing.Property.UI_LIST_BUTTON_WIDTH, typeof(float));
+				AddThingProperty(table, "Button Height", Thing.Property.UI_LIST_BUTTON_HEIGHT, typeof(float), readOnly: true);
+			}
+			void AddPropsListDropdown(TableLayoutPanel table)
+			{
+				AddThingProperty(table, "Btn Show UID", Thing.Property.UI_LIST_DROPDOWN_BUTTON_SHOW_UID, typeof(string), labelSizeOffset: 2);
+				AddSpace(table);
+				AddThingProperty(table, "Selection Index", Thing.Property.UI_LIST_DROPDOWN_SELECTION_INDEX, typeof(int));
+				AddThingProperty(table, "Selection UID", Thing.Property.UI_LIST_DROPDOWN_SELECTION_UID, typeof(string), readOnly: true);
+			}
+			void AddPropsListCarousel(TableLayoutPanel table)
+			{
+				AddThingProperty(table, "Is Repeating", Thing.Property.UI_LIST_CAROUSEL_IS_REPEATING, typeof(bool));
+				AddSpace(table);
+				AddThingProperty(table, "Selection Index", Thing.Property.UI_LIST_CAROUSEL_SELECTION_INDEX, typeof(int));
+				AddThingProperty(table, "Selection UID", Thing.Property.UI_LIST_CAROUSEL_SELECTION_UID, typeof(string), readOnly: true);
+			}
+			void AddPropsListMultiselect(TableLayoutPanel table)
+			{
+				AddThingProperty(table, "Selection Indexes", Thing.Property.UI_LIST_MULTISELECT_SELECTION_INDEXES, typeof(ReadOnlyCollection<int>));
+				AddThingProperty(table, "Selection UIDs", Thing.Property.UI_LIST_MULTISELECT_SELECTION_UIDS, typeof(ReadOnlyCollection<string>));
 			}
 
 			void AddSpace(TableLayoutPanel table)
@@ -455,7 +527,8 @@ namespace SMPLSceneEditor
 				SetFocusHotkeyPrevention(prop);
 			}
 			else if(valueType == typeof(List<string>) || (valueType.IsEnum && valueTypeIsFlag == false) ||
-				valueType == typeof(ReadOnlyCollection<string>) || valueType == typeof(Dictionary<string, Thing.Tile>))
+				valueType == typeof(ReadOnlyCollection<string>) || valueType == typeof(ReadOnlyCollection<int>) ||
+				valueType == typeof(Dictionary<string, Thing.Tile>))
 				prop = CreateList();
 			else if(valueType == typeof(Button))
 				prop = new Button() { Text = label };
@@ -577,7 +650,7 @@ namespace SMPLSceneEditor
 				if(sender == null)
 					return;
 				var control = (Control)sender;
-				PickThing(control, propName);
+				PickThing(control, null, propName);
 			}
 			void PickColor(object? sender, EventArgs e)
 			{
@@ -1232,6 +1305,7 @@ namespace SMPLSceneEditor
 					case "Single": SetControlNumber((NumericUpDown)control, (float)Get(), readOnly); break;
 					case "List<String>": ProcessList((ComboBox)control, (List<string>)Thing.Get(uid, propName)); break;
 					case "ReadOnlyCollection<String>": ProcessList((ComboBox)control, (ReadOnlyCollection<string>)Thing.Get(uid, propName)); break;
+					case "ReadOnlyCollection<Int32>": ProcessList((ComboBox)control, (ReadOnlyCollection<int>)Thing.Get(uid, propName)); break;
 					case "BlendMode": ProcessEnumList((ComboBox)control, typeof(Thing.BlendMode), propName); break;
 					case "TextboxAlignment": ProcessEnumList((ComboBox)control, typeof(SMPL.UI.Thing.TextboxAlignment), propName); break;
 					case "Styles": ProcessEnumFlagList((TextBox)control, typeof(Text.Styles)); break;
@@ -1312,6 +1386,8 @@ namespace SMPLSceneEditor
 		private static void SetControlNumber(NumericUpDown number, float value, bool readOnly = false)
 		{
 			number.Enabled = readOnly == false;
+			if(double.IsInfinity(value) || double.IsNaN(value))
+				value = 0;
 			number.Value = (decimal)value.Limit((float)number.Minimum, (float)number.Maximum);
 		}
 
@@ -1346,9 +1422,10 @@ namespace SMPLSceneEditor
 		}
 		private void TryAddPlaceholderToList(ComboBox control)
 		{
-			if(control.Enabled && listBoxPlaceholderTexts.ContainsKey(control.Name))
+			if(control.Enabled && listBoxPlaceholderTexts.ContainsKey(control.Name) &&
+				control.Items.Contains(listBoxPlaceholderTexts[control.Name]) == false)
 				control.Items.Add(listBoxPlaceholderTexts[control.Name]);
-			else if(control.Enabled == false)
+			else if(control.Enabled == false && control.Items.Contains("(none)") == false)
 				control.Items.Add("(none)");
 		}
 		private void UpdateSceneValues()
@@ -2279,7 +2356,7 @@ namespace SMPLSceneEditor
 		private void CreateUITextbox()
 		{
 			var font = GetFont("Create Textbox", "Textbox");
-			var camUID = GetInput("Create Textbox", "Provide the Textbox's Camera UID.", "Camera");
+			var camUID = GetInput("Create Textbox", "Provide the Textbox's Camera UID.", "Textbox-Camera", true);
 			if(string.IsNullOrWhiteSpace(camUID))
 				return;
 			var camRes = GetVector2("Create Textbox", "Provide the Textbox's Camera resolution.", 1, 2048, 1, 2048, new(200));
@@ -2287,6 +2364,93 @@ namespace SMPLSceneEditor
 				return;
 			var uid = Thing.UI.CreateTextbox("Textbox", camUID, font, resolutionX: (uint)camRes.X, resolutionY: (uint)camRes.Y);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
+		}
+		private void CreateUITextButton()
+		{
+			var font = GetFont("Create TextButton", "TextButton");
+			var textUID = GetInput("Create TextButton", "Provide the TextButton's Text UID.", "Text", true);
+			if(string.IsNullOrWhiteSpace(textUID))
+				return;
+			var uid = Thing.UI.CreateTextButton("TextButton", textUID, null, font);
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
+		}
+		private void CreateUIInputbox()
+		{
+			var font = GetFont("Create Inputbox", "Inputbox");
+			var camUID = GetInput("Create Inputbox", "Provide the Inputbox's Camera UID.", "Inputbox-Camera");
+			if(string.IsNullOrWhiteSpace(camUID))
+				return;
+			var camRes = GetVector2("Create Inputbox", "Provide the Inputbox's Camera resolution.", 1, 2048, 1, 2048, new(200));
+			if(camRes == default)
+				return;
+			var uid = Thing.UI.CreateInputbox("Inputbox", camUID, font, resolutionX: (uint)camRes.X, resolutionY: (uint)camRes.Y);
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
+		}
+		private void CreateUICheckbox()
+		{
+			var uid = Thing.UI.CreateCheckbox("Checkbox", null);
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
+		}
+		private void CreateUIProgressBar()
+		{
+			var uid = Thing.UI.CreateProgressBar("Checkbox", null);
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
+		}
+		private void CreateUISlider()
+		{
+			var uid = Thing.UI.CreateSlider("Checkbox", null);
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
+		}
+		private void CreateUIScrollBar()
+		{
+			var btnUIDs = GetUpDownButtonUIDs("ScrollBar");
+			if(btnUIDs == null)
+				return;
+			var uid = Thing.UI.CreateScrollBar("Checkbox", null, btnUIDs[0], btnUIDs[1]);
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
+		}
+		private void CreateUIList()
+		{
+			var btnUIDs = GetUpDownButtonUIDs("List");
+			if(btnUIDs == null)
+				return;
+			var uid = Thing.UI.CreateList("List", null, btnUIDs[0], btnUIDs[1]);
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
+		}
+		private void CreateUIListCarousel()
+		{
+			var btnUIDs = GetUpDownButtonUIDs("ListCarousel");
+			if(btnUIDs == null)
+				return;
+			var uid = Thing.UI.CreateListCarousel("ListCarousel", null, btnUIDs[0], btnUIDs[1]);
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
+		}
+		private void CreateUIListMultiselect()
+		{
+			var btnUIDs = GetUpDownButtonUIDs("ListMultiselect");
+			if(btnUIDs == null)
+				return;
+			var uid = Thing.UI.CreateListMultiselect("ListMultiselect", null, btnUIDs[0], btnUIDs[1]);
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
+		}
+		private void CreateUIListDropdown()
+		{
+			var btnUIDs = GetUpDownButtonUIDs("ListDropdown");
+			if(btnUIDs == null)
+				return;
+			var showUID = GetInput("Create ListDropdown", $"Provide the ListDropdown's Show Button UID.", "ListDropdown-Show");
+			if(string.IsNullOrWhiteSpace(showUID))
+				return;
+			var uid = Thing.UI.CreateListDropdown("ListDropdown", null, btnUIDs[0], btnUIDs[1], showUID);
+			Thing.Set(uid, Thing.Property.POSITION, createPosition);
+		}
+		private string[]? GetUpDownButtonUIDs(string name)
+		{
+			var btnUID1 = GetInput($"Create {name}", $"Provide the {name}'s Up Button UID.", $"{name}-Up");
+			if(string.IsNullOrWhiteSpace(btnUID1))
+				return default;
+			var btnUID2 = GetInput($"Create {name}", $"Provide the {name}'s Down Button UID.", $"{name}-Down");
+			return string.IsNullOrWhiteSpace(btnUID2) ? default : (new string[] { btnUID1, btnUID2 });
 		}
 
 		private void OnKeyDownObjectSearch(object sender, System.Windows.Forms.KeyEventArgs e)
@@ -2579,6 +2743,16 @@ namespace SMPLSceneEditor
 
 		private void OnSceneRightClickMenuCreateUIButton(object sender, EventArgs e) => CreateUIButton();
 		private void OnSceneRightClickMenuCreateUITextbox(object sender, EventArgs e) => CreateUITextbox();
+		private void OnSceneRightClickMenuCreateUITextButton(object sender, EventArgs e) => CreateUITextButton();
+		private void OnSceneRightClickMenuCreateUIInputbox(object sender, EventArgs e) => CreateUIInputbox();
+		private void OnSceneRightClickMenuCreateUICheckbox(object sender, EventArgs e) => CreateUICheckbox();
+		private void OnSceneRightClickMenuCreateUIProgressBar(object sender, EventArgs e) => CreateUIProgressBar();
+		private void OnSceneRightClickMenuCreateUISlider(object sender, EventArgs e) => CreateUISlider();
+		private void OnSceneRightClickMenuCreateUIScroll(object sender, EventArgs e) => CreateUIScrollBar();
+		private void OnSceneRightClickMenuCreateUIList(object sender, EventArgs e) => CreateUIList();
+		private void OnSceneRightClickMenuCreateUIListMultiselect(object sender, EventArgs e) => CreateUIListMultiselect();
+		private void OnSceneRightClickMenuCreateUICarousel(object sender, EventArgs e) => CreateUIListCarousel();
+		private void OnSceneRightClickMenuCreateUIDropdown(object sender, EventArgs e) => CreateUIListDropdown();
 
 		private void OnSceneRightClickMenuCreateHitboxLine(object sender, EventArgs e) => AddLineToHitbox();
 		private void OnSceneRightClickMenuCreateHitboxSquare(object sender, EventArgs e) => AddSquareToHitbox();
@@ -2600,7 +2774,6 @@ namespace SMPLSceneEditor
 			TryDestroySelection();
 		}
 		private void OnSceneRightClickMenuSelectionDeselect(object sender, EventArgs e) => DeselectAll();
-
 		private void OnSceneRightClickMenuResetView(object sender, EventArgs e)
 		{
 			SetView();
@@ -2871,6 +3044,9 @@ namespace SMPLSceneEditor
 		}
 		private void OnThingListPick(object sender, ToolStripItemClickedEventArgs e)
 		{
+			if(pickThingResult != null)
+				pickThingResult.Text = e.ClickedItem.Text;
+
 			if(pickThingProperty != "")
 			{
 				Thing.Set(selectedUIDs[0], pickThingProperty, e.ClickedItem.Text);
@@ -3079,7 +3255,7 @@ namespace SMPLSceneEditor
 
 			return result != DialogResult.OK ? null : GetMirrorAssetPath(pickAsset.FileName);
 		}
-		private static string GetInput(string title, string text, string defaultInput = "")
+		private string GetInput(string title, string text, string defaultInput = "", bool isThingUID = false)
 		{
 			var sz = new Vector2i(W, H + text.Split('\n').Length * 15);
 			var window = new Form()
@@ -3104,7 +3280,7 @@ namespace SMPLSceneEditor
 			{
 				Left = SPACING_X,
 				Top = SPACING_Y + textLabel.Height,
-				Width = sz.X - BUTTON_W - SPACING_X * 3,
+				Width = sz.X - BUTTON_W - SPACING_X * 3 - (isThingUID ? BUTTON_W : 0),
 				Height = TEXTBOX_H,
 				Text = defaultInput,
 				BackColor = System.Drawing.Color.Black,
@@ -3119,10 +3295,21 @@ namespace SMPLSceneEditor
 				Top = SPACING_Y + textLabel.Height,
 				DialogResult = DialogResult.OK
 			};
-			button.Click += (sender, e) => { window.Close(); };
+			var things = new Button()
+			{
+				Text = "Things",
+				Left = sz.X - BUTTON_W * 2 - SPACING_X * 2,
+				Width = BUTTON_W,
+				Height = BUTTON_H,
+				Top = SPACING_Y + textLabel.Height
+			};
+			things.Click += (sender, e) => PickThing(things, textBox);
+			button.Click += (sender, e) => window.Close();
 			window.Controls.Add(textBox);
 			window.Controls.Add(button);
 			window.Controls.Add(textLabel);
+			if(isThingUID)
+				window.Controls.Add(things);
 			window.AcceptButton = button;
 
 			return window.ShowDialog() == DialogResult.OK ? textBox.Text : "";
@@ -3347,7 +3534,7 @@ namespace SMPLSceneEditor
 				buttonThings.Click += (sender, e) =>
 				{
 					waitingPickThingControl = textBox;
-					PickThing(buttonThings);
+					PickThing(buttonThings, textBox);
 				};
 				window.Controls.Add(buttonThings);
 			}
@@ -3359,22 +3546,23 @@ namespace SMPLSceneEditor
 			foreach(string item in listBox.Items)
 				list.Add(item);
 		}
-		private void PickThing(Control control, string property = "")
+		private void PickThing(Control button, Control? result, string property = "")
 		{
 			var uids = Thing.GetUIDs();
 
 			thingsList.MaximumSize = new(thingsList.MaximumSize.Width, 300);
 			thingsList.Items.Clear();
 			for(int i = 0; i < uids.Count; i++)
-				if(selectedUIDs[0] != uids[i])
+				if(selectedUIDs.Count == 0 || selectedUIDs[0] != uids[i])
 					thingsList.Items.Add(uids[i]);
 
 			pickThingProperty = property;
+			pickThingResult = result;
 			// show twice cuz first time has wrong position
 			Show();
 			Show();
 
-			void Show() => thingsList.Show(this, control.PointToScreen(new(-thingsList.Width, -control.Height / 2)));
+			void Show() => thingsList.Show(this, button.PointToScreen(new(-thingsList.Width / 4, 10)));
 		}
 		#endregion
 	}
