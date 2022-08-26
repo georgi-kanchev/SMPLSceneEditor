@@ -346,6 +346,8 @@ namespace SMPLSceneEditor
 			{
 				AddThingProperty(table, "Tilt", Thing.Property.PSEUDO_3D_TILT, typeof(float));
 				AddThingProperty(table, "Depth", Thing.Property.PSEUDO_3D_DEPTH, typeof(float));
+				AddThingProperty(table, "Z", Thing.Property.PSEUDO_3D_Z, typeof(float));
+				AddThingProperty(table, "Position 2D", Thing.Property.PSEUDO_3D_POSITION_2D, typeof(Vector2));
 				AddSpace(table);
 				AddThingProperty(table, "Local Size", Thing.Property.PSEUDO_3D_LOCAL_SIZE, typeof(Vector2));
 				AddThingProperty(table, "Size", Thing.Property.PSEUDO_3D_SIZE, typeof(Vector2));
@@ -2669,11 +2671,13 @@ namespace SMPLSceneEditor
 					for(int i = 0; i < selectedUIDs.Count; i++)
 					{
 						var uid = selectedUIDs[i];
-						var pos = (Vector2)Thing.Get(uid, Thing.Property.POSITION);
+						var isPseudo3D = ((ReadOnlyCollection<string>)Thing.Get(uid, Thing.Property.TYPES)).Contains("Pseudo3D");
+						var pos = (Vector2)Thing.Get(uid, isPseudo3D ? Thing.Property.PSEUDO_3D_POSITION_2D : Thing.Property.POSITION);
 						var ang = (float)Thing.Get(uid, Thing.Property.ANGLE);
+						var drag = Drag(pos, false, true);
 
 						if(editIndex == 0)
-							Thing.Set(uid, Thing.Property.POSITION, Drag(pos, false, true));
+							Thing.Set(uid, isPseudo3D ? Thing.Property.PSEUDO_3D_POSITION_2D : Thing.Property.POSITION, drag);
 						else if(editIndex == 1)
 							Thing.Set(uid, Thing.Property.ANGLE, DragAngle(pos, ang));
 					}
