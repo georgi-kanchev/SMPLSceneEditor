@@ -138,6 +138,17 @@ namespace SMPLSceneEditor
 			hotkeys.Add(new Key[] { Key.C, Key.Q }, CreateCube);
 
 			hotkeys.Add(new Key[] { Key.U, Key.B }, CreateUIButton);
+			hotkeys.Add(new Key[] { Key.U, Key.X }, CreateUITextButton);
+			hotkeys.Add(new Key[] { Key.U, Key.T }, CreateUITextbox);
+			hotkeys.Add(new Key[] { Key.U, Key.I }, CreateUIInputbox);
+			hotkeys.Add(new Key[] { Key.U, Key.C }, CreateUICheckbox);
+			hotkeys.Add(new Key[] { Key.U, Key.P }, CreateUIProgressBar);
+			hotkeys.Add(new Key[] { Key.U, Key.S }, CreateUISlider);
+			hotkeys.Add(new Key[] { Key.U, Key.R }, CreateUIScrollBar);
+			hotkeys.Add(new Key[] { Key.U, Key.L }, CreateUIList);
+			hotkeys.Add(new Key[] { Key.U, Key.D }, CreateUIListDropdown);
+			hotkeys.Add(new Key[] { Key.U, Key.M }, CreateUIListMultiselect);
+			hotkeys.Add(new Key[] { Key.U, Key.A }, CreateUIListCarousel);
 
 		}
 		private void InitTables()
@@ -344,10 +355,12 @@ namespace SMPLSceneEditor
 			}
 			void AddPropsPseudo3D(TableLayoutPanel table)
 			{
+				AddThingProperty(table, "Camera UID", Thing.Property.PSEUDO_3D_CAMERA_UID, typeof(string));
+				AddSpace(table);
+				AddThingProperty(table, "Position 2D", Thing.Property.PSEUDO_3D_POSITION_2D, typeof(Vector2));
+				AddThingProperty(table, "Z", Thing.Property.PSEUDO_3D_Z, typeof(float));
 				AddThingProperty(table, "Tilt", Thing.Property.PSEUDO_3D_TILT, typeof(float));
 				AddThingProperty(table, "Depth", Thing.Property.PSEUDO_3D_DEPTH, typeof(float));
-				AddThingProperty(table, "Z", Thing.Property.PSEUDO_3D_Z, typeof(float));
-				AddThingProperty(table, "Position 2D", Thing.Property.PSEUDO_3D_POSITION_2D, typeof(Vector2));
 				AddSpace(table);
 				AddThingProperty(table, "Local Size", Thing.Property.PSEUDO_3D_LOCAL_SIZE, typeof(Vector2));
 				AddThingProperty(table, "Size", Thing.Property.PSEUDO_3D_SIZE, typeof(Vector2));
@@ -2732,6 +2745,12 @@ namespace SMPLSceneEditor
 
 		private void OnSearchSceneFocus(object sender, EventArgs e) => isTyping = true;
 		private void OnSearchSceneUnfocus(object sender, EventArgs e) => isTyping = false;
+
+		private void OnSearchSceneThingsClick(object sender, EventArgs e)
+		{
+			PickThing(searchThingsBtn, searchScene);
+
+		}
 		#endregion
 		#region SceneRightClick
 		private void OnSceneRightClickMenuCreateSprite(object sender, EventArgs e) => CreateSprite();
