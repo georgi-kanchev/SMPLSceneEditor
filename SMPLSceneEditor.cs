@@ -2061,9 +2061,9 @@ namespace SMPLSceneEditor
 
 					for(int i = 0; i < hitbox.Lines.Count; i++)
 					{
-						if(dragSelHitbox.ConvexContains(hitbox.Lines[i].A))
+						if(dragSelHitbox.Contains(hitbox.Lines[i].A))
 							SelectHitboxPointIndexA(i);
-						if(dragSelHitbox.ConvexContains(hitbox.Lines[i].B))
+						if(dragSelHitbox.Contains(hitbox.Lines[i].B))
 							SelectHitboxPointIndexB(i);
 					}
 				}
@@ -2097,7 +2097,7 @@ namespace SMPLSceneEditor
 					// same for opposite
 					var oppositeSpecialCase = ctrl && selectedUIDs.Contains(uid);
 
-					if(hitbox.ConvexContains(mousePos) && unselectSpecialCase == false && oppositeSpecialCase == false)
+					if(hitbox.Contains(mousePos) && unselectSpecialCase == false && oppositeSpecialCase == false)
 					{
 						clickedUIDs.Add(uid);
 						sum++;
@@ -2117,7 +2117,7 @@ namespace SMPLSceneEditor
 					if(hitbox == null)
 						continue;
 
-					if(dragSelHitbox != null && dragSelHitbox.ConvexContains(hitbox))
+					if(dragSelHitbox != null && dragSelHitbox.Contains(hitbox))
 						TrySelectOrDeselectThing(uid);
 				}
 			}
