@@ -2354,13 +2354,13 @@ namespace SMPLSceneEditor
 				texStackName = lastCreatedTexStackName;
 			}
 
-			var uid = Thing.CreateSpriteStack("Text", texStackName);
-			Thing.Set(uid, Thing.Property.POSITION, createPosition);
+			var uid = Thing.CreateSpriteStack("SpriteStack", texStackName);
+			Thing.Set(uid, Thing.Property.PSEUDO_3D_POSITION_2D, createPosition);
 		}
 		private void CreateCube()
 		{
-			var uid = Thing.CreateCube("Sprite", null);
-			Thing.Set(uid, Thing.Property.POSITION, createPosition);
+			var uid = Thing.CreateCube("Cube", null);
+			Thing.Set(uid, Thing.Property.PSEUDO_3D_POSITION_2D, createPosition);
 		}
 
 		private void CreateUIButton()
@@ -2395,7 +2395,7 @@ namespace SMPLSceneEditor
 			var camUID = GetInput("Create Inputbox", "Provide the Inputbox's Camera UID.", "Inputbox-Camera");
 			if(string.IsNullOrWhiteSpace(camUID))
 				return;
-			var camRes = GetVector2("Create Inputbox", "Provide the Inputbox's Camera resolution.", 1, 2048, 1, 2048, new(200));
+			var camRes = GetVector2("Create Inputbox", "Provide the Inputbox's Camera resolution.", 1, 2048, 1, 2048, new(300, 40));
 			if(camRes == default)
 				return;
 			var uid = Thing.UI.CreateInputbox("Inputbox", camUID, font, resolutionX: (uint)camRes.X, resolutionY: (uint)camRes.Y);
@@ -2408,12 +2408,12 @@ namespace SMPLSceneEditor
 		}
 		private void CreateUIProgressBar()
 		{
-			var uid = Thing.UI.CreateProgressBar("Checkbox", null);
+			var uid = Thing.UI.CreateProgressBar("ProgressBar", null);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateUISlider()
 		{
-			var uid = Thing.UI.CreateSlider("Checkbox", null);
+			var uid = Thing.UI.CreateSlider("Slider", null);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateUIScrollBar()
@@ -2421,7 +2421,7 @@ namespace SMPLSceneEditor
 			var btnUIDs = GetUpDownButtonUIDs("ScrollBar");
 			if(btnUIDs == null)
 				return;
-			var uid = Thing.UI.CreateScrollBar("Checkbox", null, btnUIDs[0], btnUIDs[1]);
+			var uid = Thing.UI.CreateScrollBar("ScrollBar", null, btnUIDs[0], btnUIDs[1]);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateUIList()
