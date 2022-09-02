@@ -231,7 +231,8 @@ namespace SMPLSceneEditor
 			}
 			void AddPropsThing(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Is Disabled", Thing.Property.IS_DISABLED, typeof(bool));
+				AddThingProperty(table, "Is Disabled", Thing.Property.IS_DISABLED, typeof(bool), readOnly: true);
+				AddThingProperty(table, "Is Disabled Self", Thing.Property.IS_DISABLED_SELF, typeof(bool));
 				AddSpace(table);
 				AddThingProperty(table, "UID", Thing.Property.UID, typeof(string));
 				AddThingProperty(table, "Old UID", Thing.Property.OLD_UID, typeof(string), readOnly: true);
@@ -275,6 +276,7 @@ namespace SMPLSceneEditor
 				AddThingProperty(table, "Order", Thing.Property.VISUAL_ORDER, typeof(int));
 				AddSpace(table);
 				AddThingProperty(table, "Is Hidden", Thing.Property.VISUAL_IS_HIDDEN, typeof(bool));
+				AddThingProperty(table, "Is Hidden Self", Thing.Property.VISUAL_IS_HIDDEN_SELF, typeof(bool), readOnly: true);
 				AddThingProperty(table, "Is Repeated", Thing.Property.VISUAL_IS_REPEATED, typeof(bool));
 				AddThingProperty(table, "Is Smooth", Thing.Property.VISUAL_IS_SMOOTH, typeof(bool));
 				AddSpace(table);
@@ -329,7 +331,6 @@ namespace SMPLSceneEditor
 			}
 			void AddPropsCloth(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Is Simulating", Thing.Property.CLOTH_IS_SIMULATING, typeof(bool));
 				AddThingProperty(table, "Has Threads", Thing.Property.CLOTH_HAS_THREADS, typeof(bool));
 				AddSpace(table);
 				AddThingProperty(table, "Break Threshold", Thing.Property.CLOTH_BREAK_THRESHOLD, typeof(float));
