@@ -231,6 +231,8 @@ namespace SMPLSceneEditor
 			}
 			void AddPropsThing(TableLayoutPanel table)
 			{
+				AddThingProperty(table, "Is Disabled", Thing.Property.IS_DISABLED, typeof(bool));
+				AddSpace(table);
 				AddThingProperty(table, "UID", Thing.Property.UID, typeof(string));
 				AddThingProperty(table, "Old UID", Thing.Property.OLD_UID, typeof(string), readOnly: true);
 				AddThingProperty(table, "Numeric UID", Thing.Property.NUMERIC_UID, typeof(int), readOnly: true);
@@ -389,7 +391,6 @@ namespace SMPLSceneEditor
 			}
 			void AddPropsButton(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Is Disabled", Thing.Property.UI_BUTTON_IS_DISABLED, typeof(bool));
 				AddThingProperty(table, "Is Draggable", Thing.Property.UI_BUTTON_IS_DRAGGABLE, typeof(bool));
 				AddSpace(table);
 				AddThingProperty(table, "Hold Delay", Thing.Property.UI_BUTTON_HOLD_DELAY, typeof(float));
@@ -412,8 +413,6 @@ namespace SMPLSceneEditor
 			}
 			void AddPropsInputbox(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Is Disabled", Thing.Property.UI_INPUTBOX_IS_DISABLED, typeof(bool));
-				AddSpace(table);
 				AddThingProperty(table, "Cursor Color", Thing.Property.UI_INPUTBOX_CURSOR_COLOR, typeof(Color));
 				AddThingProperty(table, "Cursor Position Index", Thing.Property.UI_INPUTBOX_CURSOR_POSITION_INDEX, typeof(int), labelSizeOffset: 2);
 				AddSpace(table);
@@ -444,8 +443,6 @@ namespace SMPLSceneEditor
 			}
 			void AddPropsSlider(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Is Disabled", Thing.Property.UI_SLIDER_IS_DISABLED, typeof(bool));
-				AddSpace(table);
 				AddThingProperty(table, "Length Unit", Thing.Property.UI_SLIDER_LENGTH_UNIT, typeof(float), smallNumericStep: true);
 				AddThingProperty(table, "Length", Thing.Property.UI_SLIDER_LENGTH, typeof(float));
 				AddSpace(table);
@@ -2179,6 +2176,7 @@ namespace SMPLSceneEditor
 				Thing.Duplicate(uid, dupUID);
 				Thing.Set(dupUID, Thing.Property.POSITION, pos.PointMoveAtAngle(45, sc * 20, false));
 			}
+			DeselectAll();
 		}
 		private void TryDestroySelection()
 		{
