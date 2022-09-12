@@ -51,7 +51,6 @@ namespace SMPLSceneEditor
 		{
 			{ $"Prop{Thing.Property.CHILDREN_UIDS}", "(select to focus)                                     " },
 			{ $"Prop{Thing.Property.TYPES}", "(select to edit)                                     " },
-			{ $"Prop{Thing.Property.UI_LIST_MULTISELECT_SELECTION_UIDS}", "(select to focus)                                     " },
 		};
 		private readonly Dictionary<string, Color> typeColors = new()
 		{
@@ -392,94 +391,81 @@ namespace SMPLSceneEditor
 			}
 			void AddPropsButton(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Is Draggable", Thing.Property.UI_BUTTON_IS_DRAGGABLE, typeof(bool));
+				AddThingProperty(table, "Is Draggable", Thing.Property.GUI_BUTTON_IS_DRAGGABLE, typeof(bool));
 				AddSpace(table);
-				AddThingProperty(table, "Hold Delay", Thing.Property.UI_BUTTON_HOLD_DELAY, typeof(float));
-				AddThingProperty(table, "Hold Trigger Speed", Thing.Property.UI_BUTTON_HOLD_TRIGGER_SPEED, typeof(float), labelSizeOffset: 2);
+				AddThingProperty(table, "Hold Delay", Thing.Property.GUI_BUTTON_HOLD_DELAY, typeof(float));
+				AddThingProperty(table, "Hold Trigger Speed", Thing.Property.GUI_BUTTON_HOLD_TRIGGER_SPEED, typeof(float), labelSizeOffset: 2);
 			}
 			void AddPropsTextbox(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Backgr. Color", Thing.Property.UI_TEXTBOX_BACKGROUND_COLOR, typeof(Color), labelSizeOffset: 2);
-				AddThingProperty(table, "Camera UID", Thing.Property.UI_TEXTBOX_CAMERA_UID, typeof(string));
-				AddThingProperty(table, "Alignment", Thing.Property.UI_TEXTBOX_ALIGNMENT, typeof(SMPL.UI.Thing.TextboxAlignment));
+				AddThingProperty(table, "Backgr. Color", Thing.Property.GUI_TEXTBOX_BACKGROUND_COLOR, typeof(Color), labelSizeOffset: 2);
+				AddThingProperty(table, "Alignment", Thing.Property.GUI_TEXTBOX_ALIGNMENT, typeof(Thing.GUI.TextboxAlignment));
 				AddSpace(table);
-				AddThingProperty(table, "ShadowOffset", Thing.Property.UI_TEXTBOX_SHADOW_OFFSET, typeof(Vector2), smallNumericStep: true);
-				AddThingProperty(table, "ShadowColor", Thing.Property.UI_TEXTBOX_SHADOW_COLOR, typeof(Color), labelSizeOffset: 2);
+				AddThingProperty(table, "ShadowOffset", Thing.Property.GUI_TEXTBOX_SHADOW_OFFSET, typeof(Vector2), smallNumericStep: true);
+				AddThingProperty(table, "ShadowColor", Thing.Property.GUI_TEXTBOX_SHADOW_COLOR, typeof(Color), labelSizeOffset: 2);
 			}
 			void AddPropsTextButton(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Text UID", Thing.Property.UI_TEXT_BUTTON_TEXT_UID, typeof(string));
-				AddSpace(table);
-				AddThingProperty(table, "Is Hyperlink", Thing.Property.UI_TEXT_BUTTON_IS_HYPERLINK, typeof(bool));
+				AddThingProperty(table, "Is Hyperlink", Thing.Property.GUI_TEXT_BUTTON_IS_HYPERLINK, typeof(bool));
 			}
 			void AddPropsInputbox(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Cursor Color", Thing.Property.UI_INPUTBOX_CURSOR_COLOR, typeof(Color));
-				AddThingProperty(table, "Cursor Position Index", Thing.Property.UI_INPUTBOX_CURSOR_POSITION_INDEX, typeof(int), labelSizeOffset: 2);
+				AddThingProperty(table, "Cursor Color", Thing.Property.GUI_INPUTBOX_CURSOR_COLOR, typeof(Color));
+				AddThingProperty(table, "Cursor Position Index", Thing.Property.GUI_INPUTBOX_CURSOR_POSITION_INDEX, typeof(int), labelSizeOffset: 2);
 				AddSpace(table);
-				AddThingProperty(table, "Placeholder Value", Thing.Property.UI_INPUTBOX_PLACEHOLDER_VALUE, typeof(string));
-				AddThingProperty(table, "Placeh. Color", Thing.Property.UI_INPUTBOX_PLACEHOLDER_COLOR, typeof(Color), labelSizeOffset: 2);
+				AddThingProperty(table, "Placeholder Value", Thing.Property.GUI_INPUTBOX_PLACEHOLDER_VALUE, typeof(string));
+				AddThingProperty(table, "Placeh. Color", Thing.Property.GUI_INPUTBOX_PLACEHOLDER_COLOR, typeof(Color), labelSizeOffset: 2);
 			}
 			void AddPropsCheckbox(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Is Checked", Thing.Property.UI_CHECKBOX_IS_CHECKED, typeof(bool));
+				AddThingProperty(table, "Is Checked", Thing.Property.GUI_CHECKBOX_IS_CHECKED, typeof(bool));
 			}
 			void AddPropsProgressBar(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Range A", Thing.Property.UI_PROGRESS_BAR_RANGE_A, typeof(float));
-				AddThingProperty(table, "Range B", Thing.Property.UI_PROGRESS_BAR_RANGE_B, typeof(float));
+				AddThingProperty(table, "Range A", Thing.Property.GUI_PROGRESS_BAR_RANGE_A, typeof(float));
+				AddThingProperty(table, "Range B", Thing.Property.GUI_PROGRESS_BAR_RANGE_B, typeof(float));
 				AddSpace(table);
-				AddThingProperty(table, "Progress Unit", Thing.Property.UI_PROGRESS_BAR_UNIT, typeof(float), smallNumericStep: true);
-				AddThingProperty(table, "Value", Thing.Property.UI_PROGRESS_BAR_VALUE, typeof(float));
+				AddThingProperty(table, "Progress Unit", Thing.Property.GUI_PROGRESS_BAR_UNIT, typeof(float), smallNumericStep: true);
+				AddThingProperty(table, "Value", Thing.Property.GUI_PROGRESS_BAR_VALUE, typeof(float));
 				AddSpace(table);
-				AddThingProperty(table, "Max Length", Thing.Property.UI_PROGRESS_BAR_MAX_LENGTH, typeof(float));
+				AddThingProperty(table, "Max Length", Thing.Property.GUI_PROGRESS_BAR_MAX_LENGTH, typeof(float));
 			}
 			void AddPropsScrollBar(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Button ^ UID", Thing.Property.UI_SCROLL_BAR_BUTTON_UP_UID, typeof(string), labelSizeOffset: 2);
-				AddThingProperty(table, "Button V UID", Thing.Property.UI_SCROLL_BAR_BUTTON_DOWN_UID, typeof(string), labelSizeOffset: 2);
-				AddSpace(table);
-				AddThingProperty(table, "Step", Thing.Property.UI_SCROLL_BAR_STEP, typeof(float), smallNumericStep: true);
-				AddThingProperty(table, "Step Unit", Thing.Property.UI_SCROLL_BAR_STEP_UNIT, typeof(float), smallNumericStep: true);
+				AddThingProperty(table, "Step", Thing.Property.GUI_SCROLL_BAR_STEP, typeof(float), smallNumericStep: true);
+				AddThingProperty(table, "Step Unit", Thing.Property.GUI_SCROLL_BAR_STEP_UNIT, typeof(float), smallNumericStep: true);
 			}
 			void AddPropsSlider(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Length Unit", Thing.Property.UI_SLIDER_LENGTH_UNIT, typeof(float), smallNumericStep: true);
-				AddThingProperty(table, "Length", Thing.Property.UI_SLIDER_LENGTH, typeof(float));
+				AddThingProperty(table, "Length Unit", Thing.Property.GUI_SLIDER_LENGTH_UNIT, typeof(float), smallNumericStep: true);
+				AddThingProperty(table, "Length", Thing.Property.GUI_SLIDER_LENGTH, typeof(float));
 				AddSpace(table);
-				AddThingProperty(table, "Progress Col.", Thing.Property.UI_SLIDER_PROGRESS_COLOR, typeof(Color));
-				AddThingProperty(table, "Empty Col.", Thing.Property.UI_SLIDER_EMPTY_COLOR, typeof(Color));
+				AddThingProperty(table, "Progress Col.", Thing.Property.GUI_SLIDER_PROGRESS_COLOR, typeof(Color));
+				AddThingProperty(table, "Empty Col.", Thing.Property.GUI_SLIDER_EMPTY_COLOR, typeof(Color));
 			}
 			void AddPropsList(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Buttons Tag", Thing.Property.UI_LIST_BUTTONS_TAG, typeof(string));
-				AddSpace(table);
-				AddThingProperty(table, "Visible Btn Count Max", Thing.Property.UI_LIST_VISIBLE_BUTTON_COUNT_MAX, typeof(int), labelSizeOffset: 2);
-				AddThingProperty(table, "Visible Btn Count Current", Thing.Property.UI_LIST_VISIBLE_BUTTON_COUNT_CURRENT,
+				AddThingProperty(table, "Visible Item Count Max", Thing.Property.GUI_LIST_VISIBLE_ITEM_COUNT_MAX, typeof(int), labelSizeOffset: 1);
+				AddThingProperty(table, "Visible Item Count Current", Thing.Property.GUI_LIST_VISIBLE_ITEM_COUNT_CURRENT,
 					typeof(int), labelSizeOffset: 0, readOnly: true);
 				AddSpace(table);
-				AddThingProperty(table, "Button Spacing", Thing.Property.UI_LIST_BUTTON_SPACING, typeof(float));
-				AddThingProperty(table, "Button Width", Thing.Property.UI_LIST_BUTTON_WIDTH, typeof(float));
-				AddThingProperty(table, "Button Height", Thing.Property.UI_LIST_BUTTON_HEIGHT, typeof(float), readOnly: true);
+				AddThingProperty(table, "Item Spacing", Thing.Property.GUI_LIST_ITEM_SPACING, typeof(float));
+				AddThingProperty(table, "Item Width", Thing.Property.GUI_LIST_ITEM_WIDTH, typeof(float));
+				AddThingProperty(table, "Item Height", Thing.Property.GUI_LIST_ITEM_HEIGHT, typeof(float), readOnly: true);
 			}
 			void AddPropsListDropdown(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Btn Show UID", Thing.Property.UI_LIST_DROPDOWN_BUTTON_SHOW_UID, typeof(string), labelSizeOffset: 2);
-				AddSpace(table);
-				AddThingProperty(table, "Selection Index", Thing.Property.UI_LIST_DROPDOWN_SELECTION_INDEX, typeof(int));
-				AddThingProperty(table, "Selection UID", Thing.Property.UI_LIST_DROPDOWN_SELECTION_UID, typeof(string), readOnly: true);
+				AddThingProperty(table, "Selection Index", Thing.Property.GUI_LIST_DROPDOWN_SELECTION_INDEX, typeof(int));
 			}
 			void AddPropsListCarousel(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Is Repeating", Thing.Property.UI_LIST_CAROUSEL_IS_REPEATING, typeof(bool));
+				AddThingProperty(table, "Is Repeating", Thing.Property.GUI_LIST_CAROUSEL_IS_REPEATING, typeof(bool));
 				AddSpace(table);
-				AddThingProperty(table, "Selection Index", Thing.Property.UI_LIST_CAROUSEL_SELECTION_INDEX, typeof(int));
-				AddThingProperty(table, "Selection UID", Thing.Property.UI_LIST_CAROUSEL_SELECTION_UID, typeof(string), readOnly: true);
+				AddThingProperty(table, "Selection Index", Thing.Property.GUI_LIST_CAROUSEL_SELECTION_INDEX, typeof(int));
 			}
 			void AddPropsListMultiselect(TableLayoutPanel table)
 			{
-				AddThingProperty(table, "Selection Indexes", Thing.Property.UI_LIST_MULTISELECT_SELECTION_INDEXES, typeof(ReadOnlyCollection<int>));
-				AddThingProperty(table, "Selection UIDs", Thing.Property.UI_LIST_MULTISELECT_SELECTION_UIDS, typeof(ReadOnlyCollection<string>));
+				AddThingProperty(table, "Selection Indexes", Thing.Property.GUI_LIST_MULTISELECT_SELECTION_INDEXES, typeof(ReadOnlyCollection<int>));
 			}
 
 			void AddSpace(TableLayoutPanel table)
@@ -1320,7 +1306,7 @@ namespace SMPLSceneEditor
 					case "ReadOnlyCollection<String>": ProcessList((ComboBox)control, (ReadOnlyCollection<string>)Thing.Get(uid, propName)); break;
 					case "ReadOnlyCollection<Int32>": ProcessList((ComboBox)control, (ReadOnlyCollection<int>)Thing.Get(uid, propName)); break;
 					case "BlendMode": ProcessEnumList((ComboBox)control, typeof(Thing.BlendMode), propName); break;
-					case "TextboxAlignment": ProcessEnumList((ComboBox)control, typeof(SMPL.UI.Thing.TextboxAlignment), propName); break;
+					case "TextboxAlignment": ProcessEnumList((ComboBox)control, typeof(Thing.GUI.TextboxAlignment), propName); break;
 					case "Styles": ProcessEnumFlagList((TextBox)control, typeof(Text.Styles)); break;
 					case "Effect": ProcessEnumList((ComboBox)control, typeof(Thing.Effect), propName); break;
 					case "AudioStatus": ProcessEnumList((ComboBox)control, typeof(Thing.AudioStatus), propName); break;
@@ -2364,19 +2350,16 @@ namespace SMPLSceneEditor
 
 		private void CreateUIButton()
 		{
-			var uid = Thing.UI.CreateButton("Button", null);
+			var uid = Thing.GUI.CreateButton("Button", null);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateUITextbox()
 		{
 			var font = GetFont("Create Textbox", "Textbox");
-			var camUID = GetInput("Create Textbox", "Provide the Textbox's Camera UID.", "Textbox-Camera", true);
-			if(string.IsNullOrWhiteSpace(camUID))
-				return;
 			var camRes = GetVector2("Create Textbox", "Provide the Textbox's Camera resolution.", 1, 2048, 1, 2048, new(200));
 			if(camRes == default)
 				return;
-			var uid = Thing.UI.CreateTextbox("Textbox", camUID, font, resolutionX: (uint)camRes.X, resolutionY: (uint)camRes.Y);
+			var uid = Thing.GUI.CreateTextbox("Textbox", font, resolutionX: (uint)camRes.X, resolutionY: (uint)camRes.Y);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateUITextButton()
@@ -2385,86 +2368,57 @@ namespace SMPLSceneEditor
 			var textUID = GetInput("Create TextButton", "Provide the TextButton's Text UID.", "Text", true);
 			if(string.IsNullOrWhiteSpace(textUID))
 				return;
-			var uid = Thing.UI.CreateTextButton("TextButton", textUID, null, font);
+			var uid = Thing.GUI.CreateTextButton("TextButton", textUID, null, font);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateUIInputbox()
 		{
 			var font = GetFont("Create Inputbox", "Inputbox");
-			var camUID = GetInput("Create Inputbox", "Provide the Inputbox's Camera UID.", "Inputbox-Camera");
-			if(string.IsNullOrWhiteSpace(camUID))
-				return;
-			var camRes = GetVector2("Create Inputbox", "Provide the Inputbox's Camera resolution.", 1, 2048, 1, 2048, new(300, 40));
+			var camRes = GetVector2("Create Inputbox", "Provide the Inputbox's resolution.", 1, 2048, 1, 2048, new(300, 40));
 			if(camRes == default)
 				return;
-			var uid = Thing.UI.CreateInputbox("Inputbox", camUID, font, resolutionX: (uint)camRes.X, resolutionY: (uint)camRes.Y);
+			var uid = Thing.GUI.CreateInputbox("Inputbox", font, resolutionX: (uint)camRes.X, resolutionY: (uint)camRes.Y);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateUICheckbox()
 		{
-			var uid = Thing.UI.CreateCheckbox("Checkbox", null);
+			var uid = Thing.GUI.CreateCheckbox("Checkbox", null);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateUIProgressBar()
 		{
-			var uid = Thing.UI.CreateProgressBar("ProgressBar", null);
+			var uid = Thing.GUI.CreateProgressBar("ProgressBar", null);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateUISlider()
 		{
-			var uid = Thing.UI.CreateSlider("Slider", null);
+			var uid = Thing.GUI.CreateSlider("Slider", null);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateUIScrollBar()
 		{
-			var btnUIDs = GetUpDownButtonUIDs("ScrollBar");
-			if(btnUIDs == null)
-				return;
-			var uid = Thing.UI.CreateScrollBar("ScrollBar", null, btnUIDs[0], btnUIDs[1]);
+			var uid = Thing.GUI.CreateScrollBar("ScrollBar", null);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateUIList()
 		{
-			var btnUIDs = GetUpDownButtonUIDs("List");
-			if(btnUIDs == null)
-				return;
-			var uid = Thing.UI.CreateList("List", null, btnUIDs[0], btnUIDs[1]);
+			var uid = Thing.GUI.CreateList("List", null);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateUIListCarousel()
 		{
-			var btnUIDs = GetUpDownButtonUIDs("ListCarousel");
-			if(btnUIDs == null)
-				return;
-			var uid = Thing.UI.CreateListCarousel("ListCarousel", null, btnUIDs[0], btnUIDs[1]);
+			var uid = Thing.GUI.CreateListCarousel("ListCarousel");
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateUIListMultiselect()
 		{
-			var btnUIDs = GetUpDownButtonUIDs("ListMultiselect");
-			if(btnUIDs == null)
-				return;
-			var uid = Thing.UI.CreateListMultiselect("ListMultiselect", null, btnUIDs[0], btnUIDs[1]);
+			var uid = Thing.GUI.CreateListMultiselect("ListMultiselect", null);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
 		}
 		private void CreateUIListDropdown()
 		{
-			var btnUIDs = GetUpDownButtonUIDs("ListDropdown");
-			if(btnUIDs == null)
-				return;
-			var showUID = GetInput("Create ListDropdown", $"Provide the ListDropdown's Show Button UID.", "ListDropdown-Show");
-			if(string.IsNullOrWhiteSpace(showUID))
-				return;
-			var uid = Thing.UI.CreateListDropdown("ListDropdown", null, btnUIDs[0], btnUIDs[1], showUID);
+			var uid = Thing.GUI.CreateListDropdown("ListDropdown", null);
 			Thing.Set(uid, Thing.Property.POSITION, createPosition);
-		}
-		private string[]? GetUpDownButtonUIDs(string name)
-		{
-			var btnUID1 = GetInput($"Create {name}", $"Provide the {name}'s Up Button UID.", $"{name}-Up");
-			if(string.IsNullOrWhiteSpace(btnUID1))
-				return default;
-			var btnUID2 = GetInput($"Create {name}", $"Provide the {name}'s Down Button UID.", $"{name}-Down");
-			return string.IsNullOrWhiteSpace(btnUID2) ? default : (new string[] { btnUID1, btnUID2 });
 		}
 
 		private void OnKeyDownObjectSearch(object sender, System.Windows.Forms.KeyEventArgs e)
@@ -2866,10 +2820,10 @@ namespace SMPLSceneEditor
 				var index = list.SelectedIndex;
 				Thing.Set(selectedUIDs[0], Thing.Property.TEXT_STYLE, (Text.Styles)(index * 2));
 			}
-			else if(list.Name == $"Prop{Thing.Property.UI_TEXTBOX_ALIGNMENT}")
+			else if(list.Name == $"Prop{Thing.Property.GUI_TEXTBOX_ALIGNMENT}")
 			{
 				var index = list.SelectedIndex;
-				Thing.Set(selectedUIDs[0], Thing.Property.UI_TEXTBOX_ALIGNMENT, (SMPL.UI.Thing.TextboxAlignment)index);
+				Thing.Set(selectedUIDs[0], Thing.Property.GUI_TEXTBOX_ALIGNMENT, (Thing.GUI.TextboxAlignment)index);
 			}
 			else if(list.Name == $"Prop{Thing.Property.AUDIO_STATUS}")
 			{
