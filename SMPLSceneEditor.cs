@@ -979,7 +979,7 @@ namespace SMPLSceneEditor
 						tileWindow.Clear(bgCol);
 
 						var mousePos = Mouse.GetPosition();
-						var indexPos = (tileWindow.MapPixelToCoords(Mouse.GetPosition(tileWindow), view).ToSystem()).PointToGrid(tileSz + tileGap).ToSFML();
+						var indexPos = (tileWindow.MapPixelToCoords(Mouse.GetPosition(tileWindow), view).ToSystem()).ToGrid(tileSz + tileGap).ToSFML();
 						var hoveredIndexes = (indexPos.ToSystem() / (tileSz + tileGap));
 						tilePaletteHoveredIndexes = $"X:{hoveredIndexes.X} Y:{hoveredIndexes.Y}";
 
@@ -1022,7 +1022,7 @@ namespace SMPLSceneEditor
 					zoom += zoom * 0.05f * way;
 					zoom = zoom.Limit(0.05f, 3f);
 					var pos = view.Center.ToSystem();
-					view.Center = pos.PointPercentTowardPoint(tileWindow.MapPixelToCoords(Mouse.GetPosition(tileWindow), view).ToSystem(), new(5)).ToSFML();
+					view.Center = pos.PercentToTarget(tileWindow.MapPixelToCoords(Mouse.GetPosition(tileWindow), view).ToSystem(), new(5)).ToSFML();
 				}
 			}
 			void OnPaintTileCheck(object? sender, EventArgs e)
@@ -1392,7 +1392,7 @@ namespace SMPLSceneEditor
 
 		private void TryDrawAllNonVisuals()
 		{
-			var uids = Thing.GetUIDs();
+			var uids = Thing.UIDs;
 			for(int i = 0; i < uids.Count; i++)
 			{
 				var uid = uids[i];
@@ -1431,7 +1431,7 @@ namespace SMPLSceneEditor
 		{
 			var gridSpacing = GetGridSpacing();
 			var mousePos = GetMousePosition();
-			var inGrid = mousePos.PointToGrid(new(gridSpacing)) + new Vector2(gridSpacing) * 0.5f;
+			var inGrid = mousePos.ToGrid(new(gridSpacing)) + new Vector2(gridSpacing) * 0.5f;
 			sceneValues.Text =
 				$"FPS [{SMPL.Tools.Time.FPS:F0}]\n" +
 				$"Cursor [{(int)mousePos.X} {(int)mousePos.Y}]\n" +
@@ -1456,29 +1456,29 @@ namespace SMPLSceneEditor
 			{
 				var x = viewPos.X - sz.X * 2 + i;
 				var y = viewPos.Y;
-				var top = new Vector2(x, y - sz.Y * 2).PointToGrid(new(spacing));
-				var bot = new Vector2(x, y + sz.Y * 2).PointToGrid(new(spacing));
+				var top = new Vector2(x, y - sz.Y * 2).ToGrid(new(spacing));
+				var bot = new Vector2(x, y + sz.Y * 2).ToGrid(new(spacing));
 				var col = GetColor(top.X);
 				var verts = GetVertexArray(top.X);
 
-				verts.Append(new(top.PointMoveAtAngle(180, thickness, false).ToSFML(), col));
-				verts.Append(new(top.PointMoveAtAngle(0, thickness, false).ToSFML(), col));
-				verts.Append(new(bot.PointMoveAtAngle(0, thickness, false).ToSFML(), col));
-				verts.Append(new(bot.PointMoveAtAngle(180, thickness, false).ToSFML(), col));
+				verts.Append(new(top.MoveAtAngle(180, thickness, false).ToSFML(), col));
+				verts.Append(new(top.MoveAtAngle(0, thickness, false).ToSFML(), col));
+				verts.Append(new(bot.MoveAtAngle(0, thickness, false).ToSFML(), col));
+				verts.Append(new(bot.MoveAtAngle(180, thickness, false).ToSFML(), col));
 			}
 			for(float i = 0; i <= sz.Y * 4; i += spacing)
 			{
 				var x = viewPos.X;
 				var y = viewPos.Y - sz.Y * 2 + i;
-				var left = new Vector2(x - sz.X * 2, y).PointToGrid(new(spacing));
-				var right = new Vector2(x + sz.X * 2, y).PointToGrid(new(spacing));
+				var left = new Vector2(x - sz.X * 2, y).ToGrid(new(spacing));
+				var right = new Vector2(x + sz.X * 2, y).ToGrid(new(spacing));
 				var col = GetColor(left.Y);
 				var verts = GetVertexArray(left.Y);
 
-				verts.Append(new(left.PointMoveAtAngle(270, thickness, false).ToSFML(), col));
-				verts.Append(new(left.PointMoveAtAngle(90, thickness, false).ToSFML(), col));
-				verts.Append(new(right.PointMoveAtAngle(90, thickness, false).ToSFML(), col));
-				verts.Append(new(right.PointMoveAtAngle(270, thickness, false).ToSFML(), col));
+				verts.Append(new(left.MoveAtAngle(270, thickness, false).ToSFML(), col));
+				verts.Append(new(left.MoveAtAngle(90, thickness, false).ToSFML(), col));
+				verts.Append(new(right.MoveAtAngle(90, thickness, false).ToSFML(), col));
+				verts.Append(new(right.MoveAtAngle(270, thickness, false).ToSFML(), col));
 			}
 
 			window.Draw(cellVerts);
@@ -1615,17 +1615,17 @@ namespace SMPLSceneEditor
 			for(int j = 0; j < lines.Count; j++)
 			{
 				if(ptsA.Contains(j) == false)
-					lines[j].A.DrawPoint(window, hitboxDeselectedCol, sz);
+					lines[j].A.Draw(window, hitboxDeselectedCol, sz);
 				if(ptsB.Contains(j) == false)
-					lines[j].B.DrawPoint(window, hitboxDeselectedCol, sz);
+					lines[j].B.Draw(window, hitboxDeselectedCol, sz);
 			}
 			// always draw selected points on top
 			for(int j = 0; j < lines.Count; j++)
 			{
 				if(ptsA.Contains(j))
-					lines[j].A.DrawPoint(window, hitboxSelectCol, sz);
+					lines[j].A.Draw(window, hitboxSelectCol, sz);
 				if(ptsB.Contains(j))
-					lines[j].B.DrawPoint(window, hitboxSelectCol, sz);
+					lines[j].B.Draw(window, hitboxSelectCol, sz);
 			}
 
 			void DrawBoundingBox(Hitbox? boundingBox, bool unselect = false)
@@ -1654,7 +1654,7 @@ namespace SMPLSceneEditor
 				for(int i = 0; i < selectedUIDs.Count; i++)
 				{
 					var pos = (Vector2)Thing.Get(selectedUIDs[i], Thing.Property.POSITION);
-					pos.DrawPoint(window, Color.Red, sceneSc * 4);
+					pos.Draw(window, Color.Red, sceneSc * 4);
 				}
 
 				window.Draw(fill, PrimitiveType.Quads);
@@ -1724,8 +1724,8 @@ namespace SMPLSceneEditor
 			SetViewPosition((Vector2)Thing.Get(uid, Thing.Property.POSITION));
 
 			var bb = (Hitbox)Thing.Get(uid, Thing.Property.BOUNDING_BOX);
-			var dist1 = bb.Lines[0].A.DistanceBetweenPoints(bb.Lines[0].B);
-			var dist2 = bb.Lines[1].A.DistanceBetweenPoints(bb.Lines[1].B);
+			var dist1 = bb.Lines[0].A.Distance(bb.Lines[0].B);
+			var dist2 = bb.Lines[1].A.Distance(bb.Lines[1].B);
 			var scale = (dist1 > dist2 ? dist1 : dist2) / window.Size.X * 2f;
 			SetViewScale(scale + 0.5f);
 		}
@@ -2005,10 +2005,10 @@ namespace SMPLSceneEditor
 
 			var mousePos = GetMousePosition();
 			var rawMousePos = Mouse.GetPosition(window);
-			var uids = Thing.GetUIDs();
+			var uids = Thing.UIDs;
 			var dragSelHitbox = GetDragSelectionHitbox();
 			var clickedUIDs = new List<string>();
-			var dist = selectStartPos.DistanceBetweenPoints(new(rawMousePos.X, rawMousePos.Y));
+			var dist = selectStartPos.Distance(new(rawMousePos.X, rawMousePos.Y));
 			var ctrl = Keyboard.IsKeyPressed(Keyboard.Key.LControl);
 			var alt = Keyboard.IsKeyPressed(Keyboard.Key.LAlt);
 			var drag = left && dist > sceneSc * 5f;
@@ -2027,12 +2027,12 @@ namespace SMPLSceneEditor
 					var pointSelectDist = sceneSc * HITBOX_POINT_EDIT_MAX_DIST * 0.75f;
 					for(int i = 0; i < hitbox.Lines.Count; i++)
 					{
-						if(mousePos.DistanceBetweenPoints(hitbox.Lines[i].A) < pointSelectDist)
+						if(mousePos.Distance(hitbox.Lines[i].A) < pointSelectDist)
 						{
 							SelectHitboxPointIndexA(i);
 							break; // prevents multi selection with click (the only way to separate overlapping points)
 						}
-						else if(mousePos.DistanceBetweenPoints(hitbox.Lines[i].B) < pointSelectDist)
+						else if(mousePos.Distance(hitbox.Lines[i].B) < pointSelectDist)
 						{
 							SelectHitboxPointIndexB(i);
 							break; // prevents multi selection with click (the only way to separate overlapping points)
@@ -2156,12 +2156,12 @@ namespace SMPLSceneEditor
 			for(int i = 0; i < selectedUIDs.Count; i++)
 			{
 				var uid = selectedUIDs[i];
-				var dupUID = Thing.GetFreeUID(uid);
+				var dupUID = Thing.FreeUID(uid);
 				var pos = (Vector2)Thing.Get(uid, Thing.Property.POSITION);
 				var sc = (float)Thing.Get(uid, Thing.Property.SCALE);
 
 				Thing.Duplicate(uid, dupUID);
-				Thing.Set(dupUID, Thing.Property.POSITION, pos.PointMoveAtAngle(45, sc * 20, false));
+				Thing.Set(dupUID, Thing.Property.POSITION, pos.MoveAtAngle(45, sc * 20, false));
 			}
 			DeselectAll();
 		}
@@ -2263,8 +2263,8 @@ namespace SMPLSceneEditor
 
 			for(int i = 0; i < 8; i++)
 			{
-				var p = createPosition.PointMoveAtAngle(angStep * i, radius, false);
-				var p1 = createPosition.PointMoveAtAngle(angStep * (i - 1), radius, false);
+				var p = createPosition.MoveAtAngle(angStep * i, radius, false);
+				var p1 = createPosition.MoveAtAngle(angStep * (i - 1), radius, false);
 				lines.Add(new(p, p1));
 			}
 			AddHitboxLine(uid, lines);
@@ -2429,7 +2429,7 @@ namespace SMPLSceneEditor
 
 			var prio = 0;
 			var bestGuess = default(string);
-			var uids = Thing.GetUIDs();
+			var uids = Thing.UIDs;
 
 			for(int i = 0; i < uids.Count; i++)
 			{
@@ -2493,7 +2493,7 @@ namespace SMPLSceneEditor
 			var delta = e.Delta > 0 ? -0.05f : 0.05f;
 			var pos = window.GetView().Center.ToSystem();
 			var mousePos = GetMousePosition();
-			var dist = pos.DistanceBetweenPoints(mousePos);
+			var dist = pos.Distance(mousePos);
 			var editingHitbox = editHitbox != null && editHitbox.Checked;
 			var ptsA = selectedHitboxPointIndexesA;
 			var ptsB = selectedHitboxPointIndexesB;
@@ -2503,7 +2503,7 @@ namespace SMPLSceneEditor
 			{
 				if(delta < 0)
 				{
-					pos = pos.PointPercentTowardPoint(mousePos, new(5));
+					pos = pos.PercentToTarget(mousePos, new(5));
 					SetViewPosition(pos);
 				}
 				SetViewScale(sceneSc + delta);
@@ -2599,9 +2599,9 @@ namespace SMPLSceneEditor
 								if(i == index) // shouldn't be the same line
 									continue;
 
-								if(hitbox.LocalLines[i].A.DistanceBetweenPoints(draggedPos) < snapValue)
+								if(hitbox.LocalLines[i].A.Distance(draggedPos) < snapValue)
 									return hitbox.LocalLines[i].A;
-								else if(hitbox.LocalLines[i].B.DistanceBetweenPoints(draggedPos) < snapValue)
+								else if(hitbox.LocalLines[i].B.Distance(draggedPos) < snapValue)
 									return hitbox.LocalLines[i].B;
 							}
 							return draggedPos;
@@ -2610,7 +2610,7 @@ namespace SMPLSceneEditor
 					else if(editIndex == 1)
 					{
 						var thingPos = (Vector2)Thing.Get(uid, Thing.Property.POSITION);
-						var a = thingPos.AngleBetweenPoints(GetMousePosition());
+						var a = thingPos.Angle(GetMousePosition());
 						var ang = DragAngle(thingPos, a);
 
 						for(int i = 0; i < ptsA.Count; i++)
@@ -2618,7 +2618,7 @@ namespace SMPLSceneEditor
 							var line = hitbox.LocalLines[ptsA[i]];
 							var matrix =
 								Matrix3x2.CreateTranslation(line.A) *
-								Matrix3x2.CreateRotation((ang - a).DegreesToRadians());
+								Matrix3x2.CreateRotation((ang - a).ToRadians());
 
 							hitbox.LocalLines[ptsA[i]] = new(matrix.Translation, line.B);
 						}
@@ -2627,7 +2627,7 @@ namespace SMPLSceneEditor
 							var line = hitbox.LocalLines[ptsB[i]];
 							var matrix =
 								Matrix3x2.CreateTranslation(line.B) *
-								Matrix3x2.CreateRotation((ang - a).DegreesToRadians());
+								Matrix3x2.CreateRotation((ang - a).ToRadians());
 
 							hitbox.LocalLines[ptsB[i]] = new(line.A, matrix.Translation);
 						}
@@ -2654,7 +2654,7 @@ namespace SMPLSceneEditor
 			var gridSp = new Vector2((float)snap.Value);
 			prevFormsMousePos = GetFormsMousePos();
 			prevMousePos = GetMousePosition();
-			prevFormsMousePosGrid = prevFormsMousePos.PointToGrid(gridSp) + gridSp * 0.5f;
+			prevFormsMousePosGrid = prevFormsMousePos.ToGrid(gridSp) + gridSp * 0.5f;
 
 			TryPaintTile();
 		}
@@ -3190,21 +3190,21 @@ namespace SMPLSceneEditor
 			var gridSp = new Vector2((float)snap.Value);
 
 			if(snapToGrid)
-				pos = pos.PointToGrid(gridSp) + gridSp * 0.5f;
+				pos = pos.ToGrid(gridSp) + gridSp * 0.5f;
 
-			var dist = prev.DistanceBetweenPoints(pos);
-			var ang = prev.AngleBetweenPoints(pos);
+			var dist = prev.Distance(pos);
+			var ang = prev.Angle(pos);
 
 			if(reverse)
 				dist *= -1;
 
-			return dist == 0 ? point : point.PointMoveAtAngle(view.Rotation + ang, dist / scale, false);
+			return dist == 0 ? point : point.MoveAtAngle(view.Rotation + ang, dist / scale, false);
 		}
 		private float DragAngle(Vector2 point, float angle, bool reverse = false)
 		{
 			var snapValue = (float)snap.Value;
-			var curAng = point.AngleBetweenPoints(GetMousePosition());
-			var prevAng = point.AngleBetweenPoints(prevMousePos);
+			var curAng = point.Angle(GetMousePosition());
+			var prevAng = point.Angle(prevMousePos);
 			curAng = AngToGrid(curAng, snapValue);
 			prevAng = AngToGrid(prevAng, snapValue);
 			var delta = curAng - prevAng;
@@ -3213,7 +3213,7 @@ namespace SMPLSceneEditor
 
 		private static float AngToGrid(float ang, float gridSz)
 		{
-			return new Vector2(ang).PointToGrid(new(gridSz)).X;
+			return new Vector2(ang).ToGrid(new(gridSz)).X;
 		}
 		private void Loading(string description = "")
 		{
@@ -3524,7 +3524,7 @@ namespace SMPLSceneEditor
 		}
 		private void PickThing(Control button, Control? result, string property = "")
 		{
-			var uids = Thing.GetUIDs();
+			var uids = Thing.UIDs;
 
 			thingsList.MaximumSize = new(thingsList.MaximumSize.Width, 300);
 			thingsList.Items.Clear();
