@@ -347,12 +347,12 @@ namespace SMPLSceneEditor
 				void Pin(object? sender, EventArgs e)
 				{
 					var index = GetVector2("Add Pin", "Provide the indexes to be pinned.", 0, int.MaxValue, 0, int.MaxValue);
-					Thing.CallVoid(selectedUIDs[0], Thing.Method.CLOTH_PIN, index, true);
+					Thing.Do(selectedUIDs[0], Thing.Method.CLOTH_PIN, index, true);
 				}
 				void Unpin(object? sender, EventArgs e)
 				{
 					var index = GetVector2("Remove Pin", "Provide the indexes to be unpinned.", 0, int.MaxValue, 0, int.MaxValue);
-					Thing.CallVoid(selectedUIDs[0], Thing.Method.CLOTH_PIN, index, false);
+					Thing.Do(selectedUIDs[0], Thing.Method.CLOTH_PIN, index, false);
 				}
 			}
 			void AddPropsPseudo3D(TableLayoutPanel table)
@@ -702,7 +702,7 @@ namespace SMPLSceneEditor
 				}
 
 				var uid = selectedUIDs[0];
-				var col = (Color)Thing.Get(uid, propName);
+				var col = Thing.Get<Color>(uid, propName);
 
 				Thing.Set(uid, propName, new Color(c.R, c.G, c.B, col.A));
 				UpdateThingPanel();
@@ -742,16 +742,16 @@ namespace SMPLSceneEditor
 			}
 			void EditTextList(object? sender, EventArgs e)
 			{
-				EditList("Edit List", (List<string>)Thing.Get(selectedUIDs[0], propName), thingList, uniqueList);
+				EditList("Edit List", Thing.Get<List<string>>(selectedUIDs[0], propName), thingList, uniqueList);
 				UpdateThingPanel();
 			}
 			void SetUniform(object? sender, EventArgs e)
 			{
 				var uid = selectedUIDs[0];
-				var effect = (Thing.Effect)Thing.Get(uid, Thing.Property.VISUAL_EFFECT);
+				var effect = Thing.Get<Thing.Effect>(uid, Thing.Property.VISUAL_EFFECT);
 				if(effect == Thing.Effect.None)
 					return;
-				var code = (Thing.CodeGLSL)Thing.CallGet(selectedUIDs[0], "GetEffectCode", effect);
+				var code = Thing.DoGet<Thing.CodeGLSL>(selectedUIDs[0], "GetEffectCode", effect);
 				var frag = string.IsNullOrWhiteSpace(code.FragmentUniforms) ? "" : $"- Fragment Uniforms:{code.FragmentUniforms}";
 				var vert = string.IsNullOrWhiteSpace(code.VertexUniforms) ? "" : $"- Vertex Uniforms:{code.VertexUniforms}";
 
@@ -771,27 +771,27 @@ namespace SMPLSceneEditor
 
 				var a = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 				if(a[1] == "true")
-					Thing.CallVoid(uid, Thing.Method.VISUAL_SET_EFFECT_BOOL, a[0], true);
+					Thing.Do(uid, Thing.Method.VISUAL_SET_EFFECT_BOOL, a[0], true);
 				else if(a[1] == "false")
-					Thing.CallVoid(uid, Thing.Method.VISUAL_SET_EFFECT_BOOL, a[0], false);
+					Thing.Do(uid, Thing.Method.VISUAL_SET_EFFECT_BOOL, a[0], false);
 				else if(a.Length == 2 && a[1].IsNumber())
 				{
 					var n = a[1].ToNumber();
-					Thing.CallVoid(uid, Thing.Method.VISUAL_SET_EFFECT_FLOAT, a[0], n);
-					Thing.CallVoid(uid, Thing.Method.VISUAL_SET_EFFECT_INT, a[0], (int)n);
+					Thing.Do(uid, Thing.Method.VISUAL_SET_EFFECT_FLOAT, a[0], n);
+					Thing.Do(uid, Thing.Method.VISUAL_SET_EFFECT_INT, a[0], (int)n);
 				}
 				else if(a.Length == 3 && a[1].IsNumber() && a[2].IsNumber())
-					Thing.CallVoid(uid, Thing.Method.VISUAL_SET_EFFECT_VECTOR2, a[0], new Vector2(a[1].ToNumber(), a[2].ToNumber()));
+					Thing.Do(uid, Thing.Method.VISUAL_SET_EFFECT_VECTOR2, a[0], new Vector2(a[1].ToNumber(), a[2].ToNumber()));
 				else if(a.Length == 4 && a[1].IsNumber() && a[2].IsNumber() && a[3].IsNumber())
-					Thing.CallVoid(uid, Thing.Method.VISUAL_SET_EFFECT_VECTOR3, a[0], new Vector3(a[1].ToNumber(), a[2].ToNumber(), a[3].ToNumber()));
+					Thing.Do(uid, Thing.Method.VISUAL_SET_EFFECT_VECTOR3, a[0], new Vector3(a[1].ToNumber(), a[2].ToNumber(), a[3].ToNumber()));
 				else if(a.Length == 5 && a[1].IsNumber() && a[2].IsNumber() && a[3].IsNumber() && a[4].IsNumber())
-					Thing.CallVoid(uid, Thing.Method.VISUAL_SET_EFFECT_VECTOR4, a[0], new Vector4(a[1].ToNumber(), a[2].ToNumber(), a[3].ToNumber(), a[4].ToNumber()));
+					Thing.Do(uid, Thing.Method.VISUAL_SET_EFFECT_VECTOR4, a[0], new Vector4(a[1].ToNumber(), a[2].ToNumber(), a[3].ToNumber(), a[4].ToNumber()));
 				else
 					MessageBox.Show(this, $"The {effect} uniform was not set due to invalid input.", $"Set {effect} Uniform Failed");
 			}
 			void EditTilePalette(object? sender, EventArgs e)
 			{
-				var palette = (Dictionary<string, Thing.Tile>)Thing.Get(selectedUIDs[0], Thing.Property.TILEMAP_TILE_PALETTE);
+				var palette = Thing.Get<Dictionary<string, Thing.Tile>>(selectedUIDs[0], Thing.Property.TILEMAP_TILE_PALETTE);
 				var sz = new Vector2i(W + 120, H + 375);
 				var window = new Form()
 				{
@@ -859,8 +859,8 @@ namespace SMPLSceneEditor
 				var view = tileWindow.GetView();
 				var zoom = 1f;
 				var windowSize = new Vector2(tileWindow.Size.X, tileWindow.Size.Y);
-				var tileSz = (Vector2)Thing.Get(selectedUIDs[0], Thing.Property.TILEMAP_TILE_SIZE);
-				var tileGap = (Vector2)Thing.Get(selectedUIDs[0], Thing.Property.TILEMAP_TILE_GAP);
+				var tileSz = Thing.Get<Vector2>(selectedUIDs[0], Thing.Property.TILEMAP_TILE_SIZE);
+				var tileGap = Thing.Get<Vector2>(selectedUIDs[0], Thing.Property.TILEMAP_TILE_GAP);
 
 				tilePaletteHoveredIndexesLabel.AutoSize = true;
 				tilePaletteHoveredIndexesLabel.Dock = DockStyle.Right;
@@ -959,7 +959,7 @@ namespace SMPLSceneEditor
 
 				void UpdateWindow()
 				{
-					var path = (string)Thing.Get(selectedUIDs[0], Thing.Property.VISUAL_TEXTURE_PATH);
+					var path = Thing.Get<string>(selectedUIDs[0], Thing.Property.VISUAL_TEXTURE_PATH);
 					if(path == null)
 						return;
 
@@ -1030,7 +1030,7 @@ namespace SMPLSceneEditor
 				if(selectedUIDs.Count == 0)
 					return;
 
-				var palette = (Dictionary<string, Thing.Tile>)Thing.Get(selectedUIDs[0], "TilePalette");
+				var palette = Thing.Get<Dictionary<string, Thing.Tile>>(selectedUIDs[0], "TilePalette");
 				if(paintTile.Checked && palette.Count == 0)
 					MessageBox.Show(this, "The Tile Palette is empty. Add tiles before painting.", "Paint Tile");
 			}
@@ -1089,7 +1089,7 @@ namespace SMPLSceneEditor
 				var texCoordUnitA = table.Controls[4];
 				var texCoordUnitB = table.Controls[6];
 
-				var cubeSide = (Thing.CubeSide)Thing.Get(selectedUIDs[0], propName);
+				var cubeSide = Thing.Get<Thing.CubeSide>(selectedUIDs[0], propName);
 
 				cubeSideTexPath = tex;
 
@@ -1115,7 +1115,7 @@ namespace SMPLSceneEditor
 				if(selectedUIDs.Count == 0)
 					return;
 
-				var value = (string)Thing.Get(selectedUIDs[0], propName);
+				var value = Thing.Get<string>(selectedUIDs[0], propName);
 				var sz = new Vector2i(W, H + 100);
 				var window = new Form()
 				{
@@ -1281,7 +1281,7 @@ namespace SMPLSceneEditor
 				return;
 
 			var uid = selectedUIDs[0];
-			var props = Thing.Info.GetProperties(uid);
+			var props = Thing.Property.GetAllFrom(uid);
 
 			for(int i = 0; i < props.Count; i++)
 			{
@@ -1296,61 +1296,56 @@ namespace SMPLSceneEditor
 				var control = c[0];
 				var readOnly = props[i].HasSetter == false;
 
-				switch(type)
+				if(type == typeof(string)) SetText((TextBox)control, Get<string>(), readOnly);
+				else if(type == typeof(int)) SetControlNumber((NumericUpDown)control, Get<int>(), readOnly);
+				else if(type == typeof(bool)) SetTick((CheckBox)control, Get<bool>(), readOnly);
+				else if(type == typeof(float)) SetControlNumber((NumericUpDown)control, Get<float>(), readOnly);
+				else if(type == typeof(List<string>)) ProcessList((ComboBox)control, Get<List<string>>());
+				else if(type == typeof(ReadOnlyCollection<string>)) ProcessList((ComboBox)control, Get<ReadOnlyCollection<string>>());
+				else if(type == typeof(ReadOnlyCollection<int>)) ProcessList((ComboBox)control, Get<ReadOnlyCollection<int>>());
+				else if(type == typeof(BlendMode)) ProcessEnumList<BlendMode>((ComboBox)control, typeof(BlendMode), propName);
+				else if(type == typeof(Thing.GUI.TextboxAlignment))
+					ProcessEnumList<Thing.GUI.TextboxAlignment>((ComboBox)control, typeof(Thing.GUI.TextboxAlignment), propName);
+				else if(type == typeof(Text.Styles)) ProcessEnumFlagList((TextBox)control, typeof(Text.Styles));
+				else if(type == typeof(Thing.Effect)) ProcessEnumList<Thing.Effect>((ComboBox)control, typeof(Thing.Effect), propName);
+				else if(type == typeof(Thing.AudioStatus)) ProcessEnumList<Thing.AudioStatus>((ComboBox)control, typeof(Thing.AudioStatus), propName);
+				else if(type == typeof(Hitbox)) SetText((TextBox)control, $"{Get<Hitbox>().Lines.Count} Lines", readOnly);
+				else if(type == typeof(Thing.CubeSide))
 				{
-					case "String": SetText((TextBox)control, (string)Get(), readOnly); break;
-					case "Int32": SetControlNumber((NumericUpDown)control, (int)Get(), readOnly); break;
-					case "Boolean": SetTick((CheckBox)control, (bool)Get(), readOnly); break;
-					case "Single": SetControlNumber((NumericUpDown)control, (float)Get(), readOnly); break;
-					case "List<String>": ProcessList((ComboBox)control, (List<string>)Thing.Get(uid, propName)); break;
-					case "ReadOnlyCollection<String>": ProcessList((ComboBox)control, (ReadOnlyCollection<string>)Thing.Get(uid, propName)); break;
-					case "ReadOnlyCollection<Int32>": ProcessList((ComboBox)control, (ReadOnlyCollection<int>)Thing.Get(uid, propName)); break;
-					case "BlendMode": ProcessEnumList((ComboBox)control, typeof(Thing.BlendMode), propName); break;
-					case "TextboxAlignment": ProcessEnumList((ComboBox)control, typeof(Thing.GUI.TextboxAlignment), propName); break;
-					case "Styles": ProcessEnumFlagList((TextBox)control, typeof(Text.Styles)); break;
-					case "Effect": ProcessEnumList((ComboBox)control, typeof(Thing.Effect), propName); break;
-					case "AudioStatus": ProcessEnumList((ComboBox)control, typeof(Thing.AudioStatus), propName); break;
-					case "Hitbox": SetText((TextBox)control, $"{((Hitbox)Thing.Get(uid, propName)).Lines.Count} Lines", readOnly); break;
-					case "CubeSide":
-						{
-							var cubeSide = (Thing.CubeSide)Thing.Get(uid, propName);
-							var texPath = string.IsNullOrWhiteSpace(cubeSide.TexturePath) ?
-								(string)Thing.Get(uid, Thing.Property.VISUAL_TEXTURE_PATH) : cubeSide.TexturePath;
-							SetText((TextBox)control, $"{texPath}", true);
-							break;
-						}
-					case "Dictionary<String, Tile>":
-						{
-							var prevIndex = ((ComboBox)control).SelectedIndex;
-							var palette = (Dictionary<string, Thing.Tile>)Thing.Get(uid, Thing.Property.TILEMAP_TILE_PALETTE);
-							ProcessList((ComboBox)control, palette.Keys);
-							((ComboBox)control).SelectedIndex = prevIndex == -1 && palette.Count > 0 ? 0 : prevIndex;
-							break;
-						}
-					case "Vector2":
-						{
-							var table = (TableLayoutPanel)control;
-							var vec = (Vector2)Get();
-							SetControlNumber((NumericUpDown)table.Controls[0], vec.X);
-							SetControlNumber((NumericUpDown)table.Controls[1], vec.Y);
-							break;
-						}
-					case "Color":
-						{
-							var table = (TableLayoutPanel)control;
-							var col = (Color)Get();
-							SetControlNumber((NumericUpDown)table.Controls[0], col.R);
-							SetControlNumber((NumericUpDown)table.Controls[1], col.G);
-							SetControlNumber((NumericUpDown)table.Controls[2], col.B);
-							SetControlNumber((NumericUpDown)table.Controls[3], col.A);
-							control.BackColor = System.Drawing.Color.FromArgb(255, col.R, col.G, col.B);
-							break;
-						}
+					var cubeSide = Get<Thing.CubeSide>();
+					var texPath = string.IsNullOrWhiteSpace(cubeSide.TexturePath) ?
+						Thing.Get<string>(uid, Thing.Property.VISUAL_TEXTURE_PATH) : cubeSide.TexturePath;
+					SetText((TextBox)control, texPath, true);
 				}
-				object Get() => Thing.Get(uid, propName);
+				else if(type == typeof(Dictionary<string, Thing.Tile>))
+				{
+					var prevIndex = ((ComboBox)control).SelectedIndex;
+					var palette = Thing.Get<Dictionary<string, Thing.Tile>>(uid, Thing.Property.TILEMAP_TILE_PALETTE);
+					ProcessList((ComboBox)control, palette.Keys);
+					((ComboBox)control).SelectedIndex = prevIndex == -1 && palette.Count > 0 ? 0 : prevIndex;
+				}
+				else if(type == typeof(Vector2))
+				{
+					var table = (TableLayoutPanel)control;
+					var vec = Get<Vector2>();
+					SetControlNumber((NumericUpDown)table.Controls[0], vec.X);
+					SetControlNumber((NumericUpDown)table.Controls[1], vec.Y);
+				}
+				else if(type == typeof(Color))
+				{
+					var table = (TableLayoutPanel)control;
+					var col = Get<Color>();
+					SetControlNumber((NumericUpDown)table.Controls[0], col.R);
+					SetControlNumber((NumericUpDown)table.Controls[1], col.G);
+					SetControlNumber((NumericUpDown)table.Controls[2], col.B);
+					SetControlNumber((NumericUpDown)table.Controls[3], col.A);
+					control.BackColor = System.Drawing.Color.FromArgb(255, col.R, col.G, col.B);
+				}
+
+				T Get<T>() => Thing.Get<T>(uid, propName);
 			}
 
-			void ProcessEnumList(ComboBox list, Type enumType, string propName)
+			void ProcessEnumList<T>(ComboBox list, Type enumType, string propName)
 			{
 				if(enumType.IsEnum == false)
 					return;
@@ -1360,7 +1355,8 @@ namespace SMPLSceneEditor
 				for(int i = 0; i < names.Length; i++)
 					list.Items.Add(names[i]);
 
-				list.SelectedIndex = (int)Thing.Get(uid, propName);
+				var value = Convert.ChangeType(Thing.Get<T>(uid, propName), typeof(int));
+				list.SelectedIndex = value != null ? (int)value : 0;
 			}
 			void ProcessEnumFlagList(TextBox count, Type enumType)
 			{
@@ -1396,13 +1392,13 @@ namespace SMPLSceneEditor
 			for(int i = 0; i < uids.Count; i++)
 			{
 				var uid = uids[i];
-				var type = ((ReadOnlyCollection<string>)Thing.Get(uid, Thing.Property.TYPES))[0];
+				var type = Thing.Get<ReadOnlyCollection<string>>(uid, Thing.Property.TYPES)[0];
 
 				if(typeColors.ContainsKey(type) == false ||
 					(type == "Tilemap" && paintTile != null && paintTile.Checked))
 					continue;
 
-				var boundingBox = (Hitbox)Thing.Get(uid, Thing.Property.BOUNDING_BOX);
+				var boundingBox = Thing.Get<Hitbox>(uid, Thing.Property.BOUNDING_BOX);
 				boundingBox.Draw(window, typeColors[type], sceneSc * 4);
 			}
 		}
@@ -1504,23 +1500,23 @@ namespace SMPLSceneEditor
 				return;
 
 			var uid = selectedUIDs[0];
-			var tileIndecies = Thing.CallGet(uid, Thing.Method.TILEMAP_GET_TILE_INDEXES, GetMousePosition());
-			var startRightTileInd = Thing.CallGet(uid, Thing.Method.TILEMAP_GET_TILE_INDEXES, tilePaintRightClickPos);
+			var tileIndecies = Thing.DoGet<Vector2>(uid, Thing.Method.TILEMAP_TILE_INDEXES, GetMousePosition());
+			var startRightTileInd = Thing.DoGet<Vector2>(uid, Thing.Method.TILEMAP_TILE_INDEXES, tilePaintRightClickPos);
 			var alt = IsKeyPressed(Key.LAlt);
 
 			if(Mouse.IsButtonPressed(Mouse.Button.Left))
 			{
 				if(alt)
-					Thing.CallVoid(uid, Thing.Method.TILEMAP_REMOVE_TILES, tileIndecies);
+					Thing.Do(uid, Thing.Method.TILEMAP_REMOVE_TILES, tileIndecies);
 				else
-					Thing.CallVoid(uid, Thing.Method.TILEMAP_SET_TILE, tileIndecies, tilePaletteUID);
+					Thing.Do(uid, Thing.Method.TILEMAP_SET_TILE, tileIndecies, tilePaletteUID);
 			}
 			else if(Mouse.IsButtonPressed(Mouse.Button.Right) && tilePaintRightClickPos.IsNaN() == false)
 			{
 				if(alt)
-					Thing.CallVoid(uid, Thing.Method.TILEMAP_REMOVE_TILE_SQUARE, startRightTileInd, tileIndecies);
+					Thing.Do(uid, Thing.Method.TILEMAP_REMOVE_TILE_SQUARE, startRightTileInd, tileIndecies);
 				else
-					Thing.CallVoid(uid, Thing.Method.TILEMAP_SET_TILE_SQUARE, startRightTileInd, tileIndecies, tilePaletteUID);
+					Thing.Do(uid, Thing.Method.TILEMAP_SET_TILE_SQUARE, startRightTileInd, tileIndecies, tilePaletteUID);
 			}
 		}
 		private void TryResetThingPanel()
@@ -1592,13 +1588,13 @@ namespace SMPLSceneEditor
 				return;
 
 			for(int i = 0; i < selectedUIDs.Count; i++)
-				DrawBoundingBox((Hitbox)Thing.Get(selectedUIDs[i], Thing.Property.BOUNDING_BOX));
+				DrawBoundingBox(Thing.Get<Hitbox>(selectedUIDs[i], Thing.Property.BOUNDING_BOX));
 
 			var ptsA = selectedHitboxPointIndexesA;
 			var ptsB = selectedHitboxPointIndexesB;
 			for(int i = 0; i < selectedUIDs.Count; i++)
 			{
-				var hitbox = (Hitbox)Thing.Get(selectedUIDs[i], Thing.Property.HITBOX);
+				var hitbox = Thing.Get<Hitbox>(selectedUIDs[i], Thing.Property.HITBOX);
 				for(int j = 0; j < hitbox.Lines.Count; j++)
 				{
 					var col = ptsA.Contains(j) || ptsB.Contains(j) ? hitboxSelectCol : hitboxDeselectedCol;
@@ -1609,7 +1605,7 @@ namespace SMPLSceneEditor
 			if(editHitbox == null || editHitbox.Checked == false)
 				return;
 
-			var lines = ((Hitbox)Thing.Get(selectedUIDs[0], Thing.Property.HITBOX)).Lines;
+			var lines = Thing.Get<Hitbox>(selectedUIDs[0], Thing.Property.HITBOX).Lines;
 			var sz = sceneSc * HITBOX_POINT_EDIT_MAX_DIST;
 
 			for(int j = 0; j < lines.Count; j++)
@@ -1653,7 +1649,7 @@ namespace SMPLSceneEditor
 
 				for(int i = 0; i < selectedUIDs.Count; i++)
 				{
-					var pos = (Vector2)Thing.Get(selectedUIDs[i], Thing.Property.POSITION);
+					var pos = Thing.Get<Vector2>(selectedUIDs[i], Thing.Property.POSITION);
 					pos.Draw(window, Color.Red, sceneSc * 4);
 				}
 
@@ -1721,9 +1717,9 @@ namespace SMPLSceneEditor
 			if(Thing.Exists(uid) == false)
 				return;
 
-			SetViewPosition((Vector2)Thing.Get(uid, Thing.Property.POSITION));
+			SetViewPosition(Thing.Get<Vector2>(uid, Thing.Property.POSITION));
 
-			var bb = (Hitbox)Thing.Get(uid, Thing.Property.BOUNDING_BOX);
+			var bb = Thing.Get<Hitbox>(uid, Thing.Property.BOUNDING_BOX);
 			var dist1 = bb.Lines[0].A.Distance(bb.Lines[0].B);
 			var dist2 = bb.Lines[1].A.Distance(bb.Lines[1].B);
 			var scale = (dist1 > dist2 ? dist1 : dist2) / window.Size.X * 2f;
@@ -1733,7 +1729,8 @@ namespace SMPLSceneEditor
 		#region Get
 		private static Hitbox? GetBoundingBox(string uid)
 		{
-			return Thing.Info.HasGetter(uid, Thing.Property.BOUNDING_BOX) == false ? default : (Hitbox)Thing.Get(uid, Thing.Property.BOUNDING_BOX);
+			// this check avoids error
+			return Thing.Property.IsOwnedBy(uid, Thing.Property.BOUNDING_BOX) == false ? default : Thing.Get<Hitbox>(uid, Thing.Property.BOUNDING_BOX);
 		}
 		private float GetGridSpacing()
 		{
@@ -2009,14 +2006,14 @@ namespace SMPLSceneEditor
 			var dragSelHitbox = GetDragSelectionHitbox();
 			var clickedUIDs = new List<string>();
 			var dist = selectStartPos.Distance(new(rawMousePos.X, rawMousePos.Y));
-			var ctrl = Keyboard.IsKeyPressed(Keyboard.Key.LControl);
-			var alt = Keyboard.IsKeyPressed(Keyboard.Key.LAlt);
+			var ctrl = IsKeyPressed(Key.LControl);
+			var alt = IsKeyPressed(Key.LAlt);
 			var drag = left && dist > sceneSc * 5f;
 			var editingHitbox = editHitbox != null && editHitbox.Checked;
 
 			if(editingHitbox)
 			{
-				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Thing.Property.HITBOX);
+				var hitbox = Thing.Get<Hitbox>(selectedUIDs[0], Thing.Property.HITBOX);
 				if(hitbox == null)
 					return;
 
@@ -2156,9 +2153,9 @@ namespace SMPLSceneEditor
 			for(int i = 0; i < selectedUIDs.Count; i++)
 			{
 				var uid = selectedUIDs[i];
-				var dupUID = Thing.FreeUID(uid);
-				var pos = (Vector2)Thing.Get(uid, Thing.Property.POSITION);
-				var sc = (float)Thing.Get(uid, Thing.Property.SCALE);
+				var dupUID = Thing.GetFreeUID(uid);
+				var pos = Thing.Get<Vector2>(uid, Thing.Property.POSITION);
+				var sc = Thing.Get<float>(uid, Thing.Property.SCALE);
 
 				Thing.Duplicate(uid, dupUID);
 				Thing.Set(dupUID, Thing.Property.POSITION, pos.MoveAtAngle(45, sc * 20, false));
@@ -2173,7 +2170,7 @@ namespace SMPLSceneEditor
 			if(editHitbox != null && editHitbox.Checked)
 			{
 				// work on copy lists since removing from the main list changes other indexes in the main list but not the selectedPts lists
-				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Thing.Property.HITBOX);
+				var hitbox = Thing.Get<Hitbox>(selectedUIDs[0], Thing.Property.HITBOX);
 				var lines = new List<Line>(hitbox.LocalLines);
 				var ptsA = new List<int>(selectedHitboxPointIndexesA);
 				var ptsB = new List<int>(selectedHitboxPointIndexesB);
@@ -2219,12 +2216,12 @@ namespace SMPLSceneEditor
 
 		private void AddHitboxLine(string uid, List<Line> line)
 		{
-			var hitbox = (Hitbox)Thing.Get(uid, Thing.Property.HITBOX);
+			var hitbox = Thing.Get<Hitbox>(uid, Thing.Property.HITBOX);
 			for(int i = 0; i < line.Count; i++)
 				hitbox.LocalLines.Add(new Line(Local(line[i].A), Local(line[i].B)));
 			UpdateThingPanel();
 
-			Vector2 Local(Vector2 global) => (Vector2)Thing.CallGet(uid, Thing.Method.GET_LOCAL_POSITION_FROM_SELF, global);
+			Vector2 Local(Vector2 global) => Thing.DoGet<Vector2>(uid, Thing.Method.LOCAL_POSITION_FROM_SELF, global);
 		}
 		private void AddLineToHitbox()
 		{
@@ -2511,7 +2508,7 @@ namespace SMPLSceneEditor
 			}
 			if(editingHitbox)
 			{
-				var hitbox = (Hitbox)Thing.Get(selectedUIDs[0], Thing.Property.HITBOX);
+				var hitbox = Thing.Get<Hitbox>(selectedUIDs[0], Thing.Property.HITBOX);
 
 				for(int i = 0; i < ptsA.Count; i++)
 				{
@@ -2530,7 +2527,7 @@ namespace SMPLSceneEditor
 			for(int i = 0; i < selectedUIDs.Count; i++)
 			{
 				var uid = selectedUIDs[i];
-				var sc = (float)Thing.Get(uid, Thing.Property.SCALE);
+				var sc = Thing.Get<float>(uid, Thing.Property.SCALE);
 
 				Thing.Set(uid, Thing.Property.SCALE, sc + delta);
 			}
@@ -2569,8 +2566,8 @@ namespace SMPLSceneEditor
 				else if(editHitboxPts)
 				{
 					var uid = selectedUIDs[0];
-					var hitbox = (Hitbox)Thing.Get(uid, Thing.Property.HITBOX);
-					var sc = (float)Thing.Get(uid, Thing.Property.SCALE);
+					var hitbox = Thing.Get<Hitbox>(uid, Thing.Property.HITBOX);
+					var sc = Thing.Get<float>(uid, Thing.Property.SCALE);
 
 					if(ptsA.Count == 0 && ptsB.Count == 0)
 						return;
@@ -2609,7 +2606,7 @@ namespace SMPLSceneEditor
 					}
 					else if(editIndex == 1)
 					{
-						var thingPos = (Vector2)Thing.Get(uid, Thing.Property.POSITION);
+						var thingPos = Thing.Get<Vector2>(uid, Thing.Property.POSITION);
 						var a = thingPos.Angle(GetMousePosition());
 						var ang = DragAngle(thingPos, a);
 
@@ -2637,9 +2634,9 @@ namespace SMPLSceneEditor
 					for(int i = 0; i < selectedUIDs.Count; i++)
 					{
 						var uid = selectedUIDs[i];
-						var isPseudo3D = ((ReadOnlyCollection<string>)Thing.Get(uid, Thing.Property.TYPES)).Contains("Pseudo3D");
-						var pos = (Vector2)Thing.Get(uid, isPseudo3D ? Thing.Property.PSEUDO_3D_POSITION_2D : Thing.Property.POSITION);
-						var ang = (float)Thing.Get(uid, Thing.Property.ANGLE);
+						var isPseudo3D = Thing.Get<ReadOnlyCollection<string>>(uid, Thing.Property.TYPES).Contains("Pseudo3D");
+						var pos = Thing.Get<Vector2>(uid, isPseudo3D ? Thing.Property.PSEUDO_3D_POSITION_2D : Thing.Property.POSITION);
+						var ang = Thing.Get<float>(uid, Thing.Property.ANGLE);
 						var drag = Drag(pos, false, true);
 
 						if(editIndex == 0)
@@ -2876,7 +2873,7 @@ namespace SMPLSceneEditor
 
 			var uid = selectedUIDs[0];
 
-			var prop = Thing.Info.GetProperty(uid, propName);
+			var prop = Thing.Property.GetFrom(uid, propName);
 			if(prop.HasSetter)
 				Thing.Set(uid, propName, textBox.Text);
 
@@ -2992,18 +2989,18 @@ namespace SMPLSceneEditor
 			}
 
 			var uid = selectedUIDs[0];
-			var propType = Thing.Info.GetProperty(uid, propName).Type;
+			var propType = Thing.Property.GetFrom(uid, propName).Type;
 
-			if(propType == "Vector2")
+			if(propType == typeof(Vector2))
 			{
-				var vec = (Vector2)Thing.Get(uid, propName);
+				var vec = Thing.Get<Vector2>(uid, propName);
 				if(vecColIndex == 0) vec.X = valueFloat;
 				else if(vecColIndex == 1) vec.Y = valueFloat;
 				Thing.Set(uid, propName, vec);
 			}
-			else if(propType == "Color")
+			else if(propType == typeof(Color))
 			{
-				var col = (Color)Thing.Get(uid, propName);
+				var col = Thing.Get<Color>(uid, propName);
 				var val = (byte)valueInt;
 				if(vecColIndex == 0) col.R = val;
 				else if(vecColIndex == 1) col.G = val;
@@ -3011,9 +3008,9 @@ namespace SMPLSceneEditor
 				else if(vecColIndex == 3) col.A = val;
 				Thing.Set(uid, propName, col);
 			}
-			else if(propType == "Int32")
+			else if(propType == typeof(int))
 				Thing.Set(uid, propName, valueInt);
-			else if(propType == "Single")
+			else if(propType == typeof(float))
 				Thing.Set(uid, propName, valueFloat);
 
 			UpdateThingPanel();

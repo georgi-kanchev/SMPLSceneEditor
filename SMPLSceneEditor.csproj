@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <Reference Include="SMPL">
-      <HintPath>SMPL.dll</HintPath>
+      <HintPath>..\SMPL\bin\Debug\net6.0-windows\SMPL.dll</HintPath>
     </Reference>
   </ItemGroup>
 
