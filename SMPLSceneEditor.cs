@@ -272,7 +272,7 @@ namespace SMPLSceneEditor
 			{
 				AddThingProperty(table, "Texture Path", Thing.Property.VISUAL_TEXTURE_PATH, typeof(string));
 				AddThingProperty(table, "Tint", Thing.Property.VISUAL_TINT, typeof(Color));
-				AddThingProperty(table, "Order", Thing.Property.VISUAL_ORDER, typeof(int));
+				AddThingProperty(table, "Order Z", Thing.Property.VISUAL_ORDER_Z, typeof(int));
 				AddSpace(table);
 				AddThingProperty(table, "Is Hidden", Thing.Property.VISUAL_IS_HIDDEN, typeof(bool));
 				AddThingProperty(table, "Is Hidden Self", Thing.Property.VISUAL_IS_HIDDEN_SELF, typeof(bool), readOnly: true);
@@ -1261,12 +1261,11 @@ namespace SMPLSceneEditor
 
 			TrySelect();
 
-			TryDrawAllNonVisuals();
-
 			TryHotkeys();
 
 			Game.UpdateEngine(window);
 			TryDrawSelection();
+			TryDrawAllNonVisuals();
 			Game.FinishRendering(window, window);
 
 			if(editHitbox != null && (editHitbox.Checked == false).Once("uncheck-edit-hitbox"))
